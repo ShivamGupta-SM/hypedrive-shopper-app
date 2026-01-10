@@ -50,8 +50,8 @@ export function ForgotPassword() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-zinc-950">
         <div className="w-full max-w-sm text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-950/50">
-            <CheckCircleIcon className="size-8 text-teal-600 dark:text-teal-400" />
+          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50">
+            <CheckCircleIcon className="size-8 text-emerald-600 dark:text-emerald-400" />
           </div>
 
           <Heading className="mt-6">Check your email</Heading>
@@ -75,7 +75,7 @@ export function ForgotPassword() {
                   <button
                     type="button"
                     onClick={() => setSubmitted(false)}
-                    className="font-medium text-teal-600 underline dark:text-teal-400"
+                    className="font-medium text-emerald-600 underline dark:text-emerald-400"
                   >
                     try again
                   </button>
@@ -84,7 +84,7 @@ export function ForgotPassword() {
             </div>
           </div>
 
-          <Button href="/login" className="mt-8 w-full" color="teal">
+          <Button href="/login" className="mt-8 w-full" color="emerald">
             <ArrowLeftIcon className="size-4" />
             Back to sign in
           </Button>
@@ -103,8 +103,8 @@ export function ForgotPassword() {
         <div className="text-center">
           <Logo className="mx-auto h-6" />
 
-          <div className="mx-auto mt-8 flex size-16 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-950/50">
-            <KeyIcon className="size-8 text-teal-600 dark:text-teal-400" />
+          <div className="mx-auto mt-8 flex size-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50">
+            <KeyIcon className="size-8 text-emerald-600 dark:text-emerald-400" />
           </div>
 
           <Heading className="mt-6">Reset your password</Heading>
@@ -128,7 +128,7 @@ export function ForgotPassword() {
             />
           </Field>
 
-          <Button type="submit" className="w-full" color="teal" disabled={isPending}>
+          <Button type="submit" className="w-full" color="emerald" disabled={isPending}>
             {isPending ? "Sending..." : "Send reset link"}
           </Button>
 

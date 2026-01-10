@@ -76,7 +76,7 @@ export function Register() {
 
         <div className="space-y-8">
           <div>
-            <h1 className="font-serif text-4xl text-white xl:text-5xl">
+            <h1 className="font-serif text-4xl font-semibold text-white xl:text-5xl">
               Join Hypedrive Today
             </h1>
             <p className="mt-3 text-base text-emerald-200/80">
@@ -89,28 +89,28 @@ export function Register() {
               <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
                 <GiftIcon className="size-5 text-emerald-300" />
               </div>
-              <p className="mt-4 font-semibold text-white">Free to Join</p>
+              <p className="mt-4 font-serif font-semibold text-white">Free to Join</p>
               <p className="mt-1 text-sm text-emerald-300/70">No fees, start earning instantly</p>
             </div>
             <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
                 <BanknotesIcon className="size-5 text-emerald-300" />
               </div>
-              <p className="mt-4 font-semibold text-white">Real Cashback</p>
+              <p className="mt-4 font-serif font-semibold text-white">Real Cashback</p>
               <p className="mt-1 text-sm text-emerald-300/70">Earn money on purchases</p>
             </div>
             <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
                 <SparklesIcon className="size-5 text-emerald-300" />
               </div>
-              <p className="mt-4 font-semibold text-white">Premium Campaigns</p>
+              <p className="mt-4 font-serif font-semibold text-white">Premium Campaigns</p>
               <p className="mt-1 text-sm text-emerald-300/70">Exclusive brand offers</p>
             </div>
             <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
                 <ShieldCheckIcon className="size-5 text-emerald-300" />
               </div>
-              <p className="mt-4 font-semibold text-white">Secure Payouts</p>
+              <p className="mt-4 font-serif font-semibold text-white">Secure Payouts</p>
               <p className="mt-1 text-sm text-emerald-300/70">Quick bank withdrawals</p>
             </div>
           </div>

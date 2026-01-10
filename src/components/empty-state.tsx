@@ -57,7 +57,7 @@ export function EmptyState({
       <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
         <Icon className="size-7 text-zinc-400 dark:text-zinc-500" />
       </div>
-      <p className="mt-4 font-semibold text-zinc-900 dark:text-white">
+      <p className="mt-4 font-serif font-semibold text-zinc-900 dark:text-white">
         {title}
       </p>
       <p className="mt-1 max-w-xs text-center text-sm text-zinc-500">
@@ -98,7 +98,7 @@ export function InlineEmptyState({
       <div className="flex size-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
         <Icon className="size-6 text-zinc-400" />
       </div>
-      <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-white">
+      <p className="mt-3 font-serif text-sm font-medium text-zinc-900 dark:text-white">
         {title}
       </p>
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">

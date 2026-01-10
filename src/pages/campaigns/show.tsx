@@ -877,7 +877,7 @@ export function CampaignShow() {
 
           {/* Title & Description */}
           <div>
-            <h1 className="font-serif text-3xl text-zinc-900 sm:text-4xl dark:text-white">
+            <h1 className="font-serif text-2xl font-semibold text-zinc-900 sm:text-3xl dark:text-white">
               {campaign.title}
             </h1>
             {campaign.description && (
@@ -918,9 +918,9 @@ export function CampaignShow() {
           <div className="rounded-2xl bg-zinc-900 p-6 text-white dark:bg-zinc-800">
             <div className="flex flex-wrap items-end gap-6">
               <div>
-                <p className="text-sm text-zinc-400">Earn up to</p>
+                <p className="text-sm text-zinc-300">Earn up to</p>
                 <p className="mt-1 text-4xl font-bold">{campaign.rebatePercentage || 0}%</p>
-                <p className="text-sm text-zinc-400">cashback</p>
+                <p className="text-sm text-zinc-300">cashback</p>
               </div>
               {pricing?.bonusAmountDecimal && Number(pricing.bonusAmountDecimal) > 0 && (
                 <div className="rounded-xl bg-emerald-500/20 px-4 py-2">
@@ -1171,14 +1171,14 @@ export function CampaignShow() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-zinc-400">Earn up to</p>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Earn up to</p>
                   <p className="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">
                     {campaign.rebatePercentage || 0}%
                   </p>
                 </div>
                 {pricing?.bonusAmountDecimal && Number(pricing.bonusAmountDecimal) > 0 && (
                   <div className="text-right">
-                    <p className="text-xs font-medium text-zinc-400">Plus bonus</p>
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Plus bonus</p>
                     <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                       +₹{pricing.bonusAmountDecimal}
                     </p>

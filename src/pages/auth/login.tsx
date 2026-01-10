@@ -51,7 +51,7 @@ export function Login() {
 
         <div className="space-y-8">
           <div>
-            <h1 className="font-serif text-4xl text-white xl:text-5xl">
+            <h1 className="font-serif text-4xl font-semibold text-white xl:text-5xl">
               Welcome back to Hypedrive
             </h1>
             <p className="mt-3 text-base text-emerald-200/80">
@@ -66,7 +66,7 @@ export function Login() {
                   <BanknotesIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-white">Earn Real Cashback</p>
+                  <p className="font-serif font-semibold text-white">Earn Real Cashback</p>
                   <p className="mt-0.5 text-sm text-emerald-300/70">
                     Get rewarded on every purchase you make
                   </p>
@@ -79,7 +79,7 @@ export function Login() {
                   <RocketLaunchIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-white">Exclusive Campaigns</p>
+                  <p className="font-serif font-semibold text-white">Exclusive Campaigns</p>
                   <p className="mt-0.5 text-sm text-emerald-300/70">
                     Access special offers from top brands
                   </p>
@@ -92,7 +92,7 @@ export function Login() {
                   <ShieldCheckIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-white">Fast & Secure Payouts</p>
+                  <p className="font-serif font-semibold text-white">Fast & Secure Payouts</p>
                   <p className="mt-0.5 text-sm text-emerald-300/70">
                     Quick withdrawals directly to your bank
                   </p>

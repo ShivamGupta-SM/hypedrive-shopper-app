@@ -44,6 +44,7 @@ import {
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import clsx from "clsx";
+import { useShopperProfile } from "@/hooks/use-api";
 
 interface UserIdentity {
 	id: string;
@@ -205,15 +206,15 @@ function MobileHeader({
 					<BellIcon />
 				</IconButton>
 				<Dropdown>
-					<DropdownButton as="button" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:ring-white/10 dark:active:bg-zinc-700">
+					<DropdownButton as="div" className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:ring-white/10 dark:active:bg-zinc-700">
 						{identity?.avatar ? (
 							<img
 								src={identity.avatar}
 								alt={identity.name || "Profile"}
-								className="size-6 rounded-full object-cover"
+								className="absolute inset-0 h-full w-full object-cover"
 							/>
 						) : (
-							<div className="flex size-6 items-center justify-center rounded-full bg-zinc-900 text-[10px] font-semibold text-white dark:bg-zinc-600">
+							<div className="flex h-full w-full items-center justify-center bg-zinc-900 text-xs font-semibold text-white dark:bg-zinc-600">
 								{getInitials(identity?.name)}
 							</div>
 						)}
@@ -229,7 +230,17 @@ export function AppLayout() {
 	const location = useLocation();
 	const pathname = location.pathname;
 	const { data: identity } = useGetIdentity<UserIdentity>();
+	const { data: shopperProfile } = useShopperProfile();
 	const { mutate: logout } = useLogout();
+
+	// Use shopper avatar if available, fallback to identity avatar
+	const avatarUrl = shopperProfile?.shopper?.avatarUrl || identity?.avatar;
+
+	// Create enhanced identity with fresh avatar
+	const enhancedIdentity = identity ? {
+		...identity,
+		avatar: avatarUrl,
+	} : null;
 
 	const handleLogout = () => {
 		logout();
@@ -244,10 +255,10 @@ export function AppLayout() {
 					<NavbarSection>
 						<Dropdown>
 							<DropdownButton as={NavbarItem}>
-								{identity?.avatar ? (
-									<Avatar src={identity.avatar} square />
+								{enhancedIdentity?.avatar ? (
+									<Avatar src={enhancedIdentity.avatar} square />
 								) : (
-									<Avatar initials={getInitials(identity?.name)} className="bg-zinc-800 text-white" square />
+									<Avatar initials={getInitials(enhancedIdentity?.name)} className="bg-zinc-800 text-white" square />
 								)}
 							</DropdownButton>
 							<AccountDropdownMenu anchor="bottom end" onLogout={handleLogout} />
@@ -305,17 +316,17 @@ export function AppLayout() {
 						<Dropdown>
 							<DropdownButton as={SidebarItem}>
 								<span className="flex min-w-0 items-center gap-3">
-									{identity?.avatar ? (
-										<Avatar src={identity.avatar} className="size-10" square alt="" />
+									{enhancedIdentity?.avatar ? (
+										<Avatar src={enhancedIdentity.avatar} className="size-10" square alt="" />
 									) : (
-										<Avatar initials={getInitials(identity?.name)} className="size-10 bg-zinc-800 text-white" square />
+										<Avatar initials={getInitials(enhancedIdentity?.name)} className="size-10 bg-zinc-800 text-white" square />
 									)}
 									<span className="min-w-0">
 										<span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">
-											{identity?.name || "User"}
+											{enhancedIdentity?.name || "User"}
 										</span>
 										<span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
-											{identity?.email || ""}
+											{enhancedIdentity?.email || ""}
 										</span>
 									</span>
 								</span>
@@ -327,7 +338,7 @@ export function AppLayout() {
 				</Sidebar>
 			}
 			tabBar={<TabBar pathname={pathname} />}
-			mobileHeader={<MobileHeader pathname={pathname} identity={identity} onLogout={handleLogout} />}
+			mobileHeader={<MobileHeader pathname={pathname} identity={enhancedIdentity} onLogout={handleLogout} />}
 		>
 			{/* Content */}
 			<div className="px-4 py-6 lg:px-10 lg:py-8">

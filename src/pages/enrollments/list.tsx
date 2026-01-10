@@ -1,5 +1,4 @@
 import {
-  ArrowPathIcon,
   CheckCircleIcon,
   ClockIcon,
   DocumentTextIcon,
@@ -13,10 +12,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { Heading } from "@/components/heading";
 import { Link } from "@/components/link";
-import { Select } from "@/components/select";
 import { Text } from "@/components/text";
-import { useInfiniteEnrollments } from "@/hooks/use-api";
 import type { shared } from "@/hooks/use-api";
+import { useInfiniteEnrollments } from "@/hooks/use-api";
 import { getStatusColors } from "@/lib/theme";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
@@ -133,31 +131,83 @@ function StatCard({
   variant?: "default" | "warning" | "info" | "success";
 }) {
   const styles = {
-    default: {
-      bg: "bg-zinc-100 dark:bg-zinc-800",
-      text: "text-zinc-600 dark:text-zinc-400",
-    },
-    warning: {
-      bg: "bg-amber-50 dark:bg-amber-950/50",
-      text: "text-amber-600 dark:text-amber-400",
-    },
-    info: {
-      bg: "bg-sky-50 dark:bg-sky-950/50",
-      text: "text-sky-600 dark:text-sky-400",
-    },
-    success: {
-      bg: "bg-emerald-50 dark:bg-emerald-950/50",
-      text: "text-emerald-600 dark:text-emerald-400",
-    },
+    default: { icon: "text-zinc-500 dark:text-zinc-400" },
+    warning: { icon: "text-amber-500 dark:text-amber-400" },
+    info: { icon: "text-sky-500 dark:text-sky-400" },
+    success: { icon: "text-emerald-500 dark:text-emerald-400" },
   }[variant];
 
   return (
-    <div className="flex flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <div className={`flex size-8 items-center justify-center rounded-lg ${styles.bg}`}>
-        <Icon className={`size-4 ${styles.text}`} />
+    <div className="flex shrink-0 items-center gap-2.5 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+      <Icon className={`size-4 shrink-0 ${styles.icon}`} />
+      <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+        <span className="text-base font-semibold text-zinc-900 dark:text-white">{value}</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
       </div>
-      <p className="mt-2 text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className="mt-0.5 text-lg font-bold text-zinc-900 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+// Circular gauge for deadline visualization - number centered inside ring
+function DeadlineGauge({
+  daysRemaining,
+  totalDays = 30
+}: {
+  daysRemaining: number;
+  totalDays?: number;
+}) {
+  // Calculate percentage (clamped between 0 and 100)
+  const percentage = Math.max(0, Math.min(100, (daysRemaining / totalDays) * 100));
+
+  // Color based on urgency - more nuanced thresholds
+  const getColor = () => {
+    if (daysRemaining <= 2) return { stroke: "#ef4444", text: "text-red-600 dark:text-red-400" };
+    if (daysRemaining <= 5) return { stroke: "#f59e0b", text: "text-amber-600 dark:text-amber-400" };
+    if (daysRemaining <= 14) return { stroke: "#3b82f6", text: "text-blue-600 dark:text-blue-400" };
+    return { stroke: "#10b981", text: "text-emerald-600 dark:text-emerald-400" };
+  };
+
+  const colors = getColor();
+
+  // Circle parameters
+  const size = 52;
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative flex shrink-0 items-center justify-center">
+      <svg width={size} height={size} className="-rotate-90">
+        <title>{daysRemaining} days remaining</title>
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-zinc-200 dark:text-zinc-700"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={colors.stroke}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      {/* Centered text */}
+      <div className={`absolute inset-0 flex flex-col items-center justify-center ${colors.text}`}>
+        <span className="text-sm font-bold leading-none">{daysRemaining}</span>
+        <span className="text-[8px] font-medium uppercase tracking-wide">days</span>
+      </div>
     </div>
   );
 }
@@ -188,6 +238,15 @@ function EnrollmentCard({
         icon?: string;
       };
     };
+    submissions?: Array<{
+      id: string;
+      deliverableName: string;
+      isRequired: boolean;
+      requireLink: boolean;
+      requireScreenshot: boolean;
+      proofLink?: string;
+      proofScreenshot?: string;
+    }>;
   };
 }) {
   const statusConfig = getStatusConfig(enrollment.status);
@@ -206,20 +265,26 @@ function EnrollmentCard({
     enrollment.lockedBonusAmountDecimal,
   ]);
 
-  const daysRemaining = useMemo(() => {
+  const deadlineInfo = useMemo(() => {
     if (!enrollment.expiresAt) return null;
     const expiresAt = new Date(enrollment.expiresAt);
     const now = new Date();
-    return Math.ceil(
+    const daysRemaining = Math.ceil(
       (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
     );
+    const formattedDate = expiresAt.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    });
+    return { daysRemaining, formattedDate };
   }, [enrollment.expiresAt]);
 
   const isExpiringSoon =
-    daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3;
+    deadlineInfo !== null && deadlineInfo.daysRemaining > 0 && deadlineInfo.daysRemaining <= 3;
   const isActionRequired =
     enrollment.status === "awaiting_submission" ||
     enrollment.status === "changes_requested";
+  const hasDeadline = deadlineInfo !== null && deadlineInfo.daysRemaining > 0;
 
   const productName = enrollment.campaign?.product?.name || enrollment.campaign?.title;
   const productImage = enrollment.campaign?.product?.primaryImage;
@@ -227,109 +292,191 @@ function EnrollmentCard({
   const platformName = enrollment.campaign?.platform?.name;
   const actionHint = getActionHint(enrollment.status);
   const relativeTime = formatRelativeTime(enrollment.createdAt);
-  const bonusAmount = enrollment.lockedBonusAmountDecimal
-    ? parseFloat(enrollment.lockedBonusAmountDecimal)
-    : 0;
+
+  // Get deliverables info
+  const deliverables = enrollment.submissions || [];
+  const completedDeliverables = deliverables.filter(d => d.proofLink || d.proofScreenshot);
 
   return (
     <Link
       href={`/enrollments/${enrollment.id}`}
-      className="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
-      <div className="flex flex-1 flex-col p-4">
-        {/* Header: Product + Status */}
-        <div className="flex items-start gap-3">
-          {/* Product Thumbnail */}
-          <div className="relative shrink-0">
+      {/* Header: Product + Status */}
+      <div className="flex items-start gap-2.5 p-3 sm:gap-3 sm:p-4">
+        {/* Product Thumbnail */}
+        <div className="relative shrink-0">
+          <div className="size-11 overflow-hidden rounded-lg bg-zinc-100 sm:size-12 dark:bg-zinc-800">
             {productImage ? (
-              <div className="size-12 overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                <img src={productImage} alt="" className="size-full object-cover" />
-              </div>
+              <img
+                src={productImage}
+                alt={productName || "Product"}
+                className="size-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="flex size-full items-center justify-center"><svg class="size-5 text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.5 2A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 2h-9ZM5 5.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 5 5.75Zm.75 2.25a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-4.5ZM5 10.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" /></svg></div>';
+                  }
+                }}
+              />
             ) : (
-              <div className="flex size-12 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+              <div className="flex size-full items-center justify-center">
                 <ShoppingBagIcon className="size-5 text-zinc-400" />
               </div>
             )}
-            {platformIcon && (
-              <img
-                src={platformIcon}
-                alt={platformName}
-                className="absolute -bottom-1 -right-1 size-5 rounded border border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
-              />
-            )}
           </div>
+          {platformIcon && (
+            <img
+              src={platformIcon}
+              alt={platformName}
+              className="absolute -bottom-0.5 -right-0.5 size-4 rounded border border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
+            />
+          )}
+        </div>
 
-          {/* Product Info */}
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-white">
+        {/* Product Info + Status */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="line-clamp-1 text-[13px] font-medium text-zinc-900 sm:text-sm dark:text-white">
               {productName || "Campaign Enrollment"}
             </p>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              #{enrollment.orderId} · {relativeTime}
-            </p>
+            {/* Status Badge */}
+            <div className={`flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 ${statusConfig.bgClass}`}>
+              <StatusIcon className={`size-3 ${statusConfig.iconClass}`} />
+              <span className="text-[10px] font-medium text-zinc-700 sm:text-[11px] dark:text-zinc-300">
+                {statusConfig.label}
+              </span>
+            </div>
           </div>
+          <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Order #{enrollment.orderId} · {relativeTime}
+          </p>
+        </div>
+      </div>
 
-          {/* Status Badge */}
-          <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${statusConfig.bgClass}`}>
-            <StatusIcon className={`size-3.5 ${statusConfig.iconClass}`} />
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {statusConfig.label}
-            </span>
-          </div>
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Amount Row */}
+      <div className="flex items-stretch gap-3 p-3 sm:gap-4 sm:p-4">
+        {/* Order Value */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
+          <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
+            Order Value
+          </p>
+          <p className="mt-0.5 text-base font-semibold text-zinc-900 sm:text-lg dark:text-white">
+            {formatCurrency(enrollment.orderValueDecimal)}
+          </p>
         </div>
 
-        {/* Action Alert */}
-        {(isActionRequired || isExpiringSoon) && (
-          <div className={`mt-3 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${
-            isExpiringSoon
-              ? "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
-              : "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
-          }`}>
-            {isExpiringSoon ? (
-              <>
-                <ClockIcon className="size-3.5" />
-                Expires in {daysRemaining}d - Submit now
-              </>
-            ) : (
-              <>
-                <ExclamationTriangleIcon className="size-3.5" />
-                {actionHint}
-              </>
+        {/* Vertical Divider */}
+        <div className="my-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
+
+        {/* Cashback Amount */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
+          <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
+            {enrollment.status === "approved" ? "Earned" : "Cashback"}
+          </p>
+          <p className="mt-0.5 text-base font-bold text-emerald-600 sm:text-lg dark:text-emerald-400">
+            +{formatCurrency(estimatedPayout)}
+          </p>
+        </div>
+
+        {/* Deadline Gauge - Only show for action required statuses */}
+        {isActionRequired && hasDeadline && (
+          <>
+            <div className="my-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
+            <DeadlineGauge daysRemaining={deadlineInfo.daysRemaining} />
+          </>
+        )}
+      </div>
+
+      {/* Deliverables Chips - if present */}
+      {deliverables.length > 0 && (
+        <>
+          {/* Edge-to-edge divider */}
+          <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+          <div className="flex flex-wrap gap-1.5 p-3 sm:p-4">
+            {deliverables.slice(0, 3).map((d) => {
+              const isComplete = d.proofLink || d.proofScreenshot;
+              return (
+                <span
+                  key={d.id}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:text-[11px] ${
+                    isComplete
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                      : d.isRequired
+                        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                  }`}
+                >
+                  {isComplete ? (
+                    <CheckCircleIcon className="size-2.5 text-emerald-500" />
+                  ) : d.isRequired ? (
+                    <span className="size-1 rounded-full bg-amber-500" />
+                  ) : null}
+                  {d.deliverableName.length > 12
+                    ? `${d.deliverableName.slice(0, 12)}...`
+                    : d.deliverableName}
+                </span>
+              );
+            })}
+            {deliverables.length > 3 && (
+              <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500 sm:text-[11px] dark:bg-zinc-800 dark:text-zinc-400">
+                +{deliverables.length - 3}
+              </span>
             )}
           </div>
-        )}
+        </>
+      )}
 
-        {/* Financials Row */}
-        <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
-          <div className="flex items-baseline gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-zinc-400">Order</p>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                {formatCurrency(enrollment.orderValueDecimal)}
-              </p>
+      {/* Action Alert - Only if no deliverables shown and action required */}
+      {isActionRequired && deliverables.length === 0 && (
+        <>
+          {/* Edge-to-edge divider */}
+          <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+          <div className="flex items-center justify-between gap-2 px-3 py-2.5 text-xs sm:px-4">
+            <div className={`flex items-center gap-1.5 font-medium ${
+              isExpiringSoon
+                ? "text-red-600 dark:text-red-400"
+                : "text-amber-600 dark:text-amber-400"
+            }`}>
+              {isExpiringSoon ? (
+                <ClockIcon className="size-3.5" />
+              ) : (
+                <ExclamationTriangleIcon className="size-3.5" />
+              )}
+              <span>{actionHint}</span>
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-zinc-400">Rate</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">
-                  {enrollment.lockedRebatePercentage}%
-                </span>
-                {bonusAmount > 0 && (
-                  <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                    +₹{Math.round(bonusAmount)}
-                  </span>
-                )}
-              </div>
-            </div>
+            {hasDeadline && (
+              <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                Due {deadlineInfo.formattedDate}
+              </span>
+            )}
           </div>
+        </>
+      )}
 
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-wide text-zinc-400">Cashback</p>
-            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-              +{formatCurrency(estimatedPayout)}
-            </p>
-          </div>
+      {/* Footer Stats Bar */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+      <div className="flex items-center justify-between px-3 py-2 sm:px-4">
+        <div className="flex items-center gap-3 text-[10px] sm:gap-4 sm:text-[11px]">
+          <span className="text-zinc-500 dark:text-zinc-400">
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">{enrollment.lockedRebatePercentage}%</span> cashback
+          </span>
+          {enrollment.lockedBonusAmountDecimal && parseFloat(enrollment.lockedBonusAmountDecimal) > 0 && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              +₹{Math.round(parseFloat(enrollment.lockedBonusAmountDecimal))} bonus
+            </span>
+          )}
         </div>
+        {deliverables.length > 0 && (
+          <span className="text-[10px] text-zinc-500 sm:text-[11px] dark:text-zinc-400">
+            {completedDeliverables.length}/{deliverables.length} tasks
+          </span>
+        )}
       </div>
     </Link>
   );
@@ -358,26 +505,71 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   );
 }
 
-const statusOptions: { value: EnrollmentStatus | ""; label: string }[] = [
-  { value: "", label: "All Statuses" },
-  { value: "awaiting_submission", label: "Awaiting Submission" },
-  { value: "awaiting_review", label: "Under Review" },
-  { value: "changes_requested", label: "Changes Requested" },
-  { value: "approved", label: "Approved" },
-  { value: "permanently_rejected", label: "Rejected" },
-  { value: "withdrawn", label: "Withdrawn" },
-  { value: "expired", label: "Expired" },
-];
+// Tab types for filtering
+type TabType = "all" | "action" | "in_progress" | "completed" | "expired";
+
+// Tab button component
+function TabButton({
+  label,
+  isActive,
+  onClick,
+  count,
+}: {
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+  count?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ring-1 ${
+        isActive
+          ? "bg-zinc-900 text-white ring-zinc-900 dark:bg-white dark:text-zinc-900 dark:ring-white"
+          : "bg-white text-zinc-600 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700 dark:active:bg-zinc-700"
+      }`}
+    >
+      {label}
+      {count !== undefined && count > 0 && (
+        <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none ${
+          isActive
+            ? "bg-white/20 text-white dark:bg-zinc-900/30 dark:text-zinc-900"
+            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+        }`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Map tab to status filters - defined outside component to avoid recreating
+const tabStatusMap: Record<TabType, EnrollmentStatus[] | undefined> = {
+  all: undefined,
+  action: ["awaiting_submission", "changes_requested"],
+  in_progress: ["awaiting_review"],
+  completed: ["approved", "rejected", "permanently_rejected", "cancelled", "withdrawn"],
+  expired: ["expired"],
+};
+
+// Tab label mapping
+const tabLabels: Record<TabType, string> = {
+  all: "All",
+  action: "Action Needed",
+  in_progress: "In Review",
+  completed: "Completed",
+  expired: "Expired",
+};
 
 export function EnrollmentsList() {
-  const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | "">("");
+  const [activeTab, setActiveTab] = useState<TabType>("all");
 
   const params = useMemo(
     () => ({
-      status: statusFilter || undefined,
       limit: 20,
     }),
-    [statusFilter]
+    []
   );
 
   const {
@@ -390,7 +582,12 @@ export function EnrollmentsList() {
     refetch,
   } = useInfiniteEnrollments(params);
 
-  const hasActiveFilter = statusFilter !== "";
+  // Filter enrollments based on active tab
+  const filteredEnrollments = useMemo(() => {
+    const tabStatuses = tabStatusMap[activeTab];
+    if (!tabStatuses) return enrollments;
+    return enrollments.filter((e) => tabStatuses.includes(e.status as EnrollmentStatus));
+  }, [enrollments, activeTab]);
 
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -421,71 +618,77 @@ export function EnrollmentsList() {
           e.status === "awaiting_submission" || e.status === "changes_requested"
       ).length,
       inProgress: enrollments.filter(
-        (e) =>
-          e.status === "awaiting_submission" || e.status === "awaiting_review"
+        (e) => e.status === "awaiting_review"
       ).length,
-      approved: enrollments.filter((e) => e.status === "approved").length,
+      completed: enrollments.filter(
+        (e) =>
+          e.status === "approved" ||
+          e.status === "rejected" ||
+          e.status === "permanently_rejected" ||
+          e.status === "cancelled" ||
+          e.status === "withdrawn"
+      ).length,
+      expired: enrollments.filter(
+        (e) => e.status === "expired"
+      ).length,
     };
   }, [enrollments]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Header */}
       <div>
         <Heading>Enrollments</Heading>
-        <Text className="mt-1 text-sm">Track your campaign enrollments and earnings</Text>
+        <Text className="mt-0.5 text-sm">Track your campaign enrollments and earnings</Text>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Horizontal scroll on mobile */}
       {stats && stats.total > 0 && (
-        <div className="grid grid-cols-4 gap-2">
-          <StatCard icon={ShoppingBagIcon} label="Total" value={stats.total} variant="default" />
-          <StatCard icon={ExclamationTriangleIcon} label="Action" value={stats.needsAction} variant="warning" />
-          <StatCard icon={ClockIcon} label="Progress" value={stats.inProgress} variant="info" />
-          <StatCard icon={CheckCircleIcon} label="Approved" value={stats.approved} variant="success" />
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1 sm:gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <StatCard icon={ExclamationTriangleIcon} label="Pending" value={stats.needsAction} variant="warning" />
+          <StatCard icon={ClockIcon} label="Review" value={stats.inProgress} variant="info" />
+          <StatCard icon={CheckCircleIcon} label="Done" value={stats.completed} variant="success" />
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="flex items-center gap-2">
-        <Select
-          name="status"
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as EnrollmentStatus | "")
-          }
-          className="flex-1 sm:max-w-xs"
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="flex size-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-        >
-          <ArrowPathIcon className="size-4" />
-        </button>
-        {hasActiveFilter && (
-          <button
-            type="button"
-            onClick={() => setStatusFilter("")}
-            className="flex size-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-          >
-            <XMarkIcon className="size-4" />
-          </button>
-        )}
+      {/* Tabs - Scrollable */}
+      <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <TabButton
+          label={tabLabels.all}
+          isActive={activeTab === "all"}
+          onClick={() => setActiveTab("all")}
+        />
+        <TabButton
+          label={tabLabels.action}
+          isActive={activeTab === "action"}
+          onClick={() => setActiveTab("action")}
+          count={stats?.needsAction}
+        />
+        <TabButton
+          label={tabLabels.in_progress}
+          isActive={activeTab === "in_progress"}
+          onClick={() => setActiveTab("in_progress")}
+          count={stats?.inProgress}
+        />
+        <TabButton
+          label={tabLabels.completed}
+          isActive={activeTab === "completed"}
+          onClick={() => setActiveTab("completed")}
+        />
+        <TabButton
+          label={tabLabels.expired}
+          isActive={activeTab === "expired"}
+          onClick={() => setActiveTab("expired")}
+          count={stats?.expired}
+        />
       </div>
 
       {/* Results count */}
-      <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-        <p className="text-sm text-zinc-500">
+      <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 sm:pb-3 dark:border-zinc-800">
+        <p className="text-[13px] text-zinc-500 sm:text-sm">
           {loading
             ? "Loading..."
-            : `${enrollments.length} enrollment${enrollments.length !== 1 ? "s" : ""}`}
+            : `${filteredEnrollments.length} enrollment${filteredEnrollments.length !== 1 ? "s" : ""}`}
         </p>
       </div>
 
@@ -493,9 +696,9 @@ export function EnrollmentsList() {
       {loading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50">
-          <div className="flex size-12 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/50">
-            <XMarkIcon className="size-6 text-rose-500" />
+        <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-12 sm:py-16 dark:bg-zinc-900/50">
+          <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
+            <XMarkIcon className="size-6 text-red-500" />
           </div>
           <p className="mt-4 font-semibold text-zinc-900 dark:text-white">Something went wrong</p>
           <p className="mt-1 text-sm text-zinc-500">Unable to load enrollments</p>
@@ -503,10 +706,10 @@ export function EnrollmentsList() {
             Try again
           </Button>
         </div>
-      ) : enrollments.length > 0 ? (
+      ) : filteredEnrollments.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
-            {enrollments.map((enrollment) => (
+          <div className="grid grid-cols-1 gap-2.5 sm:gap-3 md:grid-cols-2 lg:gap-4">
+            {filteredEnrollments.map((enrollment) => (
               <EnrollmentCard
                 key={enrollment.id}
                 enrollment={
@@ -518,7 +721,7 @@ export function EnrollmentsList() {
 
           {/* Infinite scroll trigger */}
           {hasMore && (
-            <div ref={loadMoreRef} className="flex justify-center py-6">
+            <div ref={loadMoreRef} className="flex justify-center py-4 sm:py-6">
               {loadingMore && (
                 <div className="flex items-center gap-2 text-sm text-zinc-500">
                   <div className="size-4 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600 dark:border-zinc-700 dark:border-t-zinc-400" />
@@ -529,7 +732,7 @@ export function EnrollmentsList() {
           )}
         </>
       ) : (
-        <EmptyState hasFilters={hasActiveFilter} />
+        <EmptyState hasFilters={activeTab !== "all"} />
       )}
     </div>
   );

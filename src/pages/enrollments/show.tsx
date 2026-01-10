@@ -64,7 +64,7 @@ function formatCurrency(amount: string | number) {
 }
 
 function getStatusConfig(status: EnrollmentStatus): {
-  color: "lime" | "amber" | "red" | "zinc" | "sky";
+  color: "emerald" | "amber" | "red" | "zinc" | "sky";
   label: string;
   icon: typeof CheckCircleIcon;
   bgColor: string;
@@ -72,7 +72,7 @@ function getStatusConfig(status: EnrollmentStatus): {
   const configs: Record<
     EnrollmentStatus,
     {
-      color: "lime" | "amber" | "red" | "zinc" | "sky";
+      color: "emerald" | "amber" | "red" | "zinc" | "sky";
       label: string;
       icon: typeof CheckCircleIcon;
       bgColor: string;
@@ -97,7 +97,7 @@ function getStatusConfig(status: EnrollmentStatus): {
       bgColor: "bg-amber-50 dark:bg-amber-950/30",
     },
     approved: {
-      color: "lime",
+      color: "emerald",
       label: "Approved",
       icon: CheckCircleIcon,
       bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
@@ -112,13 +112,13 @@ function getStatusConfig(status: EnrollmentStatus): {
       color: "zinc",
       label: "Withdrawn",
       icon: XMarkIcon,
-      bgColor: "bg-slate-100 dark:bg-slate-800/50",
+      bgColor: "bg-zinc-100 dark:bg-zinc-800/50",
     },
     expired: {
       color: "zinc",
       label: "Expired",
       icon: ClockIcon,
-      bgColor: "bg-rose-50 dark:bg-rose-950/30",
+      bgColor: "bg-zinc-100 dark:bg-zinc-800/50",
     },
   };
   return (
@@ -134,7 +134,7 @@ function getStatusConfig(status: EnrollmentStatus): {
 function LoadingSpinner() {
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      <div className="size-8 animate-spin rounded-full border-2 border-orange-200 border-t-orange-600 dark:border-orange-800 dark:border-t-orange-400" />
+      <div className="size-8 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600 dark:border-emerald-800 dark:border-t-emerald-400" />
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         Loading enrollment...
       </p>
@@ -288,7 +288,7 @@ function DeliverableCard({
             </div>
           </div>
           {isSubmitted && (
-            <Badge color="lime" className="shrink-0 text-[9px] sm:text-[10px]">
+            <Badge color="emerald" className="shrink-0 text-[9px] sm:text-[10px]">
               Done
             </Badge>
           )}
@@ -572,8 +572,8 @@ export function EnrollmentShow() {
   if (error || !enrollment) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/50">
-          <ShoppingBagIcon className="size-7 text-rose-400" />
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/50">
+          <ShoppingBagIcon className="size-7 text-red-400" />
         </div>
         <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">
           Enrollment not found
@@ -581,7 +581,7 @@ export function EnrollmentShow() {
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
           The enrollment you're looking for doesn't exist.
         </p>
-        <Button className="mt-4" onClick={() => navigate("/enrollments")} color="rose">
+        <Button className="mt-4" onClick={() => navigate("/enrollments")} color="red">
           Back to Enrollments
         </Button>
       </div>
@@ -613,7 +613,7 @@ export function EnrollmentShow() {
                   {statusConfig && (
                     <div
                       className={`flex size-10 items-center justify-center rounded-lg ${
-                        statusConfig.color === "lime"
+                        statusConfig.color === "emerald"
                           ? "bg-emerald-100 dark:bg-emerald-900"
                           : statusConfig.color === "amber"
                             ? "bg-amber-100 dark:bg-amber-900"
@@ -626,7 +626,7 @@ export function EnrollmentShow() {
                     >
                       <statusConfig.icon
                         className={`size-5 ${
-                          statusConfig.color === "lime"
+                          statusConfig.color === "emerald"
                             ? "text-emerald-600 dark:text-emerald-400"
                             : statusConfig.color === "amber"
                               ? "text-amber-600 dark:text-amber-400"

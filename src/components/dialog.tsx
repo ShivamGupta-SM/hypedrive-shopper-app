@@ -58,7 +58,7 @@ export function DialogTitle({
   return (
     <Headless.DialogTitle
       {...props}
-      className={clsx(className, 'text-base/6 font-semibold text-balance text-zinc-950 xs:text-lg/6 sm:text-base/6 dark:text-white')}
+      className={clsx(className, 'font-serif text-base/6 font-semibold text-balance text-zinc-950 xs:text-lg/6 sm:text-base/6 dark:text-white')}
     />
   )
 }

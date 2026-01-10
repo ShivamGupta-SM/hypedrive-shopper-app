@@ -12,6 +12,7 @@ import { Heading, Subheading } from "@/components/heading";
 import { Input, InputGroup } from "@/components/input";
 import { Link } from "@/components/link";
 import { Select } from "@/components/select";
+import { Text } from "@/components/text";
 import {
   useShopperProfile,
   useShopperStats,
@@ -129,46 +130,35 @@ function StatCard({
   icon: Icon,
   label,
   value,
-  subtext,
   variant = "default",
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  subtext?: string;
   variant?: "default" | "success" | "warning" | "info";
 }) {
   const styles = {
     default: {
-      bg: "bg-zinc-100 dark:bg-zinc-800",
-      text: "text-zinc-600 dark:text-zinc-400",
+      icon: "text-zinc-500 dark:text-zinc-400",
     },
     success: {
-      bg: "bg-emerald-50 dark:bg-emerald-950/50",
-      text: "text-emerald-600 dark:text-emerald-400",
+      icon: "text-emerald-500 dark:text-emerald-400",
     },
     warning: {
-      bg: "bg-amber-50 dark:bg-amber-950/50",
-      text: "text-amber-600 dark:text-amber-400",
+      icon: "text-amber-500 dark:text-amber-400",
     },
     info: {
-      bg: "bg-sky-50 dark:bg-sky-950/50",
-      text: "text-sky-600 dark:text-sky-400",
+      icon: "text-sky-500 dark:text-sky-400",
     },
   }[variant];
 
   return (
-    <div className="flex flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <div className={`flex size-8 items-center justify-center rounded-lg ${styles.bg}`}>
-        <Icon className={`size-4 ${styles.text}`} />
+    <div className="flex flex-1 flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="flex items-center gap-1.5">
+        <Icon className={`size-4 ${styles.icon}`} />
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
       </div>
-      <p className="mt-2 text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className="mt-0.5 text-base font-bold text-zinc-900 dark:text-white sm:text-lg">
-        {value}
-      </p>
-      {subtext && (
-        <p className="mt-0.5 text-[10px] text-zinc-400">{subtext}</p>
-      )}
+      <p className="mt-1 text-base font-semibold text-zinc-900 sm:text-lg dark:text-white">{value}</p>
     </div>
   );
 }
@@ -215,7 +205,7 @@ function TransactionRow({
   const Icon = config.icon;
 
   return (
-    <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3.5 last:border-0 dark:border-zinc-800">
+    <div className="flex items-center gap-3 border-b border-zinc-950/5 px-4 py-3.5 last:border-0 dark:border-white/5">
       <div
         className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${config.bg}`}
       >
@@ -270,10 +260,10 @@ function WithdrawalRow({
     };
   };
 }) {
-  const statusConfig: Record<string, { color: "lime" | "amber" | "red" | "zinc"; label: string }> = {
+  const statusConfig: Record<string, { color: "emerald" | "amber" | "red" | "zinc"; label: string }> = {
     pending: { color: "amber", label: "Pending" },
     processing: { color: "amber", label: "Processing" },
-    completed: { color: "lime", label: "Completed" },
+    completed: { color: "emerald", label: "Completed" },
     failed: { color: "red", label: "Failed" },
     cancelled: { color: "zinc", label: "Cancelled" },
   };
@@ -281,7 +271,7 @@ function WithdrawalRow({
   const config = statusConfig[withdrawal.status] || { color: "zinc", label: withdrawal.status };
 
   return (
-    <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3.5 last:border-0 dark:border-zinc-800">
+    <div className="flex items-center gap-3 border-b border-zinc-950/5 px-4 py-3.5 last:border-0 dark:border-white/5">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/50">
         <ArrowUpTrayIcon className="size-5 text-sky-600 dark:text-sky-400" />
       </div>
@@ -545,12 +535,10 @@ export function Wallet() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <header>
+      <div>
         <Heading>Wallet</Heading>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Track earnings and manage withdrawals
-        </p>
-      </header>
+        <Text className="mt-1 text-sm">Track earnings and manage withdrawals</Text>
+      </div>
 
       {/* KYC Alert - only shown when balance > ₹30,000 and KYC not done */}
       <KYCAlert kycStatus={profile?.shopper?.kycStatus} balance={availableAmount} />
@@ -564,20 +552,18 @@ export function Wallet() {
         kycVerified={kycVerified}
       />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Stats */}
+      <div className="-mx-0.5 flex gap-2 px-0.5">
         <StatCard
           icon={ArrowTrendingUpIcon}
           label="Earned"
           value={`₹${wallet?.totalCreditedDecimal || stats?.totalEarningsDecimal || "0"}`}
-          subtext={`${stats?.approved || 0} approved`}
           variant="success"
         />
         <StatCard
           icon={ClockIcon}
           label="Pending"
           value={`₹${wallet?.pendingBalanceDecimal || stats?.pendingEarningsDecimal || "0"}`}
-          subtext={`${stats?.awaitingReview || 0} in review`}
           variant="warning"
         />
         <StatCard
@@ -589,10 +575,10 @@ export function Wallet() {
       </div>
 
       {/* Two Column Layout for Desktop */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         {/* Transactions */}
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+        <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+          <div className="flex items-center justify-between border-b border-zinc-950/5 px-4 py-3 dark:border-white/5">
             <div className="flex items-center gap-2">
               <BanknotesIcon className="size-4 text-zinc-400" />
               <Subheading className="text-sm">Transactions</Subheading>
@@ -638,8 +624,8 @@ export function Wallet() {
         </div>
 
         {/* Withdrawals */}
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+        <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+          <div className="flex items-center justify-between border-b border-zinc-950/5 px-4 py-3 dark:border-white/5">
             <div className="flex items-center gap-2">
               <ArrowUpTrayIcon className="size-4 text-zinc-400" />
               <Subheading className="text-sm">Withdrawals</Subheading>
@@ -674,8 +660,8 @@ export function Wallet() {
 
       {/* Linked Bank Accounts */}
       {!methodsLoading && (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+        <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+          <div className="flex items-center justify-between border-b border-zinc-950/5 px-4 py-3 dark:border-white/5">
             <div className="flex items-center gap-2">
               <BuildingLibraryIcon className="size-4 text-zinc-400" />
               <Subheading className="text-sm">Linked Bank Accounts</Subheading>
@@ -705,7 +691,7 @@ export function Wallet() {
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <div className="divide-y divide-zinc-950/5 dark:divide-white/5">
               {methodsData?.methods?.map((method) => (
                 <div key={method.id} className="flex items-center gap-3 p-4">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">

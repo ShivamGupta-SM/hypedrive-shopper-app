@@ -59,10 +59,26 @@ function useAsync<T>(
 
 // Shopper Profile
 export function useShopperProfile() {
-  return useAsync(async () => {
+  const result = useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.shoppers.getMyShopperProfile();
+    const profile = await client.shoppers.getMyShopperProfile();
+
+    // Sync shopper data to localStorage for identity
+    if (profile?.shopper) {
+      const shopperData = {
+        id: profile.shopper.id,
+        firstName: profile.shopper.firstName || "",
+        lastName: profile.shopper.lastName || "",
+        kycStatus: profile.shopper.kycStatus || "pending",
+        avatarUrl: profile.shopper.avatarUrl,
+      };
+      localStorage.setItem("auth_shopper", JSON.stringify(shopperData));
+    }
+
+    return profile;
   }, []);
+
+  return result;
 }
 
 // Shopper Stats
@@ -113,8 +129,8 @@ export function useInfiniteCampaigns(params?: {
   q?: string;
   featured?: boolean;
   sort?: "trending" | "recent";
-}): InfiniteState<campaigns.CampaignListItem> {
-  const [data, setData] = useState<campaigns.CampaignListItem[]>([]);
+}): InfiniteState<campaigns.Campaign> {
+  const [data, setData] = useState<campaigns.Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -243,19 +259,51 @@ export function useEnrollments(params?: {
   }, [params?.cursor, params?.limit, params?.status, params?.campaignId]);
 }
 
-// Infinite Enrollments List
+// Enriched enrollment type with campaign data
+export interface EnrichedEnrollment extends enrollments.Enrollment {
+  campaign?: {
+    title: string;
+    product?: {
+      name: string;
+      primaryImage?: string;
+    };
+    platform?: {
+      name: string;
+      icon?: string;
+    };
+  };
+  submissions?: Array<{
+    id: string;
+    deliverableName: string;
+    isRequired: boolean;
+    requireLink: boolean;
+    requireScreenshot: boolean;
+    proofLink?: string;
+    proofScreenshot?: string;
+  }>;
+}
+
+// Cache types for campaign and product data
+interface CampaignCache {
+  campaign: campaigns.Campaign;
+  product?: products.ProductWithStats;
+  platform?: platforms.Platform;
+}
+
+// Infinite Enrollments List with campaign enrichment
 export function useInfiniteEnrollments(params?: {
   limit?: number;
   status?: shared.EnrollmentStatus;
   campaignId?: string;
-}): InfiniteState<enrollments.EnrollmentListItem> {
-  const [data, setData] = useState<enrollments.EnrollmentListItem[]>([]);
+}): InfiniteState<EnrichedEnrollment> {
+  const [data, setData] = useState<EnrichedEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const cursorRef = useRef<string | null>(null);
   const paramsRef = useRef(params);
+  const campaignCacheRef = useRef<Map<string, CampaignCache>>(new Map());
 
   // Reset when params change
   useEffect(() => {
@@ -284,10 +332,93 @@ export function useInfiniteEnrollments(params?: {
         cursor: isLoadMore ? cursorRef.current || undefined : undefined,
       });
 
+      const enrollmentData = result.data || [];
+
+      // Get unique campaign IDs that aren't cached
+      const uniqueCampaignIds = [...new Set(enrollmentData.map(e => e.campaignId))]
+        .filter(id => !campaignCacheRef.current.has(id));
+
+      // Fetch campaign, product, and platform data for uncached campaigns
+      if (uniqueCampaignIds.length > 0) {
+        const campaignPromises = uniqueCampaignIds.map(async (id) => {
+          try {
+            const campaign = await client.campaigns.getCampaign(id);
+
+            // Fetch product data if campaign has productId
+            let product: products.ProductWithStats | undefined;
+            let platform: platforms.Platform | undefined;
+
+            if (campaign.productId) {
+              try {
+                product = await client.products.getProduct(campaign.productId);
+                // Fetch platform if product has platformId
+                if (product?.platformId) {
+                  try {
+                    platform = await client.platforms.getPlatform(product.platformId);
+                  } catch {
+                    // Platform fetch failed, continue without it
+                  }
+                }
+              } catch {
+                // Product fetch failed, continue without it
+              }
+            }
+
+            return { id, campaign, product, platform };
+          } catch {
+            return { id, campaign: null, product: undefined, platform: undefined };
+          }
+        });
+
+        const campaignResults = await Promise.all(campaignPromises);
+        campaignResults.forEach(({ id, campaign, product, platform }) => {
+          if (campaign) {
+            campaignCacheRef.current.set(id, { campaign, product, platform });
+          }
+        });
+      }
+
+      // Enrich enrollments with campaign data
+      const enrichedEnrollments: EnrichedEnrollment[] = enrollmentData.map(enrollment => {
+        const cached = campaignCacheRef.current.get(enrollment.campaignId);
+        const campaign = cached?.campaign;
+        const product = cached?.product;
+        const platform = cached?.platform;
+
+        // Get primary image from product
+        const primaryImage = product?.productImages?.find(img => img.isPrimary)?.imageUrl
+          || product?.productImages?.[0]?.imageUrl;
+
+        return {
+          ...enrollment,
+          campaign: campaign ? {
+            title: campaign.title,
+            product: product ? {
+              name: product.name,
+              primaryImage,
+            } : undefined,
+            platform: platform ? {
+              name: platform.name,
+              icon: platform.icon || platform.logo,
+            } : undefined,
+          } : undefined,
+          // Map deliverables to submissions format expected by EnrollmentCard
+          submissions: enrollment.deliverables?.map(d => ({
+            id: d.campaignDeliverableId,
+            deliverableName: d.name,
+            isRequired: d.isRequired,
+            requireLink: d.requireLink,
+            requireScreenshot: d.requireScreenshot,
+            proofLink: d.proofLink,
+            proofScreenshot: d.proofScreenshot,
+          })),
+        };
+      });
+
       if (isLoadMore) {
-        setData(prev => [...prev, ...(result.data || [])]);
+        setData(prev => [...prev, ...enrichedEnrollments]);
       } else {
-        setData(result.data || []);
+        setData(enrichedEnrollments);
       }
       cursorRef.current = result.nextCursor;
       setHasMore(result.hasMore);

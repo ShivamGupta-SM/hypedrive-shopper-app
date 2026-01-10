@@ -1,16 +1,12 @@
 import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
 import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogActions } from "@/components/dialog";
-import {
-  MenuSection,
-  MenuSectionHeader,
-  MenuSectionFooter,
-  MenuRow,
-  MenuSeparator,
-} from "@/components/menu-list";
+import { Heading, Subheading } from "@/components/heading";
+import { MenuSection, MenuRow, MenuSeparator, MenuDangerButton } from "@/components/menu-list";
+import { Text } from "@/components/text";
 import { useShopperProfile, useKYCStatus, useWithdrawalMethods } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
-import type { wallet } from "@/lib/api-client";
+import type { wallets } from "@/lib/api-client";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -25,7 +21,6 @@ import {
   PlusIcon,
   TrashIcon,
   StarIcon,
-  ChevronRightIcon,
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   LockClosedIcon,
@@ -268,7 +263,7 @@ function AddBankAccountDialog({
 
     try {
       const client = getAuthenticatedClient();
-      await client.wallet.addWithdrawalMethod({
+      await client.wallets.addWithdrawalMethod({
         accountType,
         ...(accountType === "bank_account"
           ? {
@@ -307,7 +302,7 @@ function AddBankAccountDialog({
                   accountType === "bank_account" ? "bg-white dark:bg-zinc-800" : ""
                 }`}
               >
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-sky-500">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500">
                   <BuildingLibraryIcon className="size-4 text-white" />
                 </div>
                 <span className="flex-1 text-[15px] text-zinc-900 dark:text-white">Bank Account</span>
@@ -323,7 +318,7 @@ function AddBankAccountDialog({
                   accountType === "upi" ? "bg-white dark:bg-zinc-800" : ""
                 }`}
               >
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500">
                   <span className="text-[11px] font-bold text-white">UPI</span>
                 </div>
                 <span className="flex-1 text-[15px] text-zinc-900 dark:text-white">UPI</span>
@@ -614,175 +609,6 @@ function EditAddressDialog({
   );
 }
 
-// iOS-style Profile Header Card with Avatar Upload
-function ProfileHeader({
-  profile,
-  isVerified,
-  onEdit,
-  onAvatarChange,
-  avatarUploading,
-}: {
-  profile: {
-    userName: string;
-    userEmail: string;
-    initials: string;
-    avatarUrl?: string;
-  };
-  isVerified: boolean;
-  onEdit: () => void;
-  onAvatarChange: (file: File) => void;
-  avatarUploading: boolean;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAvatarClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onAvatarChange(file);
-    }
-    // Reset input so same file can be selected again
-    e.target.value = "";
-  };
-
-  return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-      <button
-        type="button"
-        onClick={onEdit}
-        className="flex w-full items-center gap-4 p-4 text-left active:bg-zinc-50 dark:active:bg-zinc-800"
-      >
-        {/* Avatar with camera overlay */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={handleAvatarClick}
-            disabled={avatarUploading}
-            className="group relative"
-          >
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.userName}
-                className="size-16 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex size-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                {profile.initials}
-              </div>
-            )}
-            {/* Camera overlay */}
-            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100">
-              {avatarUploading ? (
-                <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              ) : (
-                <CameraIcon className="size-5 text-white" />
-              )}
-            </div>
-          </button>
-          {isVerified && !avatarUploading && (
-            <div className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900">
-              <CheckCircleIcon className="size-3 text-white" />
-            </div>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-
-        {/* Info */}
-        <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold text-zinc-900 dark:text-white">
-            {profile.userName}
-          </p>
-          <p className="truncate text-[15px] text-zinc-500 dark:text-zinc-400">
-            {profile.userEmail}
-          </p>
-        </div>
-
-        <ChevronRightIcon className="size-5 text-zinc-300 dark:text-zinc-600" />
-      </button>
-    </div>
-  );
-}
-
-// Unified KYC Section Card
-function KYCCard({
-  kycStatus,
-  onStartKYC,
-}: {
-  kycStatus: {
-    status?: string;
-    panVerified?: boolean;
-    aadhaarVerified?: boolean;
-  } | null;
-  onStartKYC: () => void;
-}) {
-  const isFullyVerified = kycStatus?.status === "verified";
-  const isPanVerified = kycStatus?.panVerified || false;
-  const isAadhaarVerified = kycStatus?.aadhaarVerified || false;
-  const isPartiallyVerified = isPanVerified || isAadhaarVerified;
-
-  if (isFullyVerified) {
-    return (
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
-            <ShieldCheckIcon className="size-4 text-white" />
-          </div>
-          <div className="flex-1">
-            <p className="text-[15px] font-medium text-zinc-900 dark:text-white">Identity Verified</p>
-            <p className="text-[13px] text-zinc-500 dark:text-zinc-400">PAN & Aadhaar verified</p>
-          </div>
-          <Badge color="emerald">Verified</Badge>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-amber-500">
-          <IdentificationIcon className="size-4 text-white" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-medium text-zinc-900 dark:text-white">Complete KYC</p>
-          <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
-            {isPartiallyVerified ? (
-              <span className="flex items-center gap-2">
-                <span className={isPanVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                  {isPanVerified ? "✓ PAN" : "○ PAN"}
-                </span>
-                <span className={isAadhaarVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                  {isAadhaarVerified ? "✓ Aadhaar" : "○ Aadhaar"}
-                </span>
-              </span>
-            ) : (
-              "Required for withdrawals over ₹30,000"
-            )}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onStartKYC}
-          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-[13px] font-medium text-white active:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-100"
-        >
-          {isPartiallyVerified ? "Continue" : "Verify"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // Change Email Dialog
 function ChangeEmailDialog({
   open,
@@ -901,29 +727,189 @@ function ChangeEmailDialog({
   );
 }
 
+// Profile Card - Hero section at top
+function ProfileCard({
+  profile,
+  isVerified,
+  onEdit,
+  onAvatarChange,
+  avatarUploading,
+}: {
+  profile: {
+    userName: string;
+    userEmail: string;
+    initials: string;
+    avatarUrl?: string;
+    memberSince: string;
+  };
+  isVerified: boolean;
+  onEdit: () => void;
+  onAvatarChange: (file: File) => void;
+  avatarUploading: boolean;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onAvatarChange(file);
+    }
+    e.target.value = "";
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          {/* Avatar with camera overlay */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              disabled={avatarUploading}
+              className="group relative"
+            >
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.userName}
+                  className="size-20 rounded-full object-cover sm:size-16"
+                />
+              ) : (
+                <div className="flex size-20 items-center justify-center rounded-full bg-zinc-200 text-2xl font-semibold text-zinc-600 sm:size-16 sm:text-xl dark:bg-zinc-700 dark:text-zinc-300">
+                  {profile.initials}
+                </div>
+              )}
+              {/* Camera overlay */}
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100">
+                {avatarUploading ? (
+                  <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <CameraIcon className="size-5 text-white" />
+                )}
+              </div>
+            </button>
+            {isVerified && !avatarUploading && (
+              <div className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900">
+                <CheckCircleIcon className="size-3 text-white" />
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Info */}
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <p className="text-lg font-semibold text-zinc-900 dark:text-white">
+              {profile.userName}
+            </p>
+            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+              {profile.userEmail}
+            </p>
+            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              Member since {profile.memberSince}
+            </p>
+          </div>
+
+          {/* Edit button */}
+          <Button onClick={onEdit} outline className="w-full sm:w-auto">
+            Edit Profile
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// KYC Card
+function KYCCard({
+  kycStatus,
+  onStartKYC,
+}: {
+  kycStatus: {
+    status?: string;
+    panVerified?: boolean;
+    aadhaarVerified?: boolean;
+  } | null;
+  onStartKYC: () => void;
+}) {
+  const isFullyVerified = kycStatus?.status === "verified";
+  const isPanVerified = kycStatus?.panVerified || false;
+  const isAadhaarVerified = kycStatus?.aadhaarVerified || false;
+  const isPartiallyVerified = isPanVerified || isAadhaarVerified;
+
+  if (isFullyVerified) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500">
+          <ShieldCheckIcon className="size-5 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-emerald-900 dark:text-emerald-100">Identity Verified</p>
+          <p className="text-sm text-emerald-700 dark:text-emerald-300">PAN & Aadhaar verified</p>
+        </div>
+        <Badge color="emerald">Verified</Badge>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-amber-50 p-4 sm:flex-row sm:items-center dark:bg-amber-950/30">
+      <div className="flex items-center gap-3 sm:flex-1">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500">
+          <IdentificationIcon className="size-5 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-medium text-amber-900 dark:text-amber-100">Complete KYC</p>
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            {isPartiallyVerified ? (
+              <span className="flex items-center gap-2">
+                <span className={isPanVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                  {isPanVerified ? "PAN verified" : "PAN pending"}
+                </span>
+                <span>·</span>
+                <span className={isAadhaarVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                  {isAadhaarVerified ? "Aadhaar verified" : "Aadhaar pending"}
+                </span>
+              </span>
+            ) : (
+              "Required for withdrawals over ₹30,000"
+            )}
+          </p>
+        </div>
+      </div>
+      <Button onClick={onStartKYC} color="amber" className="w-full shrink-0 sm:w-auto">
+        {isPartiallyVerified ? "Continue" : "Verify Now"}
+      </Button>
+    </div>
+  );
+}
+
 // Bank Account Row
 function BankAccountRow({
   method,
   onVerify,
   onSetDefault,
   onDelete,
-  isFirst,
-  isLast,
 }: {
-  method: wallet.WithdrawalMethod;
+  method: wallets.WithdrawalMethod;
   onVerify: () => void;
   onSetDefault: () => void;
   onDelete: () => void;
-  isFirst?: boolean;
-  isLast?: boolean;
 }) {
   return (
-    <div
-      className={`flex items-center gap-3 bg-white px-4 py-3 dark:bg-zinc-900 ${
-        isFirst ? "rounded-t-xl" : ""
-      } ${isLast ? "rounded-b-xl" : ""}`}
-    >
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-sky-500">
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500">
         {method.accountType === "upi" ? (
           <span className="text-[10px] font-bold text-white">UPI</span>
         ) : (
@@ -951,7 +937,7 @@ function BankAccountRow({
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {method.isVerified ? (
           <CheckCircleIcon className="size-5 text-emerald-500" />
         ) : (
@@ -967,7 +953,7 @@ function BankAccountRow({
           <button
             type="button"
             onClick={onSetDefault}
-            className="p-1 text-zinc-400 active:text-amber-500"
+            className="rounded p-1 text-zinc-400 active:text-amber-500"
           >
             <StarIcon className="size-4" />
           </button>
@@ -975,7 +961,7 @@ function BankAccountRow({
         <button
           type="button"
           onClick={onDelete}
-          className="p-1 text-zinc-400 active:text-red-500"
+          className="rounded p-1 text-zinc-400 active:text-red-500"
         >
           <TrashIcon className="size-4" />
         </button>
@@ -1073,7 +1059,7 @@ export function Settings() {
   const handleVerifyMethod = async (id: string) => {
     try {
       const client = getAuthenticatedClient();
-      await client.wallet.verifyWithdrawalMethod(id);
+      await client.wallets.verifyWithdrawalMethod(id);
       refetchMethods();
     } catch (err) {
       console.error("Failed to verify:", err);
@@ -1083,7 +1069,7 @@ export function Settings() {
   const handleSetDefault = async (id: string) => {
     try {
       const client = getAuthenticatedClient();
-      await client.wallet.setDefaultWithdrawalMethod(id);
+      await client.wallets.setDefaultWithdrawalMethod(id);
       refetchMethods();
     } catch (err) {
       console.error("Failed to set default:", err);
@@ -1094,22 +1080,32 @@ export function Settings() {
     if (!confirm("Are you sure you want to remove this payment method?")) return;
     try {
       const client = getAuthenticatedClient();
-      await client.wallet.deleteWithdrawalMethod(id);
+      await client.wallets.deleteWithdrawalMethod(id);
       refetchMethods();
     } catch (err) {
       console.error("Failed to delete:", err);
     }
   };
 
+  // Type assertion for extended shopper fields that may be returned by API
+  type ExtendedShopper = NonNullable<typeof profile>["shopper"] & {
+    phoneNumber?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+  };
+  const shopper = profile?.shopper as ExtendedShopper | undefined;
+
   const userName =
     profile?.user?.name ||
-    `${profile?.shopper?.firstName || ""} ${profile?.shopper?.lastName || ""}`.trim() ||
+    `${shopper?.firstName || ""} ${shopper?.lastName || ""}`.trim() ||
     "User";
   const userEmail = profile?.user?.email || "";
-  const displayName = profile?.shopper?.displayName || userName;
-  const phoneNumber = profile?.shopper?.phoneNumber || "Not set";
-  const memberSince = profile?.shopper?.createdAt
-    ? new Date(profile.shopper.createdAt).toLocaleDateString("en-IN", {
+  const displayName = shopper?.displayName || userName;
+  const phoneNumber = shopper?.phoneNumber || "Not set";
+  const memberSince = shopper?.createdAt
+    ? new Date(shopper.createdAt).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -1126,30 +1122,42 @@ export function Settings() {
   const isVerified = kycStatus?.status === "verified";
 
   // Address fields
-  const address = profile?.shopper?.address || "";
-  const city = profile?.shopper?.city || "";
-  const state = profile?.shopper?.state || "";
-  const postalCode = profile?.shopper?.postalCode || "";
+  const address = shopper?.address || "";
+  const city = shopper?.city || "";
+  const state = shopper?.state || "";
+  const postalCode = shopper?.postalCode || "";
   const hasAddress = address || city || state || postalCode;
+  const addressDisplay = hasAddress
+    ? [city, state].filter(Boolean).join(", ") || "Address set"
+    : "Not set";
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 pb-8">
-      {/* Profile Header with Avatar */}
-      <ProfileHeader
-        profile={{ userName, userEmail, initials, avatarUrl: profile?.shopper?.avatarUrl }}
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <Heading>Settings</Heading>
+        <Text className="mt-1 text-sm">Manage your profile and preferences</Text>
+      </div>
+
+      {/* Profile Card - Hero */}
+      <ProfileCard
+        profile={{ userName, userEmail, initials, avatarUrl: shopper?.avatarUrl, memberSince }}
         isVerified={isVerified}
         onEdit={() => setIsEditing(true)}
         onAvatarChange={handleAvatarChange}
         avatarUploading={avatarUploading}
       />
 
-      {/* Account Info Section */}
-      <section>
-        <MenuSectionHeader>Account</MenuSectionHeader>
+      {/* KYC Status */}
+      <KYCCard kycStatus={kycStatus} onStartKYC={handleStartKYC} />
+
+      {/* Two Column Layout for Desktop */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Account & Contact Info */}
         <MenuSection>
           <MenuRow
             icon={UserCircleIcon}
-            iconBg="bg-sky-500"
+            iconColor="sky"
             label="Display Name"
             value={displayName}
             onClick={() => setIsEditing(true)}
@@ -1158,7 +1166,7 @@ export function Settings() {
           <MenuSeparator />
           <MenuRow
             icon={EnvelopeIcon}
-            iconBg="bg-orange-500"
+            iconColor="orange"
             label="Email"
             value={userEmail}
             onClick={() => setIsChangingEmail(true)}
@@ -1166,155 +1174,117 @@ export function Settings() {
           <MenuSeparator />
           <MenuRow
             icon={PhoneIcon}
-            iconBg="bg-emerald-500"
+            iconColor="emerald"
             label="Phone"
             value={phoneNumber}
             onClick={() => setIsEditing(true)}
           />
           <MenuSeparator />
           <MenuRow
+            icon={MapPinIcon}
+            iconColor="red"
+            label="Address"
+            value={addressDisplay}
+            onClick={() => setIsEditingAddress(true)}
+          />
+          <MenuSeparator />
+          <MenuRow
             icon={CalendarIcon}
-            iconBg="bg-amber-500"
+            iconColor="amber"
             label="Member Since"
             value={memberSince}
             isLast
           />
         </MenuSection>
-      </section>
 
-      {/* Address Section */}
-      <section>
-        <MenuSectionHeader>Address</MenuSectionHeader>
+        {/* Payout Methods */}
         <MenuSection>
-          <MenuRow
-            icon={MapPinIcon}
-            iconBg="bg-red-500"
-            label="Address"
-            value={hasAddress ? undefined : "Not set"}
-            onClick={() => setIsEditingAddress(true)}
-            isFirst
-            isLast={!hasAddress}
-          />
-          {hasAddress && (
-            <>
-              <MenuSeparator />
-              <button
-                type="button"
-                onClick={() => setIsEditingAddress(true)}
-                className="w-full rounded-b-xl bg-white px-4 py-3 text-left active:bg-zinc-50 dark:bg-zinc-900 dark:active:bg-zinc-800"
-              >
-                <p className="ml-10 text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {address && <span className="block">{address}</span>}
-                  {(city || state || postalCode) && (
-                    <span className="block">
-                      {[city, state, postalCode].filter(Boolean).join(", ")}
-                    </span>
-                  )}
-                </p>
-              </button>
-            </>
-          )}
-        </MenuSection>
-      </section>
-
-      {/* KYC Verification Section - Unified Card */}
-      <section>
-        <MenuSectionHeader>Identity Verification</MenuSectionHeader>
-        <KYCCard kycStatus={kycStatus} onStartKYC={handleStartKYC} />
-      </section>
-
-      {/* Payout Methods Section */}
-      <section>
-        <MenuSectionHeader>Payout Methods</MenuSectionHeader>
-        <MenuSection>
-          {methodsLoading ? (
-            <div className="flex justify-center py-6">
-              <div className="size-5 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+          <div className="flex items-center justify-between border-b border-zinc-950/5 px-4 py-3 dark:border-white/5">
+            <div className="flex items-center gap-2">
+              <BuildingLibraryIcon className="size-4 text-zinc-400" />
+              <Subheading className="text-sm">Payout Methods</Subheading>
             </div>
-          ) : withdrawalMethods.length > 0 ? (
-            <>
-              {withdrawalMethods.map((method, index) => (
-                <div key={method.id}>
-                  {index > 0 && <MenuSeparator />}
-                  <BankAccountRow
-                    method={method}
-                    onVerify={() => handleVerifyMethod(method.id)}
-                    onSetDefault={() => handleSetDefault(method.id)}
-                    onDelete={() => handleDeleteMethod(method.id)}
-                    isFirst={index === 0}
-                    isLast={index === withdrawalMethods.length - 1 && withdrawalMethods.length > 0}
-                  />
-                </div>
-              ))}
-              <MenuSeparator />
-              <button
-                type="button"
-                onClick={() => setIsAddingBank(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-b-xl bg-white py-3 text-[15px] font-medium text-zinc-600 active:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-400 dark:active:bg-zinc-800"
-              >
-                <PlusIcon className="size-4" />
-                Add Payout Method
-              </button>
-            </>
-          ) : (
             <button
               type="button"
               onClick={() => setIsAddingBank(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-4 text-[15px] font-medium text-zinc-600 active:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-400 dark:active:bg-zinc-800"
+              className="flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400"
             >
-              <PlusIcon className="size-4" />
-              Add Payout Method
+              <PlusIcon className="size-3.5" />
+              Add
             </button>
+          </div>
+          {methodsLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="size-5 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+            </div>
+          ) : withdrawalMethods.length > 0 ? (
+            withdrawalMethods.map((method: wallets.WithdrawalMethod, index: number) => (
+              <div key={method.id}>
+                {index > 0 && <MenuSeparator />}
+                <BankAccountRow
+                  method={method}
+                  onVerify={() => handleVerifyMethod(method.id)}
+                  onSetDefault={() => handleSetDefault(method.id)}
+                  onDelete={() => handleDeleteMethod(method.id)}
+                />
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <BuildingLibraryIcon className="size-6 text-zinc-400" />
+              </div>
+              <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-white">
+                No payout methods
+              </p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                Add a bank account or UPI to receive earnings
+              </p>
+              <Button onClick={() => setIsAddingBank(true)} className="mt-4">
+                <PlusIcon className="size-4" />
+                Add Method
+              </Button>
+            </div>
           )}
         </MenuSection>
-        <MenuSectionFooter>
-          Add a bank account or UPI to receive your earnings.
-        </MenuSectionFooter>
-      </section>
+      </div>
 
       {/* Support Section */}
-      <section>
-        <MenuSectionHeader>Support</MenuSectionHeader>
-        <MenuSection>
-          <MenuRow
-            icon={QuestionMarkCircleIcon}
-            iconBg="bg-zinc-500"
-            label="Help & FAQ"
-            onClick={() => {}}
-            isFirst
-          />
-          <MenuSeparator />
-          <MenuRow
-            icon={DocumentTextIcon}
-            iconBg="bg-zinc-500"
-            label="Terms of Service"
-            onClick={() => {}}
-          />
-          <MenuSeparator />
-          <MenuRow
-            icon={LockClosedIcon}
-            iconBg="bg-zinc-500"
-            label="Privacy Policy"
-            onClick={() => {}}
-            isLast
-          />
-        </MenuSection>
-      </section>
+      <MenuSection>
+        <MenuRow
+          icon={QuestionMarkCircleIcon}
+          iconColor="zinc"
+          label="Help & FAQ"
+          onClick={() => {}}
+          isFirst
+        />
+        <MenuSeparator />
+        <MenuRow
+          icon={DocumentTextIcon}
+          iconColor="zinc"
+          label="Terms of Service"
+          onClick={() => {}}
+        />
+        <MenuSeparator />
+        <MenuRow
+          icon={LockClosedIcon}
+          iconColor="zinc"
+          label="Privacy Policy"
+          onClick={() => {}}
+          isLast
+        />
+      </MenuSection>
 
-      {/* Sign Out Section */}
-      <section>
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-rose-500 to-rose-600 py-3 text-[15px] font-medium text-white shadow-sm active:from-rose-600 active:to-rose-700 dark:from-rose-600 dark:to-rose-700 dark:active:from-rose-700 dark:active:to-rose-800"
-        >
+      {/* Sign Out */}
+      <MenuSection>
+        <MenuDangerButton onClick={() => logout()}>
           <ArrowRightStartOnRectangleIcon className="size-4" />
           Sign Out
-        </button>
-      </section>
+        </MenuDangerButton>
+      </MenuSection>
 
       {/* Footer */}
-      <p className="pt-2 text-center text-[13px] text-zinc-400">
+      <p className="text-center text-[13px] text-zinc-400">
         Hypedrive Shopper v1.0.0
       </p>
 
@@ -1322,9 +1292,9 @@ export function Settings() {
       <EditProfileSheet
         open={isEditing}
         profile={{
-          displayName: profile?.shopper?.displayName,
-          bio: profile?.shopper?.bio,
-          phoneNumber: profile?.shopper?.phoneNumber,
+          displayName: shopper?.displayName,
+          bio: shopper?.bio,
+          phoneNumber: shopper?.phoneNumber,
         }}
         onSave={handleProfileSave}
         onCancel={() => setIsEditing(false)}
@@ -1334,10 +1304,10 @@ export function Settings() {
       <EditAddressDialog
         open={isEditingAddress}
         address={{
-          address: profile?.shopper?.address,
-          city: profile?.shopper?.city,
-          state: profile?.shopper?.state,
-          postalCode: profile?.shopper?.postalCode,
+          address: shopper?.address,
+          city: shopper?.city,
+          state: shopper?.state,
+          postalCode: shopper?.postalCode,
         }}
         onSave={handleAddressSave}
         onCancel={() => setIsEditingAddress(false)}

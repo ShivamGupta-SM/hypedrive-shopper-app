@@ -17,6 +17,7 @@ interface StoredShopper {
   firstName: string;
   lastName: string;
   kycStatus: string;
+  avatarUrl?: string;
 }
 
 export const authProvider: AuthProvider = {
@@ -201,7 +202,7 @@ export const authProvider: AuthProvider = {
           id: user.id,
           name: shopper ? `${shopper.firstName} ${shopper.lastName}` : user.name,
           email: user.email,
-          avatar: user.image,
+          avatar: shopper?.avatarUrl || user.image,
           shopperStatus: shopper?.kycStatus,
         };
       } catch {

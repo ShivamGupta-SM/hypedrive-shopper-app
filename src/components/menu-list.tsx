@@ -6,6 +6,18 @@ import { Badge } from "@/components/badge";
 // iOS-style grouped menu patterns extracted for reuse across the app
 // =============================================================================
 
+// Duotone icon color presets for circle icons
+export const duotoneColors = {
+  sky: { bg: "bg-sky-100 dark:bg-sky-900/40", icon: "text-sky-600 dark:text-sky-400" },
+  orange: { bg: "bg-orange-100 dark:bg-orange-900/40", icon: "text-orange-600 dark:text-orange-400" },
+  emerald: { bg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600 dark:text-emerald-400" },
+  red: { bg: "bg-red-100 dark:bg-red-900/40", icon: "text-red-600 dark:text-red-400" },
+  amber: { bg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600 dark:text-amber-400" },
+  zinc: { bg: "bg-zinc-100 dark:bg-zinc-800", icon: "text-zinc-500 dark:text-zinc-400" },
+} as const;
+
+export type DuotoneColor = keyof typeof duotoneColors;
+
 /**
  * MenuSection - iOS-style grouped section container
  *
@@ -18,7 +30,7 @@ import { Badge } from "@/components/badge";
  */
 export function MenuSection({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+    <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       {children}
     </div>
   );
@@ -58,7 +70,7 @@ export function MenuSectionFooter({ children }: { children: React.ReactNode }) {
  * MenuSeparator - Indented divider between menu rows
  */
 export function MenuSeparator() {
-  return <div className="ml-14 h-px bg-zinc-200 dark:bg-zinc-800" />;
+  return <div className="ml-13 h-px bg-zinc-100 dark:bg-zinc-800" />;
 }
 
 /**
@@ -103,6 +115,7 @@ export function MenuSeparator() {
 export function MenuRow({
   icon: Icon,
   iconBg,
+  iconColor,
   label,
   value,
   badge,
@@ -113,7 +126,10 @@ export function MenuRow({
   isLast,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  iconBg: string;
+  /** Legacy: solid background color (e.g., "bg-sky-500") */
+  iconBg?: string;
+  /** Preferred: duotone circle style */
+  iconColor?: DuotoneColor;
   label: string;
   value?: string;
   badge?: string;
@@ -125,6 +141,15 @@ export function MenuRow({
 }) {
   const Component = onClick ? "button" : "div";
 
+  // Use duotone colors if iconColor is provided, otherwise fall back to legacy iconBg
+  const useDuotone = iconColor && duotoneColors[iconColor];
+  const containerClasses = useDuotone
+    ? `flex size-9 shrink-0 items-center justify-center rounded-full ${duotoneColors[iconColor].bg}`
+    : `flex size-9 shrink-0 items-center justify-center rounded-xl ${iconBg}`;
+  const iconClasses = useDuotone
+    ? `size-4 ${duotoneColors[iconColor].icon}`
+    : "size-4 text-white";
+
   return (
     <Component
       type={onClick ? "button" : undefined}
@@ -135,10 +160,8 @@ export function MenuRow({
         isLast ? "rounded-b-xl" : ""
       }`}
     >
-      <div
-        className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${iconBg}`}
-      >
-        <Icon className="size-4 text-white" />
+      <div className={containerClasses}>
+        <Icon className={iconClasses} />
       </div>
       <span
         className={`flex-1 text-[15px] ${
