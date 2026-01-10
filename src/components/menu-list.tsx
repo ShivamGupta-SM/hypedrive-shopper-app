@@ -136,7 +136,7 @@ export function MenuRow({
       }`}
     >
       <div
-        className={`flex size-7 shrink-0 items-center justify-center rounded-md ${iconBg}`}
+        className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${iconBg}`}
       >
         <Icon className="size-4 text-white" />
       </div>

@@ -46,54 +46,54 @@ export function Login() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel - Branding (Desktop only) */}
-      <div className="hidden w-1/2 flex-col justify-between bg-teal-950 p-10 lg:flex xl:p-12">
+      <div className="hidden w-1/2 flex-col justify-between bg-emerald-950 p-10 lg:flex xl:p-12">
         <Logo className="h-6 text-white" />
 
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="font-serif text-4xl text-white xl:text-5xl">
               Welcome back to Hypedrive
             </h1>
-            <p className="mt-3 text-base text-teal-200/80">
+            <p className="mt-3 text-base text-emerald-200/80">
               Sign in to track your earnings and manage your campaigns
             </p>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-teal-800/50 bg-teal-900/40 p-5">
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-800/60">
-                  <BanknotesIcon className="size-5 text-teal-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
+                  <BanknotesIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-white">Earn Real Cashback</p>
-                  <p className="mt-0.5 text-sm text-teal-300/70">
+                  <p className="mt-0.5 text-sm text-emerald-300/70">
                     Get rewarded on every purchase you make
                   </p>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-teal-800/50 bg-teal-900/40 p-5">
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-800/60">
-                  <RocketLaunchIcon className="size-5 text-teal-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
+                  <RocketLaunchIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-white">Exclusive Campaigns</p>
-                  <p className="mt-0.5 text-sm text-teal-300/70">
+                  <p className="mt-0.5 text-sm text-emerald-300/70">
                     Access special offers from top brands
                   </p>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-teal-800/50 bg-teal-900/40 p-5">
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-800/60">
-                  <ShieldCheckIcon className="size-5 text-teal-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
+                  <ShieldCheckIcon className="size-5 text-emerald-300" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-white">Fast & Secure Payouts</p>
-                  <p className="mt-0.5 text-sm text-teal-300/70">
+                  <p className="mt-0.5 text-sm text-emerald-300/70">
                     Quick withdrawals directly to your bank
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export function Login() {
           </div>
         </div>
 
-        <p className="text-sm text-teal-400/60">
+        <p className="text-sm text-emerald-400/60">
           &copy; {new Date().getFullYear()} Hypedrive. All rights reserved.
         </p>
       </div>
@@ -158,7 +158,7 @@ export function Login() {
               </TextLink>
             </div>
 
-            <Button type="submit" className="w-full" color="teal" disabled={isPending}>
+            <Button type="submit" className="w-full" color="emerald" disabled={isPending}>
               {isPending ? "Signing in..." : "Sign in"}
             </Button>
           </form>

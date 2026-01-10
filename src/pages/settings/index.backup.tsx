@@ -1,13 +1,6 @@
 import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
 import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogActions } from "@/components/dialog";
-import {
-  MenuSection,
-  MenuSectionHeader,
-  MenuSectionFooter,
-  MenuRow,
-  MenuSeparator,
-} from "@/components/menu-list";
 import { useShopperProfile, useKYCStatus, useWithdrawalMethods } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
 import type { wallet } from "@/lib/api-client";
@@ -43,6 +36,89 @@ function LoadingSpinner() {
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         Loading profile...
       </p>
+    </div>
+  );
+}
+
+// iOS-style Section Header
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2 px-4 text-[13px] font-normal uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      {children}
+    </h3>
+  );
+}
+
+// iOS-style Section Footer (small text below section)
+function SectionFooter({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-2 px-4 text-[13px] text-zinc-500 dark:text-zinc-400">
+      {children}
+    </p>
+  );
+}
+
+// iOS-style Menu Item Row
+function MenuRow({
+  icon: Icon,
+  iconBg,
+  label,
+  value,
+  badge,
+  badgeColor,
+  onClick,
+  destructive,
+  isFirst,
+  isLast,
+}: {
+  icon: typeof EnvelopeIcon;
+  iconBg: string;
+  label: string;
+  value?: string;
+  badge?: string;
+  badgeColor?: "emerald" | "amber" | "red" | "zinc";
+  onClick?: () => void;
+  destructive?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 bg-white px-4 py-3 text-left active:bg-zinc-100 dark:bg-zinc-900 dark:active:bg-zinc-800 ${
+        isFirst ? "rounded-t-xl" : ""
+      } ${isLast ? "rounded-b-xl" : ""}`}
+    >
+      <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
+        <Icon className="size-4 text-white" />
+      </div>
+      <span className={`flex-1 text-[15px] ${destructive ? "text-red-500" : "text-zinc-900 dark:text-white"}`}>
+        {label}
+      </span>
+      {value && (
+        <span className="text-[15px] text-zinc-400 dark:text-zinc-500">{value}</span>
+      )}
+      {badge && (
+        <Badge color={badgeColor || "zinc"} className="text-[11px]">{badge}</Badge>
+      )}
+      {onClick && !destructive && (
+        <ChevronRightIcon className="size-4 text-zinc-300 dark:text-zinc-600" />
+      )}
+    </button>
+  );
+}
+
+// Separator for menu rows
+function MenuSeparator() {
+  return <div className="ml-14 h-px bg-zinc-200 dark:bg-zinc-800" />;
+}
+
+// iOS-style grouped section container
+function MenuSection({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      {children}
     </div>
   );
 }
@@ -1145,7 +1221,7 @@ export function Settings() {
 
       {/* Account Info Section */}
       <section>
-        <MenuSectionHeader>Account</MenuSectionHeader>
+        <SectionHeader>Account</SectionHeader>
         <MenuSection>
           <MenuRow
             icon={UserCircleIcon}
@@ -1184,7 +1260,7 @@ export function Settings() {
 
       {/* Address Section */}
       <section>
-        <MenuSectionHeader>Address</MenuSectionHeader>
+        <SectionHeader>Address</SectionHeader>
         <MenuSection>
           <MenuRow
             icon={MapPinIcon}
@@ -1219,13 +1295,13 @@ export function Settings() {
 
       {/* KYC Verification Section - Unified Card */}
       <section>
-        <MenuSectionHeader>Identity Verification</MenuSectionHeader>
+        <SectionHeader>Identity Verification</SectionHeader>
         <KYCCard kycStatus={kycStatus} onStartKYC={handleStartKYC} />
       </section>
 
       {/* Payout Methods Section */}
       <section>
-        <MenuSectionHeader>Payout Methods</MenuSectionHeader>
+        <SectionHeader>Payout Methods</SectionHeader>
         <MenuSection>
           {methodsLoading ? (
             <div className="flex justify-center py-6">
@@ -1267,14 +1343,14 @@ export function Settings() {
             </button>
           )}
         </MenuSection>
-        <MenuSectionFooter>
+        <SectionFooter>
           Add a bank account or UPI to receive your earnings.
-        </MenuSectionFooter>
+        </SectionFooter>
       </section>
 
       {/* Support Section */}
       <section>
-        <MenuSectionHeader>Support</MenuSectionHeader>
+        <SectionHeader>Support</SectionHeader>
         <MenuSection>
           <MenuRow
             icon={QuestionMarkCircleIcon}

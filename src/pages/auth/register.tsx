@@ -71,52 +71,52 @@ export function Register() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel - Branding (Desktop only) */}
-      <div className="hidden w-1/2 flex-col justify-between bg-cyan-950 p-10 lg:flex xl:p-12">
+      <div className="hidden w-1/2 flex-col justify-between bg-emerald-950 p-10 lg:flex xl:p-12">
         <Logo className="h-6 text-white" />
 
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="font-serif text-4xl text-white xl:text-5xl">
               Join Hypedrive Today
             </h1>
-            <p className="mt-3 text-base text-cyan-200/80">
+            <p className="mt-3 text-base text-emerald-200/80">
               Create your account and start earning cashback on your purchases
             </p>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <div className="rounded-2xl border border-cyan-800/50 bg-cyan-900/40 p-5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-800/60">
-                <GiftIcon className="size-5 text-cyan-300" />
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
+                <GiftIcon className="size-5 text-emerald-300" />
               </div>
               <p className="mt-4 font-semibold text-white">Free to Join</p>
-              <p className="mt-1 text-sm text-cyan-300/70">No fees, start earning instantly</p>
+              <p className="mt-1 text-sm text-emerald-300/70">No fees, start earning instantly</p>
             </div>
-            <div className="rounded-2xl border border-cyan-800/50 bg-cyan-900/40 p-5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-800/60">
-                <BanknotesIcon className="size-5 text-cyan-300" />
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
+                <BanknotesIcon className="size-5 text-emerald-300" />
               </div>
               <p className="mt-4 font-semibold text-white">Real Cashback</p>
-              <p className="mt-1 text-sm text-cyan-300/70">Earn money on purchases</p>
+              <p className="mt-1 text-sm text-emerald-300/70">Earn money on purchases</p>
             </div>
-            <div className="rounded-2xl border border-cyan-800/50 bg-cyan-900/40 p-5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-800/60">
-                <SparklesIcon className="size-5 text-cyan-300" />
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
+                <SparklesIcon className="size-5 text-emerald-300" />
               </div>
               <p className="mt-4 font-semibold text-white">Premium Campaigns</p>
-              <p className="mt-1 text-sm text-cyan-300/70">Exclusive brand offers</p>
+              <p className="mt-1 text-sm text-emerald-300/70">Exclusive brand offers</p>
             </div>
-            <div className="rounded-2xl border border-cyan-800/50 bg-cyan-900/40 p-5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-cyan-800/60">
-                <ShieldCheckIcon className="size-5 text-cyan-300" />
+            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-800/60">
+                <ShieldCheckIcon className="size-5 text-emerald-300" />
               </div>
               <p className="mt-4 font-semibold text-white">Secure Payouts</p>
-              <p className="mt-1 text-sm text-cyan-300/70">Quick bank withdrawals</p>
+              <p className="mt-1 text-sm text-emerald-300/70">Quick bank withdrawals</p>
             </div>
           </div>
         </div>
 
-        <p className="text-sm text-cyan-400/60">
+        <p className="text-sm text-emerald-400/60">
           &copy; {new Date().getFullYear()} Hypedrive. All rights reserved.
         </p>
       </div>
@@ -194,7 +194,7 @@ export function Register() {
               </Label>
             </CheckboxField>
 
-            <Button type="submit" className="w-full" color="cyan" disabled={isPending}>
+            <Button type="submit" className="w-full" color="emerald" disabled={isPending}>
               {isPending ? "Creating account..." : "Create account"}
             </Button>
           </form>

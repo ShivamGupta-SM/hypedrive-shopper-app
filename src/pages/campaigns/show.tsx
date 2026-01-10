@@ -74,11 +74,11 @@ function formatCurrency(amount: number) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { color: "lime" | "amber" | "rose" | "zinc" | "sky"; label: string }> = {
-    active: { color: "lime", label: "Active" },
+  const config: Record<string, { color: "emerald" | "amber" | "red" | "zinc" | "sky"; label: string }> = {
+    active: { color: "emerald", label: "Active" },
     paused: { color: "amber", label: "Paused" },
     ended: { color: "zinc", label: "Ended" },
-    cancelled: { color: "rose", label: "Cancelled" },
+    cancelled: { color: "red", label: "Cancelled" },
     draft: { color: "zinc", label: "Draft" },
     pending_approval: { color: "amber", label: "Pending" },
     approved: { color: "sky", label: "Approved" },
@@ -90,8 +90,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function CampaignTypeBadge({ type }: { type: string }) {
-  const config: Record<string, { color: "lime" | "amber" | "sky"; label: string; icon: typeof BanknotesIcon }> = {
-    cashback: { color: "lime", label: "Cashback", icon: BanknotesIcon },
+  const config: Record<string, { color: "emerald" | "amber" | "sky"; label: string; icon: typeof BanknotesIcon }> = {
+    cashback: { color: "emerald", label: "Cashback", icon: BanknotesIcon },
     barter: { color: "amber", label: "Barter", icon: GiftIcon },
     hybrid: { color: "sky", label: "Hybrid", icon: SparklesIcon },
   };
@@ -598,7 +598,7 @@ function EnrollmentDialog({
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-zinc-900 dark:text-white">Extracted Details</p>
                   {scanResult.confidence !== undefined && (
-                    <Badge color={scanResult.confidence > 0.8 ? "lime" : scanResult.confidence > 0.5 ? "amber" : "rose"}>
+                    <Badge color={scanResult.confidence > 0.8 ? "emerald" : scanResult.confidence > 0.5 ? "amber" : "red"}>
                       {Math.round(scanResult.confidence * 100)}% match
                     </Badge>
                   )}
@@ -877,7 +877,7 @@ export function CampaignShow() {
 
           {/* Title & Description */}
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl dark:text-white">
+            <h1 className="font-serif text-3xl text-zinc-900 sm:text-4xl dark:text-white">
               {campaign.title}
             </h1>
             {campaign.description && (
