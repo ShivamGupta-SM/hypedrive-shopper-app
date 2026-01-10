@@ -8,20 +8,20 @@ export function Address() {
 	const [country, setCountry] = useState(countries[0]);
 
 	return (
-		<div className="grid grid-cols-2 gap-6">
+		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
 			<Input
 				aria-label="Street Address"
 				name="address"
 				placeholder="Street Address"
 				defaultValue="147 Catalyst Ave"
-				className="col-span-2"
+				className="sm:col-span-2"
 			/>
 			<Input
 				aria-label="City"
 				name="city"
 				placeholder="City"
 				defaultValue="Toronto"
-				className="col-span-2"
+				className="sm:col-span-2"
 			/>
 			<Listbox aria-label="Region" name="region" placeholder="Region" defaultValue="Ontario">
 				{country.regions.map((region) => (
@@ -43,7 +43,7 @@ export function Address() {
 				by="code"
 				value={country}
 				onChange={(country) => setCountry(country)}
-				className="col-span-2"
+				className="sm:col-span-2"
 			>
 				{countries.map((country) => (
 					<ListboxOption key={country.code} value={country}>

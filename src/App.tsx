@@ -13,11 +13,10 @@ import "./App.css";
 import { authProvider } from "./authProvider";
 import { AppLayout } from "./components/app-layout";
 import { Dashboard } from "./pages/dashboard";
-import { EventsList, EventShow } from "./pages/events";
-import { OrdersList, OrderShow } from "./pages/orders";
-import { CampaignsList } from "./pages/campaigns";
-import { EnrollmentsList } from "./pages/enrollments";
+import { CampaignsList, CampaignShow } from "./pages/campaigns";
+import { EnrollmentsList, EnrollmentShow } from "./pages/enrollments";
 import { Settings } from "./pages/settings";
+import { Wallet } from "./pages/wallet";
 import { ForgotPassword, Login, Register } from "./pages/auth";
 import { AuthLayout } from "./pages/auth/layout";
 
@@ -36,22 +35,18 @@ function App() {
 								list: "/",
 							},
 							{
-								name: "events",
-								list: "/events",
-								show: "/events/:id",
-							},
-							{
-								name: "orders",
-								list: "/orders",
-								show: "/orders/:id",
-							},
-							{
 								name: "campaigns",
 								list: "/campaigns",
+								show: "/campaigns/:id",
 							},
 							{
 								name: "enrollments",
 								list: "/enrollments",
+								show: "/enrollments/:id",
+							},
+							{
+								name: "wallet",
+								list: "/wallet",
 							},
 							{
 								name: "settings",
@@ -74,16 +69,15 @@ function App() {
 								}
 							>
 								<Route index element={<Dashboard />} />
-								<Route path="events">
-									<Route index element={<EventsList />} />
-									<Route path=":id" element={<EventShow />} />
+								<Route path="campaigns">
+									<Route index element={<CampaignsList />} />
+									<Route path=":id" element={<CampaignShow />} />
 								</Route>
-								<Route path="orders">
-									<Route index element={<OrdersList />} />
-									<Route path=":id" element={<OrderShow />} />
+								<Route path="enrollments">
+									<Route index element={<EnrollmentsList />} />
+									<Route path=":id" element={<EnrollmentShow />} />
 								</Route>
-								<Route path="campaigns" element={<CampaignsList />} />
-								<Route path="enrollments" element={<EnrollmentsList />} />
+								<Route path="wallet" element={<Wallet />} />
 								<Route path="settings" element={<Settings />} />
 								<Route path="*" element={<ErrorComponent />} />
 							</Route>

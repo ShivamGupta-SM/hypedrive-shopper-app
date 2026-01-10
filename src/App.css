@@ -4,6 +4,197 @@
 @theme {
 	--font-sans: "Geist Variable", sans-serif;
 	--font-sans--font-feature-settings: "cv11";
+
+	/* ==========================================================================
+	   HYPEDRIVE SHOPPER COLOR PALETTE
+	   A clean, minimal color system for a cashback/rewards app
+	   ========================================================================== */
+
+	/* --------------------------------------------------------------------------
+	   PRIMARY COLORS
+	   Main brand colors used for primary actions and key UI elements
+	   -------------------------------------------------------------------------- */
+
+	/* Primary: Emerald - Used for earnings, cashback, positive money states */
+	--color-primary-50: #ecfdf5;
+	--color-primary-100: #d1fae5;
+	--color-primary-200: #a7f3d0;
+	--color-primary-300: #6ee7b7;
+	--color-primary-400: #34d399;
+	--color-primary-500: #10b981;
+	--color-primary-600: #059669;
+	--color-primary-700: #047857;
+	--color-primary-800: #065f46;
+	--color-primary-900: #064e3b;
+	--color-primary-950: #022c22;
+
+	/* --------------------------------------------------------------------------
+	   SEMANTIC COLORS
+	   Status colors with specific meanings throughout the app
+	   -------------------------------------------------------------------------- */
+
+	/* Success: Emerald - Approved, completed, positive balance */
+	--color-success-light: #d1fae5;
+	--color-success: #10b981;
+	--color-success-dark: #059669;
+	--color-success-text: #047857;
+	--color-success-text-dark: #34d399;
+
+	/* Warning: Amber - Pending, needs attention, caution */
+	--color-warning-light: #fef3c7;
+	--color-warning: #f59e0b;
+	--color-warning-dark: #d97706;
+	--color-warning-text: #92400e;
+	--color-warning-text-dark: #fcd34d;
+
+	/* Error: Red - Rejected, failed, issues */
+	--color-error-light: #fee2e2;
+	--color-error: #ef4444;
+	--color-error-dark: #dc2626;
+	--color-error-text: #b91c1c;
+	--color-error-text-dark: #fca5a5;
+
+	/* Info: Sky - Under review, processing, informational */
+	--color-info-light: #e0f2fe;
+	--color-info: #0ea5e9;
+	--color-info-dark: #0284c7;
+	--color-info-text: #0369a1;
+	--color-info-text-dark: #7dd3fc;
+
+	/* --------------------------------------------------------------------------
+	   NEUTRAL COLORS
+	   Zinc-based neutrals for text, backgrounds, and borders
+	   -------------------------------------------------------------------------- */
+
+	/* Light mode surfaces */
+	--color-surface-primary: #ffffff;
+	--color-surface-secondary: #fafafa;
+	--color-surface-tertiary: #f4f4f5;
+	--color-surface-elevated: #ffffff;
+
+	/* Dark mode surfaces */
+	--color-surface-primary-dark: #18181b;
+	--color-surface-secondary-dark: #27272a;
+	--color-surface-tertiary-dark: #3f3f46;
+	--color-surface-elevated-dark: #27272a;
+
+	/* Text colors - Light mode */
+	--color-text-primary: #09090b;
+	--color-text-secondary: #71717a;
+	--color-text-tertiary: #a1a1aa;
+	--color-text-disabled: #d4d4d8;
+
+	/* Text colors - Dark mode */
+	--color-text-primary-dark: #fafafa;
+	--color-text-secondary-dark: #a1a1aa;
+	--color-text-tertiary-dark: #71717a;
+	--color-text-disabled-dark: #52525b;
+
+	/* Border colors */
+	--color-border-light: rgba(9, 9, 11, 0.1);
+	--color-border-medium: rgba(9, 9, 11, 0.15);
+	--color-border-strong: rgba(9, 9, 11, 0.2);
+	--color-border-light-dark: rgba(255, 255, 255, 0.1);
+	--color-border-medium-dark: rgba(255, 255, 255, 0.15);
+	--color-border-strong-dark: rgba(255, 255, 255, 0.2);
+
+	/* --------------------------------------------------------------------------
+	   ACCENT COLORS
+	   Secondary accent colors for highlights and badges
+	   -------------------------------------------------------------------------- */
+
+	/* Bonus/Reward accent: Amber/Gold */
+	--color-accent-bonus: #f59e0b;
+	--color-accent-bonus-light: #fef3c7;
+	--color-accent-bonus-text: #92400e;
+	--color-accent-bonus-text-dark: #fcd34d;
+
+	/* Cashback badge: Emerald */
+	--color-accent-cashback: #10b981;
+	--color-accent-cashback-light: #d1fae5;
+
+	/* --------------------------------------------------------------------------
+	   INTERACTIVE STATES
+	   Hover, active, focus states for consistency
+	   -------------------------------------------------------------------------- */
+
+	/* Hover overlays */
+	--color-hover-light: rgba(9, 9, 11, 0.05);
+	--color-hover-medium: rgba(9, 9, 11, 0.1);
+	--color-hover-light-dark: rgba(255, 255, 255, 0.05);
+	--color-hover-medium-dark: rgba(255, 255, 255, 0.1);
+
+	/* Focus ring */
+	--color-focus-ring: #3b82f6;
+
+	/* --------------------------------------------------------------------------
+	   ENROLLMENT STATUS COLORS
+	   Specific colors for enrollment/campaign statuses
+	   -------------------------------------------------------------------------- */
+
+	/* Awaiting submission - Amber */
+	--color-status-awaiting-submission: #d97706;
+	--color-status-awaiting-submission-dark: #fbbf24;
+	--color-status-awaiting-submission-bg: #fef3c7;
+	--color-status-awaiting-submission-bg-dark: rgba(251, 191, 36, 0.15);
+
+	/* Awaiting review - Sky */
+	--color-status-awaiting-review: #0284c7;
+	--color-status-awaiting-review-dark: #38bdf8;
+	--color-status-awaiting-review-bg: #e0f2fe;
+	--color-status-awaiting-review-bg-dark: rgba(56, 189, 248, 0.15);
+
+	/* Changes requested - Amber */
+	--color-status-changes-requested: #d97706;
+	--color-status-changes-requested-dark: #fbbf24;
+	--color-status-changes-requested-bg: #fef3c7;
+	--color-status-changes-requested-bg-dark: rgba(251, 191, 36, 0.15);
+
+	/* Approved - Emerald */
+	--color-status-approved: #059669;
+	--color-status-approved-dark: #34d399;
+	--color-status-approved-bg: #d1fae5;
+	--color-status-approved-bg-dark: rgba(52, 211, 153, 0.15);
+
+	/* Rejected - Red */
+	--color-status-rejected: #dc2626;
+	--color-status-rejected-dark: #f87171;
+	--color-status-rejected-bg: #fee2e2;
+	--color-status-rejected-bg-dark: rgba(248, 113, 113, 0.15);
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Hide scrollbars globally */
+* {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+	display: none;
+}
+
+/* iOS Safe Area Utilities */
+.pt-safe {
+	padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe {
+	padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pl-safe {
+	padding-left: env(safe-area-inset-left);
+}
+
+.pr-safe {
+	padding-right: env(safe-area-inset-right);
+}
+
+.p-safe {
+	padding-top: env(safe-area-inset-top);
+	padding-bottom: env(safe-area-inset-bottom);
+	padding-left: env(safe-area-inset-left);
+	padding-right: env(safe-area-inset-right);
+}
