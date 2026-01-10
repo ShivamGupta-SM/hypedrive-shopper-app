@@ -1,8 +1,10 @@
 import {
+  ArrowPathIcon,
   CheckCircleIcon,
   ClockIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
+  QueueListIcon,
   ShoppingBagIcon,
   XCircleIcon,
   XMarkIcon,
@@ -115,35 +117,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  variant = "default",
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: number | string;
-  variant?: "default" | "warning" | "info" | "success";
-}) {
-  const styles = {
-    default: { icon: "text-zinc-500 dark:text-zinc-400" },
-    warning: { icon: "text-amber-500 dark:text-amber-400" },
-    info: { icon: "text-sky-500 dark:text-sky-400" },
-    success: { icon: "text-emerald-500 dark:text-emerald-400" },
-  }[variant];
-
-  return (
-    <div className="flex shrink-0 items-center gap-2.5 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <Icon className={`size-4 shrink-0 ${styles.icon}`} />
-      <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-        <span className="text-base font-semibold text-zinc-900 dark:text-white">{value}</span>
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-      </div>
     </div>
   );
 }
@@ -311,6 +284,8 @@ function EnrollmentCard({
               <img
                 src={productImage}
                 alt={productName || "Product"}
+                loading="lazy"
+                decoding="async"
                 className="size-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -331,6 +306,8 @@ function EnrollmentCard({
             <img
               src={platformIcon}
               alt={platformName}
+              loading="lazy"
+              decoding="async"
               className="absolute -bottom-0.5 -right-0.5 size-4 rounded border border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
             />
           )}
@@ -360,9 +337,9 @@ function EnrollmentCard({
       <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
 
       {/* Amount Row */}
-      <div className="flex items-stretch gap-3 p-3 sm:gap-4 sm:p-4">
+      <div className="flex items-stretch">
         {/* Order Value */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4">
           <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
             Order Value
           </p>
@@ -371,11 +348,11 @@ function EnrollmentCard({
           </p>
         </div>
 
-        {/* Vertical Divider */}
-        <div className="my-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
+        {/* Vertical Divider - Edge to edge */}
+        <div className="w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
 
         {/* Cashback Amount */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4">
           <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
             {enrollment.status === "approved" ? "Earned" : "Cashback"}
           </p>
@@ -387,8 +364,10 @@ function EnrollmentCard({
         {/* Deadline Gauge - Only show for action required statuses */}
         {isActionRequired && hasDeadline && (
           <>
-            <div className="my-1 w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
-            <DeadlineGauge daysRemaining={deadlineInfo.daysRemaining} />
+            <div className="w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
+            <div className="flex items-center px-3 py-3 sm:px-4 sm:py-4">
+              <DeadlineGauge daysRemaining={deadlineInfo.daysRemaining} />
+            </div>
           </>
         )}
       </div>
@@ -506,16 +485,20 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 }
 
 // Tab types for filtering
-type TabType = "all" | "action" | "in_progress" | "completed" | "expired";
+type TabType = "all" | "pending" | "changes_requested" | "in_progress" | "completed" | "expired";
 
 // Tab button component
 function TabButton({
   label,
+  icon: Icon,
+  iconColor,
   isActive,
   onClick,
   count,
 }: {
   label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  iconColor?: string;
   isActive: boolean;
   onClick: () => void;
   count?: number;
@@ -530,6 +513,7 @@ function TabButton({
           : "bg-white text-zinc-600 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700 dark:active:bg-zinc-700"
       }`}
     >
+      {Icon && <Icon className={`size-4 ${isActive ? "" : iconColor || ""}`} />}
       {label}
       {count !== undefined && count > 0 && (
         <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none ${
@@ -547,17 +531,19 @@ function TabButton({
 // Map tab to status filters - defined outside component to avoid recreating
 const tabStatusMap: Record<TabType, EnrollmentStatus[] | undefined> = {
   all: undefined,
-  action: ["awaiting_submission", "changes_requested"],
+  pending: ["awaiting_submission"],
+  changes_requested: ["changes_requested"],
   in_progress: ["awaiting_review"],
-  completed: ["approved", "rejected", "permanently_rejected", "cancelled", "withdrawn"],
+  completed: ["approved", "permanently_rejected", "withdrawn"],
   expired: ["expired"],
 };
 
 // Tab label mapping
 const tabLabels: Record<TabType, string> = {
   all: "All",
-  action: "Action Needed",
-  in_progress: "In Review",
+  pending: "Pending",
+  changes_requested: "Action Required",
+  in_progress: "Under Review",
   completed: "Completed",
   expired: "Expired",
 };
@@ -613,9 +599,11 @@ export function EnrollmentsList() {
     if (!enrollments.length) return null;
     return {
       total: enrollments.length,
-      needsAction: enrollments.filter(
-        (e) =>
-          e.status === "awaiting_submission" || e.status === "changes_requested"
+      pending: enrollments.filter(
+        (e) => e.status === "awaiting_submission"
+      ).length,
+      changesRequested: enrollments.filter(
+        (e) => e.status === "changes_requested"
       ).length,
       inProgress: enrollments.filter(
         (e) => e.status === "awaiting_review"
@@ -623,9 +611,7 @@ export function EnrollmentsList() {
       completed: enrollments.filter(
         (e) =>
           e.status === "approved" ||
-          e.status === "rejected" ||
           e.status === "permanently_rejected" ||
-          e.status === "cancelled" ||
           e.status === "withdrawn"
       ).length,
       expired: enrollments.filter(
@@ -642,41 +628,50 @@ export function EnrollmentsList() {
         <Text className="mt-0.5 text-sm">Track your campaign enrollments and earnings</Text>
       </div>
 
-      {/* Quick Stats - Horizontal scroll on mobile */}
-      {stats && stats.total > 0 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1 sm:gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <StatCard icon={ExclamationTriangleIcon} label="Pending" value={stats.needsAction} variant="warning" />
-          <StatCard icon={ClockIcon} label="Review" value={stats.inProgress} variant="info" />
-          <StatCard icon={CheckCircleIcon} label="Done" value={stats.completed} variant="success" />
-        </div>
-      )}
-
       {/* Tabs - Scrollable */}
       <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <TabButton
           label={tabLabels.all}
+          icon={QueueListIcon}
+          iconColor="text-sky-500"
           isActive={activeTab === "all"}
           onClick={() => setActiveTab("all")}
         />
         <TabButton
-          label={tabLabels.action}
-          isActive={activeTab === "action"}
-          onClick={() => setActiveTab("action")}
-          count={stats?.needsAction}
+          label={tabLabels.pending}
+          icon={DocumentTextIcon}
+          iconColor="text-amber-500"
+          isActive={activeTab === "pending"}
+          onClick={() => setActiveTab("pending")}
+          count={stats?.pending}
+        />
+        <TabButton
+          label={tabLabels.changes_requested}
+          icon={ArrowPathIcon}
+          iconColor="text-orange-500"
+          isActive={activeTab === "changes_requested"}
+          onClick={() => setActiveTab("changes_requested")}
+          count={stats?.changesRequested}
         />
         <TabButton
           label={tabLabels.in_progress}
+          icon={ClockIcon}
+          iconColor="text-sky-500"
           isActive={activeTab === "in_progress"}
           onClick={() => setActiveTab("in_progress")}
           count={stats?.inProgress}
         />
         <TabButton
           label={tabLabels.completed}
+          icon={CheckCircleIcon}
+          iconColor="text-emerald-500"
           isActive={activeTab === "completed"}
           onClick={() => setActiveTab("completed")}
         />
         <TabButton
           label={tabLabels.expired}
+          icon={XCircleIcon}
+          iconColor="text-red-500"
           isActive={activeTab === "expired"}
           onClick={() => setActiveTab("expired")}
           count={stats?.expired}

@@ -27,6 +27,7 @@ import {
   MapPinIcon,
   CameraIcon,
   ShieldCheckIcon,
+  ExclamationCircleIcon,
 } from "@heroicons/react/16/solid";
 import { useLogout } from "@refinedev/core";
 import { useState, useId, useRef } from "react";
@@ -727,6 +728,310 @@ function ChangeEmailDialog({
   );
 }
 
+// KYC Verification Dialog - PAN + Aadhaar flow
+function KYCVerificationDialog({
+  open,
+  kycStatus,
+  onSuccess,
+  onCancel,
+}: {
+  open: boolean;
+  kycStatus: {
+    status?: string;
+    panVerified?: boolean;
+    aadhaarVerified?: boolean;
+  } | null;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [step, setStep] = useState<"pan" | "aadhaar" | "aadhaar_otp">(
+    kycStatus?.panVerified ? "aadhaar" : "pan"
+  );
+  const [panNumber, setPanNumber] = useState("");
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [panVerifiedName, setPanVerifiedName] = useState<string | null>(null);
+  const panId = useId();
+  const aadhaarId = useId();
+  const otpId = useId();
+
+  const resetForm = () => {
+    setStep(kycStatus?.panVerified ? "aadhaar" : "pan");
+    setPanNumber("");
+    setAadhaarNumber("");
+    setOtp("");
+    setClientId("");
+    setError(null);
+    setPanVerifiedName(null);
+  };
+
+  // PAN Validation - format: XXXXX0000X
+  const isValidPan = (pan: string) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase());
+
+  // Aadhaar Validation - 12 digits
+  const isValidAadhaar = (aadhaar: string) => /^\d{12}$/.test(aadhaar.replace(/\s/g, ""));
+
+  const handleSubmitPAN = async () => {
+    if (!isValidPan(panNumber)) {
+      setError("Please enter a valid PAN number (e.g., ABCDE1234F)");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const client = getAuthenticatedClient();
+      const result = await client.shoppers.submitPAN({
+        panNumber: panNumber.toUpperCase(),
+      });
+
+      if (result.verified) {
+        setPanVerifiedName(result.name || null);
+        // Move to Aadhaar step after short delay
+        setTimeout(() => {
+          setStep("aadhaar");
+          setError(null);
+        }, 1500);
+      } else {
+        setError(result.error || "PAN verification failed. Please check the number.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify PAN");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInitiateAadhaar = async () => {
+    const cleanAadhaar = aadhaarNumber.replace(/\s/g, "");
+    if (!isValidAadhaar(cleanAadhaar)) {
+      setError("Please enter a valid 12-digit Aadhaar number");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const client = getAuthenticatedClient();
+      const result = await client.shoppers.initiateAadhaarVerification({
+        aadhaarNumber: cleanAadhaar,
+      });
+
+      setClientId(result.clientId);
+      setStep("aadhaar_otp");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAadhaarOTP = async () => {
+    if (otp.length !== 6) {
+      setError("Please enter the 6-digit OTP");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const client = getAuthenticatedClient();
+      const result = await client.shoppers.completeAadhaarVerification({
+        clientId,
+        otp,
+      });
+
+      if (result.verified) {
+        onSuccess();
+      } else {
+        setError(result.error || "OTP verification failed. Please try again.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format Aadhaar as user types: XXXX XXXX XXXX
+  const formatAadhaar = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 12);
+    const parts = [];
+    for (let i = 0; i < digits.length; i += 4) {
+      parts.push(digits.slice(i, i + 4));
+    }
+    return parts.join(" ");
+  };
+
+  return (
+    <Dialog open={open} onClose={() => { resetForm(); onCancel(); }} size="md">
+      <DialogTitle>
+        {step === "pan" && "Verify PAN"}
+        {step === "aadhaar" && "Verify Aadhaar"}
+        {step === "aadhaar_otp" && "Enter OTP"}
+      </DialogTitle>
+      <DialogDescription>
+        {step === "pan" && "Enter your PAN card number for identity verification."}
+        {step === "aadhaar" && "Enter your Aadhaar number. An OTP will be sent to your linked mobile."}
+        {step === "aadhaar_otp" && "Enter the 6-digit OTP sent to your Aadhaar-linked mobile number."}
+      </DialogDescription>
+
+      <DialogBody>
+        <div className="space-y-4">
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2">
+            <div className={`flex size-7 items-center justify-center rounded-full text-xs font-bold ${
+              step === "pan"
+                ? "bg-sky-500 text-white"
+                : kycStatus?.panVerified || panVerifiedName
+                  ? "bg-emerald-500 text-white"
+                  : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+            }`}>
+              {kycStatus?.panVerified || panVerifiedName ? <CheckCircleIcon className="size-4" /> : "1"}
+            </div>
+            <div className={`h-0.5 flex-1 ${
+              step !== "pan" ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700"
+            }`} />
+            <div className={`flex size-7 items-center justify-center rounded-full text-xs font-bold ${
+              step === "aadhaar" || step === "aadhaar_otp"
+                ? "bg-sky-500 text-white"
+                : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+            }`}>
+              2
+            </div>
+          </div>
+
+          {/* PAN Step */}
+          {step === "pan" && (
+            <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
+              <div className="px-4 py-3">
+                <label htmlFor={panId} className="text-[13px] text-zinc-500 dark:text-zinc-400">PAN Number</label>
+                <input
+                  id={panId}
+                  type="text"
+                  value={panNumber}
+                  onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                  className="mt-1 w-full bg-transparent font-mono text-[15px] uppercase tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PAN Success Message */}
+          {step === "pan" && panVerifiedName && (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+              <CheckCircleIcon className="size-4 shrink-0" />
+              PAN verified! Name: {panVerifiedName}
+            </div>
+          )}
+
+          {/* Aadhaar Step */}
+          {step === "aadhaar" && (
+            <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
+              <div className="px-4 py-3">
+                <label htmlFor={aadhaarId} className="text-[13px] text-zinc-500 dark:text-zinc-400">Aadhaar Number</label>
+                <input
+                  id={aadhaarId}
+                  type="text"
+                  value={aadhaarNumber}
+                  onChange={(e) => setAadhaarNumber(formatAadhaar(e.target.value))}
+                  placeholder="0000 0000 0000"
+                  maxLength={14}
+                  inputMode="numeric"
+                  className="mt-1 w-full bg-transparent font-mono text-[15px] tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* OTP Step */}
+          {step === "aadhaar_otp" && (
+            <>
+              <div className="rounded-xl bg-sky-50 p-3 text-sm text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+                OTP sent to your Aadhaar-linked mobile number ending in ****
+              </div>
+              <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
+                <div className="px-4 py-3">
+                  <label htmlFor={otpId} className="text-[13px] text-zinc-500 dark:text-zinc-400">Enter OTP</label>
+                  <input
+                    id={otpId}
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                    inputMode="numeric"
+                    className="mt-1 w-full bg-transparent font-mono text-[15px] tracking-[0.5em] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleInitiateAadhaar}
+                disabled={loading}
+                className="text-sm text-sky-600 hover:underline dark:text-sky-400"
+              >
+                Resend OTP
+              </button>
+            </>
+          )}
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+              <ExclamationCircleIcon className="size-4 shrink-0" />
+              {error}
+            </div>
+          )}
+        </div>
+      </DialogBody>
+
+      <DialogActions>
+        <Button type="button" outline onClick={() => { resetForm(); onCancel(); }}>
+          Cancel
+        </Button>
+        {step === "pan" && (
+          <Button
+            type="button"
+            onClick={handleSubmitPAN}
+            disabled={loading || panNumber.length !== 10}
+            color="dark/zinc"
+          >
+            {loading ? "Verifying..." : "Verify PAN"}
+          </Button>
+        )}
+        {step === "aadhaar" && (
+          <Button
+            type="button"
+            onClick={handleInitiateAadhaar}
+            disabled={loading || aadhaarNumber.replace(/\s/g, "").length !== 12}
+            color="dark/zinc"
+          >
+            {loading ? "Sending OTP..." : "Send OTP"}
+          </Button>
+        )}
+        {step === "aadhaar_otp" && (
+          <Button
+            type="button"
+            onClick={handleVerifyAadhaarOTP}
+            disabled={loading || otp.length !== 6}
+            color="dark/zinc"
+          >
+            {loading ? "Verifying..." : "Verify OTP"}
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // Profile Card - Hero section at top
 function ProfileCard({
   profile,
@@ -763,7 +1068,7 @@ function ProfileCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       <div className="p-5 sm:p-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           {/* Avatar with camera overlay */}
@@ -991,6 +1296,7 @@ export function Settings() {
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   if (profileLoading || kycLoading) {
@@ -1032,8 +1338,12 @@ export function Settings() {
   };
 
   const handleStartKYC = () => {
-    // Navigate to KYC flow or open KYC modal
-    console.log("Start KYC verification flow");
+    setIsVerifyingKYC(true);
+  };
+
+  const handleKYCSuccess = () => {
+    setIsVerifyingKYC(false);
+    refetchProfile();
   };
 
   const handleAddBankSuccess = () => {
@@ -1087,15 +1397,7 @@ export function Settings() {
     }
   };
 
-  // Type assertion for extended shopper fields that may be returned by API
-  type ExtendedShopper = NonNullable<typeof profile>["shopper"] & {
-    phoneNumber?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  };
-  const shopper = profile?.shopper as ExtendedShopper | undefined;
+  const shopper = profile?.shopper;
 
   const userName =
     profile?.user?.name ||

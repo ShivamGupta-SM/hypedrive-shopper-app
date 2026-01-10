@@ -30,7 +30,7 @@ export type DuotoneColor = keyof typeof duotoneColors;
  */
 export function MenuSection({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       {children}
     </div>
   );
@@ -70,7 +70,7 @@ export function MenuSectionFooter({ children }: { children: React.ReactNode }) {
  * MenuSeparator - Indented divider between menu rows
  */
 export function MenuSeparator() {
-  return <div className="ml-13 h-px bg-zinc-100 dark:bg-zinc-800" />;
+  return <div className="ml-13 h-px bg-zinc-200 dark:bg-zinc-700" />;
 }
 
 /**
@@ -256,7 +256,7 @@ export function MenuDangerButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[15px] font-medium text-red-500 active:bg-zinc-50 dark:bg-zinc-900 dark:active:bg-zinc-800"
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[15px] font-medium text-red-500 shadow-sm ring-1 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-900 dark:ring-zinc-800 dark:active:bg-zinc-800"
     >
       {children}
     </button>

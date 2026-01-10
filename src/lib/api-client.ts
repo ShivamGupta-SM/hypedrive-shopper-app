@@ -3570,28 +3570,6 @@ export namespace auth {
 }
 
 export namespace campaigns {
-    export interface Campaign {
-        id: string
-        organizationId: string
-        productId: string
-        title: string
-        description?: string
-        startDate: string
-        endDate: string
-        rebatePercentage?: number
-        billRate?: number
-        platformFee?: number
-        bonusAmount?: number
-        maxEnrollments: number
-        status: shared.CampaignStatus
-        campaignType: shared.CampaignType
-        isPublic: boolean
-        slug?: string
-        enrollmentExpiryDays: number
-        createdAt: string
-        updatedAt: string
-    }
-
     export interface CampaignPricing {
         campaignId: string
         rebatePercentage: number
@@ -3643,6 +3621,107 @@ export namespace campaigns {
 
     export type DeliverableStatus = "active" | "inactive" | "deprecated"
 
+    export interface ProductImageItem {
+        id: string
+        imageUrl: string
+        sortOrder: number
+        altText?: string
+        isPrimary: boolean
+    }
+
+    export interface ShopperCampaign {
+        /**
+         * Current enrollment count
+         */
+        currentEnrollments: number
+
+        /**
+         * Bonus amount formatted as decimal string (e.g., "100.00")
+         */
+        bonusAmountDecimal: string
+
+        /**
+         * Product details
+         */
+        product: {
+            id: string
+            name: string
+            /**
+             * Product price in paise
+             */
+            price: number
+
+            /**
+             * Product price formatted as decimal string
+             */
+            priceDecimal: string
+
+            /**
+             * Product link URL
+             */
+            productLink: string
+
+            /**
+             * Primary product image URL
+             */
+            primaryImage?: string
+
+            /**
+             * All product images
+             */
+            productImages: ProductImageItem[]
+        }
+
+        /**
+         * Organization details
+         */
+        organization: {
+            id: string
+            name: string
+            /**
+             * Organization logo URL
+             */
+            logo?: string
+        }
+
+        /**
+         * Platform details (where product is sold)
+         */
+        platform?: {
+            id: string
+            name: string
+            /**
+             * Platform logo URL
+             */
+            logo?: string
+
+            /**
+             * Platform icon URL
+             */
+            icon?: string
+        }
+
+        id: string
+        organizationId: string
+        productId: string
+        title: string
+        description?: string
+        startDate: string
+        endDate: string
+        rebatePercentage?: number
+        billRate?: number
+        platformFee?: number
+        bonusAmount?: number
+        maxEnrollments: number
+        status: shared.CampaignStatus
+        campaignType: shared.CampaignType
+        isPublic: boolean
+        slug?: string
+        enrollmentExpiryDays: number
+        createdAt: string
+        updatedAt: string
+    }
+
     export class ServiceClient {
         private baseClient: BaseClient
 
@@ -3690,11 +3769,12 @@ export namespace campaigns {
         /**
          * GET /campaigns/:id
          * Get public campaign by ID - for shoppers viewing active campaigns from approved orgs
+         * Returns enriched campaign data with product, organization, and platform details
          */
-        public async getCampaign(id: string): Promise<Campaign> {
+        public async getCampaign(id: string): Promise<ShopperCampaign> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/campaigns/${encodeURIComponent(id)}`)
-            return await resp.json() as Campaign
+            return await resp.json() as ShopperCampaign
         }
 
         /**
@@ -3718,6 +3798,7 @@ export namespace campaigns {
         /**
          * GET /campaigns
          * List public campaigns for shoppers with unified filtering
+         * Returns enriched campaign data with product, organization, and platform details
          * Query params:
          * - featured: boolean - Show featured campaigns (most recent)
          * - sort: "trending" | "recent" - Sort order (trending = most enrollments in 7 days)
@@ -3736,7 +3817,7 @@ export namespace campaigns {
     featured?: boolean
     sort?: "trending" | "recent"
 }): Promise<{
-    data: Campaign[]
+    data: ShopperCampaign[]
     nextCursor: string | null
     hasMore: boolean
 }> {
@@ -3754,7 +3835,7 @@ export namespace campaigns {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/campaigns`, undefined, {query})
             return await resp.json() as {
-    data: Campaign[]
+    data: ShopperCampaign[]
     nextCursor: string | null
     hasMore: boolean
 }
@@ -6582,6 +6663,11 @@ export namespace shoppers {
         displayName?: string
         bio?: string
         avatarUrl?: string
+        phoneNumber?: string
+        address?: string
+        city?: string
+        state?: string
+        postalCode?: string
         kycStatus: KYCStatus
         panNumber?: string
         panVerified: boolean

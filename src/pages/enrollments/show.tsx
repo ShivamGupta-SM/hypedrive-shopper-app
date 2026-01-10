@@ -10,6 +10,7 @@ import {
 import { Field, Label } from "@/components/fieldset";
 import { Heading, Subheading } from "@/components/heading";
 import { Input } from "@/components/input";
+import { Link } from "@/components/link";
 import { useEnrollmentDetail, useEnrollmentPricing } from "@/hooks/use-api";
 import type { shared } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
@@ -784,6 +785,8 @@ export function EnrollmentShow() {
                     <img
                       src={enrollment.ocrData.screenshotUrl}
                       alt="Order Screenshot"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full object-cover"
                     />
                   </a>

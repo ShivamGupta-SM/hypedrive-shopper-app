@@ -129,8 +129,8 @@ export function useInfiniteCampaigns(params?: {
   q?: string;
   featured?: boolean;
   sort?: "trending" | "recent";
-}): InfiniteState<campaigns.Campaign> {
-  const [data, setData] = useState<campaigns.Campaign[]>([]);
+}): InfiniteState<campaigns.ShopperCampaign> {
+  const [data, setData] = useState<campaigns.ShopperCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -285,7 +285,7 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
 
 // Cache types for campaign and product data
 interface CampaignCache {
-  campaign: campaigns.Campaign;
+  campaign: campaigns.ShopperCampaign;
   product?: products.ProductWithStats;
   platform?: platforms.Platform;
 }
@@ -553,7 +553,7 @@ export function useActiveCampaigns(limit = 4) {
 export function useWallet() {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.getMyWallet();
+    return client.wallets.getMyWallet();
   }, []);
 }
 
@@ -565,7 +565,7 @@ export function useWalletTransactions(params?: {
 }) {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.getWalletTransactions(params || {});
+    return client.wallets.getWalletTransactions(params || {});
   }, [params?.skip, params?.take, params?.type]);
 }
 
@@ -573,11 +573,11 @@ export function useWalletTransactions(params?: {
 export function useWithdrawals(params?: {
   skip?: number;
   take?: number;
-  status?: string;
+  status?: shared.WithdrawalStatus;
 }) {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.listMyWithdrawals(params || {});
+    return client.wallets.listMyWithdrawals(params || {});
   }, [params?.skip, params?.take, params?.status]);
 }
 
@@ -585,7 +585,7 @@ export function useWithdrawals(params?: {
 export function useWithdrawal(id: string) {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.getWithdrawal(id);
+    return client.wallets.getWithdrawal(id);
   }, [id]);
 }
 
@@ -593,7 +593,7 @@ export function useWithdrawal(id: string) {
 export function useWithdrawalMethods() {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.listWithdrawalMethods();
+    return client.wallets.listWithdrawalMethods();
   }, []);
 }
 
@@ -602,19 +602,21 @@ export function useWithdrawalMethod(id: string) {
   return useAsync(async () => {
     if (!id) return null;
     const client = getAuthenticatedClient();
-    return client.wallet.getWithdrawalMethod(id);
+    return client.wallets.getWithdrawalMethod(id);
   }, [id]);
 }
 
 // Withdrawal Stats
 export function useWithdrawalStats(params?: {
-  startDate?: string;
-  endDate?: string;
+  organizationId?: string;
+  shopperId?: string;
+  holderType?: "organization" | "shopper";
+  holderId?: string;
 }) {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.wallet.getWithdrawalStats(params || {});
-  }, [params?.startDate, params?.endDate]);
+    return client.wallets.getWithdrawalStats(params || {});
+  }, [params?.organizationId, params?.shopperId, params?.holderType, params?.holderId]);
 }
 
 // =============================================================================

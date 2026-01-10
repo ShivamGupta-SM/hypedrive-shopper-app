@@ -784,6 +784,8 @@ function ProductImageGallery({ images }: { images: { id: string; imageUrl: strin
         <img
           src={sortedImages[selectedImage]?.imageUrl}
           alt={sortedImages[selectedImage]?.altText || "Product image"}
+          loading="lazy"
+          decoding="async"
           className="aspect-square w-full object-cover"
         />
       </div>
@@ -800,7 +802,7 @@ function ProductImageGallery({ images }: { images: { id: string; imageUrl: strin
                   : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <img src={img.imageUrl} alt="" className="size-16 object-cover" />
+              <img src={img.imageUrl} alt="" loading="lazy" decoding="async" className="size-16 object-cover" />
             </button>
           ))}
         </div>
@@ -1245,7 +1247,7 @@ export function CampaignShow() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-3">
                 {platform.logo ? (
-                  <img src={platform.logo} alt={platform.name} className="size-12 rounded-xl object-cover" />
+                  <img src={platform.logo} alt={platform.name} loading="lazy" decoding="async" className="size-12 rounded-xl object-cover" />
                 ) : (
                   <div className="flex size-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
                     <PlatformIcon type={platform.type} />

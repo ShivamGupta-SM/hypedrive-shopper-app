@@ -9,7 +9,7 @@ import {
   useShopperProfile,
   useShopperStats,
 } from "@/hooks/use-api";
-import { getStatusColors, semanticColors } from "@/lib/theme";
+import { getStatusColors } from "@/lib/theme";
 import {
   ArrowRightIcon,
   ArrowTrendingUpIcon,
@@ -218,7 +218,7 @@ function JourneyStats({
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="flex flex-1 flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10"
+          className="flex flex-1 flex-col rounded-xl bg-white p-3 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
         >
           <div className="flex items-center gap-1.5">
             <stat.icon className={`size-4 ${stat.iconColor}`} />
@@ -333,16 +333,16 @@ function CampaignCard({
 }) {
   const cashback =
     campaign.rebatePercentage && campaign.rebatePercentage > 0
-      ? `${campaign.rebatePercentage}%`
+      ? campaign.rebatePercentage
       : null;
   const bonus = campaign.bonusAmountDecimal
-    ? `₹${campaign.bonusAmountDecimal}`
+    ? parseFloat(campaign.bonusAmountDecimal)
     : null;
 
   return (
     <Link
       href={`/campaigns/${campaign.id}`}
-      className="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
       {/* Product image - 4:3 aspect ratio */}
       <div className="relative aspect-4/3 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
@@ -350,6 +350,8 @@ function CampaignCard({
           <img
             src={campaign.product.primaryImage}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="size-full object-cover"
           />
         ) : (
@@ -359,52 +361,56 @@ function CampaignCard({
         )}
         {/* Platform icon */}
         {campaign.platform?.icon && (
-          <div className="absolute bottom-2 right-2 flex size-7 items-center justify-center rounded-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90">
+          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
             <img
               src={campaign.platform.icon}
               alt={campaign.platform.name || ""}
-              className="size-5 object-contain"
+              loading="lazy"
+              decoding="async"
+              className="size-4 object-contain"
             />
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        {/* Brand */}
-        {campaign.organization?.name && (
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            {campaign.organization.name}
-          </p>
-        )}
-
-        {/* Product name */}
-        <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 dark:text-white">
-          {campaign.product?.name || campaign.title}
-        </h3>
-
-        {/* Price + Rewards row */}
-        <div className="mt-2 flex items-baseline justify-between gap-2">
-          {/* Price */}
-          {campaign.product?.priceDecimal && (
-            <p className="text-base font-bold text-zinc-900 dark:text-white">
-              ₹{campaign.product.priceDecimal}
+      {/* Content - Product Info */}
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        {/* Brand + Product Name */}
+        <div className="min-w-0 flex-1">
+          {campaign.organization?.name && (
+            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
+              {campaign.organization.name}
             </p>
           )}
+          <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
+            {campaign.product?.name || campaign.title}
+          </h3>
+        </div>
 
-          {/* Cashback badges */}
-          <div className="flex items-center gap-1.5">
-            {cashback && (
-              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                {cashback}
-              </span>
-            )}
-            {bonus && (
-              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-400">
-                +{bonus}
-              </span>
-            )}
-          </div>
+        {/* Price */}
+        {campaign.product?.priceDecimal && (
+          <p className="mt-2 text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
+            ₹{campaign.product.priceDecimal}
+          </p>
+        )}
+      </div>
+
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Footer Stats Bar - inspired by enrollment cards */}
+      <div className="flex items-center justify-between px-2.5 py-2 sm:px-3">
+        <div className="flex items-center gap-2 text-[10px] sm:gap-3 sm:text-[11px]">
+          {cashback && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold">{cashback}%</span> cashback
+            </span>
+          )}
+          {bonus && bonus > 0 && (
+            <span className="text-sky-600 dark:text-sky-400">
+              +₹{Math.round(bonus)} bonus
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -441,12 +447,6 @@ function CampaignsSection({
           View all
           <ChevronRightIcon className="size-3.5" />
         </Link>
-      </div>
-      {/* Results count - consistent with other pages */}
-      <div className="mb-3 flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-        <p className="text-sm text-zinc-500">
-          {campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""}
-        </p>
       </div>
       {/* Responsive grid layout - consistent with campaigns list */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
@@ -527,84 +527,113 @@ function EnrollmentCard({
 
   const relativeTime = formatRelativeTime(enrollment.createdAt);
 
+  // Calculate estimated payout if not provided
+  const estimatedPayout = enrollment.payoutAmountDecimal
+    ? parseFloat(enrollment.payoutAmountDecimal)
+    : enrollment.orderValueDecimal && enrollment.lockedRebatePercentage
+      ? (parseFloat(enrollment.orderValueDecimal) * enrollment.lockedRebatePercentage) / 100 +
+        (enrollment.lockedBonusAmountDecimal ? parseFloat(enrollment.lockedBonusAmountDecimal) : 0)
+      : 0;
+
   return (
     <Link
       href={`/enrollments/${enrollment.id}`}
-      className="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
-      <div className="flex flex-1 flex-col p-4">
-        {/* Header: Product + Status */}
-        <div className="flex items-start gap-3">
-          {/* Product Thumbnail */}
-          <div className="relative shrink-0">
+      {/* Header: Product + Status */}
+      <div className="flex items-start gap-2.5 p-3 sm:gap-3 sm:p-4">
+        {/* Product Thumbnail */}
+        <div className="relative shrink-0">
+          <div className="size-11 overflow-hidden rounded-lg bg-zinc-100 sm:size-12 dark:bg-zinc-800">
             {productImage ? (
-              <div className="size-12 overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                <img src={productImage} alt="" className="size-full object-cover" />
-              </div>
+              <img
+                src={productImage}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-full object-cover"
+              />
             ) : (
-              <div className="flex size-12 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+              <div className="flex size-full items-center justify-center">
                 <SparklesIcon className="size-5 text-zinc-400" />
               </div>
             )}
-            {platformIcon && (
-              <img
-                src={platformIcon}
-                alt={platformName}
-                className="absolute -bottom-1 -right-1 size-5 rounded border border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
-              />
-            )}
           </div>
-
-          {/* Product Info */}
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-white">
-              {productName}
-            </p>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              {enrollment.orderId ? `#${enrollment.orderId} · ` : ""}{relativeTime}
-            </p>
-          </div>
-
-          {/* Status Badge */}
-          <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${statusColors.bg}`}>
-            <Icon className={`size-3.5 ${statusColors.icon}`} />
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {statusInfo.label}
-            </span>
-          </div>
+          {platformIcon && (
+            <img
+              src={platformIcon}
+              alt={platformName}
+              loading="lazy"
+              decoding="async"
+              className="absolute -bottom-0.5 -right-0.5 size-4 rounded border border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
+            />
+          )}
         </div>
 
-        {/* Financials Row */}
-        {(enrollment.orderValueDecimal || enrollment.payoutAmountDecimal) && (
-          <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
-            {enrollment.orderValueDecimal && (
-              <div className="flex items-baseline gap-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wide text-zinc-400">Order</p>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                    ₹{enrollment.orderValueDecimal}
-                  </p>
-                </div>
-                {enrollment.lockedRebatePercentage && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-zinc-400">Rate</p>
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                      {enrollment.lockedRebatePercentage}%
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            {enrollment.payoutAmountDecimal && (
-              <div className="text-right">
-                <p className="text-[10px] uppercase tracking-wide text-zinc-400">Cashback</p>
-                <p className={`text-sm font-bold ${semanticColors.success.text}`}>
-                  +₹{enrollment.payoutAmountDecimal}
-                </p>
-              </div>
-            )}
+        {/* Product Info + Status */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="line-clamp-1 text-[13px] font-medium text-zinc-900 sm:text-sm dark:text-white">
+              {productName}
+            </p>
+            {/* Status Badge */}
+            <div className={`flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 ${statusColors.bg}`}>
+              <Icon className={`size-3 ${statusColors.icon}`} />
+              <span className="text-[10px] font-medium text-zinc-700 sm:text-[11px] dark:text-zinc-300">
+                {statusInfo.label}
+              </span>
+            </div>
           </div>
-        )}
+          <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            {enrollment.orderId ? `Order #${enrollment.orderId} · ` : ""}{relativeTime}
+          </p>
+        </div>
+      </div>
+
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Amount Row */}
+      <div className="flex items-stretch">
+        {/* Order Value */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4">
+          <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
+            Order Value
+          </p>
+          <p className="mt-0.5 text-base font-semibold text-zinc-900 sm:text-lg dark:text-white">
+            ₹{enrollment.orderValueDecimal || "0"}
+          </p>
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="w-px self-stretch bg-zinc-200 dark:bg-zinc-700" />
+
+        {/* Cashback Amount */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4">
+          <p className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 sm:text-[10px] dark:text-zinc-400">
+            {enrollment.status === "approved" ? "Earned" : "Cashback"}
+          </p>
+          <p className="mt-0.5 text-base font-bold text-emerald-600 sm:text-lg dark:text-emerald-400">
+            +₹{estimatedPayout.toFixed(0)}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer Stats Bar */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+      <div className="flex items-center justify-between px-3 py-2 sm:px-4">
+        <div className="flex items-center gap-3 text-[10px] sm:gap-4 sm:text-[11px]">
+          {enrollment.lockedRebatePercentage && (
+            <span className="text-zinc-500 dark:text-zinc-400">
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">{enrollment.lockedRebatePercentage}%</span> cashback
+            </span>
+          )}
+          {enrollment.lockedBonusAmountDecimal && parseFloat(enrollment.lockedBonusAmountDecimal) > 0 && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              +₹{Math.round(parseFloat(enrollment.lockedBonusAmountDecimal))} bonus
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -650,12 +679,6 @@ function EnrollmentsSection({
           View all
           <ChevronRightIcon className="size-3.5" />
         </Link>
-      </div>
-      {/* Results count - consistent with other pages */}
-      <div className="mb-3 flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-        <p className="text-sm text-zinc-500">
-          {enrollments.length} enrollment{enrollments.length !== 1 ? "s" : ""}
-        </p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         {enrollments.slice(0, 4).map((enrollment) => (
@@ -708,8 +731,9 @@ export function Dashboard() {
     return <LoadingSkeleton />;
   }
 
-  // Extract data
-  const firstName =
+  // Extract data - use displayName for greeting (user's preferred public name)
+  const displayName =
+    profile?.shopper?.displayName ||
     profile?.shopper?.firstName ||
     profile?.user?.name?.split(" ")[0] ||
     "there";
@@ -795,7 +819,7 @@ export function Dashboard() {
       {/* Header */}
       <div>
         <Heading>
-          {greeting}, {firstName}
+          {greeting}, {displayName}
         </Heading>
         <Text className="mt-1 text-sm">
           {isNewUser ? "Let's get you started" : "Here's your earnings summary"}

@@ -65,6 +65,7 @@ export function EmptyState({
       </p>
       {action && (
         <Button
+          color="dark/zinc"
           href={action.href}
           onClick={action.onClick}
           className="mt-5"
@@ -106,6 +107,7 @@ export function InlineEmptyState({
       </p>
       {action && (
         <Button
+          color="dark/zinc"
           href={action.href}
           onClick={action.onClick}
           className="mt-4"

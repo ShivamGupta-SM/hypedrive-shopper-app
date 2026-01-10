@@ -2,8 +2,12 @@ import * as Headless from "@headlessui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  ArchiveBoxIcon,
+  ArrowsRightLeftIcon,
   ClockIcon,
+  CurrencyRupeeIcon,
   FunnelIcon,
+  PlayCircleIcon,
   SparklesIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
@@ -57,13 +61,13 @@ function CampaignCard({
   };
 }) {
   const cashback = campaign.rebatePercentage && campaign.rebatePercentage > 0
-    ? `${campaign.rebatePercentage}%`
+    ? campaign.rebatePercentage
     : null;
 
   const bonus = campaign.bonusAmountDecimal
-    ? `₹${campaign.bonusAmountDecimal}`
+    ? parseFloat(campaign.bonusAmountDecimal)
     : campaign.bonusAmount && campaign.bonusAmount > 0
-      ? `₹${(campaign.bonusAmount / 100).toFixed(0)}`
+      ? campaign.bonusAmount / 100
       : null;
 
   const daysLeft = campaign.endDate
@@ -77,19 +81,19 @@ function CampaignCard({
     : null;
 
   // Campaign type badge config
-  const typeConfig: Record<string, { color: "emerald" | "amber" | "sky"; label: string }> = {
-    cashback: { color: "emerald", label: "Cashback" },
-    barter: { color: "amber", label: "Barter" },
-    hybrid: { color: "sky", label: "Hybrid" },
+  const typeConfig: Record<string, { color: "emerald" | "amber" | "sky"; label: string; icon: React.ComponentType<{ className?: string }> }> = {
+    cashback: { color: "emerald", label: "Cashback", icon: CurrencyRupeeIcon },
+    barter: { color: "amber", label: "Barter", icon: ArrowsRightLeftIcon },
+    hybrid: { color: "sky", label: "Hybrid", icon: SparklesIcon },
   };
   const badgeConfig = typeConfig[campaign.campaignType || ""] || typeConfig.cashback;
+  const BadgeIcon = badgeConfig.icon;
 
   return (
     <Link
       href={`/campaigns/${campaign.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
-
       {/* Image */}
       <div className="relative aspect-4/3 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         {campaign.product?.primaryImage ? (
@@ -106,81 +110,83 @@ function CampaignCard({
           </div>
         )}
 
-        {/* Campaign type badge - top right */}
-        <Badge color={badgeConfig.color} className="absolute right-2 top-2 text-[10px]">
+        {/* Campaign type badge - top right with solid bg for contrast */}
+        <span className={`absolute right-2 top-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium shadow-sm ${
+          badgeConfig.color === "emerald"
+            ? "bg-emerald-500 text-white"
+            : badgeConfig.color === "amber"
+              ? "bg-amber-500 text-white"
+              : "bg-sky-500 text-white"
+        }`}>
+          <BadgeIcon className="size-3" />
           {badgeConfig.label}
-        </Badge>
+        </span>
 
         {/* Platform badge */}
         {campaign.platform?.icon && (
-          <div className="absolute bottom-2 right-2 flex size-7 items-center justify-center rounded-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90">
+          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
             <img
               src={campaign.platform.icon}
               alt={campaign.platform.name}
               loading="lazy"
-              className="size-5 object-contain"
+              decoding="async"
+              className="size-4 object-contain"
             />
           </div>
         )}
 
         {/* Urgency badge */}
         {isEndingSoon && (
-          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-zinc-900/80 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-zinc-900/80 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:text-xs">
             <ClockIcon className="size-3" />
             {daysLeft}d left
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        {/* Brand */}
-        {campaign.organization && (
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            {campaign.organization.name}
-          </p>
-        )}
-
-        {/* Product Name */}
-        <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 dark:text-white">
-          {campaign.product?.name || campaign.title}
-        </h3>
-
-        {/* Price + Rewards Row */}
-        <div className="mt-2 flex items-baseline justify-between gap-2">
-          {campaign.product?.priceDecimal && (
-            <p className="text-base font-bold text-zinc-900 dark:text-white">
-              ₹{campaign.product.priceDecimal}
+      {/* Content - Product Info */}
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        {/* Brand + Product Name */}
+        <div className="min-w-0 flex-1">
+          {campaign.organization && (
+            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
+              {campaign.organization.name}
             </p>
           )}
-
-          <div className="flex items-center gap-1.5">
-            {cashback && (
-              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                {cashback}
-              </span>
-            )}
-            {bonus && (
-              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-400">
-                +{bonus}
-              </span>
-            )}
-          </div>
+          <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
+            {campaign.product?.name || campaign.title}
+          </h3>
         </div>
 
-        {/* Footer */}
-        {(slotsLeft !== null || campaign.platform?.name) && (
-          <div className="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
-            {slotsLeft !== null && (
-              <span>{slotsLeft} slots left</span>
-            )}
-            {slotsLeft !== null && campaign.platform?.name && !campaign.platform.icon && (
-              <span>·</span>
-            )}
-            {campaign.platform?.name && !campaign.platform.icon && (
-              <span>{campaign.platform.name}</span>
-            )}
-          </div>
+        {/* Price */}
+        {campaign.product?.priceDecimal && (
+          <p className="mt-2 text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
+            ₹{campaign.product.priceDecimal}
+          </p>
+        )}
+      </div>
+
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Footer Stats Bar - inspired by enrollment cards */}
+      <div className="flex items-center justify-between px-2.5 py-2 sm:px-3">
+        <div className="flex items-center gap-2 text-[10px] sm:gap-3 sm:text-[11px]">
+          {cashback !== null && cashback > 0 && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold">{cashback}%</span> cashback
+            </span>
+          )}
+          {bonus !== null && bonus > 0 && (
+            <span className="text-sky-600 dark:text-sky-400">
+              +₹{Math.round(bonus)} bonus
+            </span>
+          )}
+        </div>
+        {slotsLeft !== null && slotsLeft >= 0 && (
+          <span className="text-[10px] text-zinc-400 sm:text-[11px] dark:text-zinc-500">
+            {slotsLeft} left
+          </span>
         )}
       </div>
     </Link>
@@ -388,13 +394,13 @@ function TrendingCard({
   };
 }) {
   const cashback = campaign.rebatePercentage && campaign.rebatePercentage > 0
-    ? `${campaign.rebatePercentage}%`
+    ? campaign.rebatePercentage
     : null;
 
   const bonus = campaign.bonusAmountDecimal
-    ? `₹${campaign.bonusAmountDecimal}`
+    ? parseFloat(campaign.bonusAmountDecimal)
     : campaign.bonusAmount && campaign.bonusAmount > 0
-      ? `₹${(campaign.bonusAmount / 100).toFixed(0)}`
+      ? campaign.bonusAmount / 100
       : null;
 
   // Campaign type badge config
@@ -408,79 +414,85 @@ function TrendingCard({
   return (
     <Link
       href={`/campaigns/${campaign.id}`}
-      className="relative flex w-[calc(100vw-3rem)] shrink-0 snap-center overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-950/5 sm:w-85 lg:w-auto dark:bg-zinc-900 dark:ring-white/10"
+      className="flex w-[calc(100vw-3rem)] shrink-0 snap-center flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 sm:w-85 lg:w-auto dark:bg-zinc-900 dark:ring-zinc-800"
     >
-      {/* Campaign type badge - top right */}
-      <Badge color={badgeConfig.color} className="absolute right-2 top-2 z-10 text-[10px]">
-        {badgeConfig.label}
-      </Badge>
-
-      {/* Image - Left side */}
-      <div className="relative h-36 w-32 shrink-0 overflow-hidden bg-zinc-100 sm:h-40 sm:w-36 lg:h-32 lg:w-28 xl:h-36 xl:w-32 dark:bg-zinc-800">
-        {campaign.product?.primaryImage ? (
-          <img
-            src={campaign.product.primaryImage}
-            alt={campaign.product.name}
-            loading="eager"
-            decoding="async"
-            className="size-full object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center">
-            <SparklesIcon className="size-8 text-zinc-300 dark:text-zinc-600" />
-          </div>
-        )}
-
-        {/* Platform icon */}
-        {campaign.platform?.icon && (
-          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
+      <div className="flex flex-1">
+        {/* Image - Left side (square) */}
+        <div className="relative size-28 shrink-0 overflow-hidden bg-zinc-100 sm:size-32 lg:size-28 xl:size-32 dark:bg-zinc-800">
+          {campaign.product?.primaryImage ? (
             <img
-              src={campaign.platform.icon}
-              alt={campaign.platform.name}
-              className="size-4 object-contain"
+              src={campaign.product.primaryImage}
+              alt={campaign.product.name}
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover"
             />
-          </div>
-        )}
-      </div>
-
-      {/* Content - Right side */}
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:p-4 lg:p-3">
-        <div>
-          {/* Brand */}
-          {campaign.organization && (
-            <p className="truncate text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              {campaign.organization.name}
-            </p>
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <SparklesIcon className="size-8 text-zinc-300 dark:text-zinc-600" />
+            </div>
           )}
 
-          {/* Product Name */}
-          <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 dark:text-white">
-            {campaign.product?.name || campaign.title}
-          </h3>
+          {/* Platform icon */}
+          {campaign.platform?.icon && (
+            <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
+              <img
+                src={campaign.platform.icon}
+                alt={campaign.platform.name}
+                loading="lazy"
+                decoding="async"
+                className="size-4 object-contain"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Bottom row - Price + Rewards */}
-        <div className="mt-2 flex items-center justify-between gap-2">
-          {/* Price */}
-          {campaign.product?.priceDecimal && (
-            <span className="text-base font-bold text-zinc-900 lg:text-sm xl:text-base dark:text-white">
-              ₹{campaign.product.priceDecimal}
+        {/* Content - Right side */}
+        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3">
+          <div>
+            {/* Brand */}
+            {campaign.organization && (
+              <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
+                {campaign.organization.name}
+              </p>
+            )}
+
+            {/* Product Name */}
+            <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
+              {campaign.product?.name || campaign.title}
+            </h3>
+          </div>
+
+          {/* Price + Badge */}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            {campaign.product?.priceDecimal && (
+              <span className="text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
+                ₹{campaign.product.priceDecimal}
+              </span>
+            )}
+            <Badge color={badgeConfig.color} className="text-[10px]">
+              {badgeConfig.label}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Footer Stats Bar - matches CampaignCard pattern */}
+      <div className="flex items-center justify-between px-2.5 py-2 sm:px-3">
+        <div className="flex items-center gap-2 text-[10px] sm:gap-3 sm:text-[11px]">
+          {cashback !== null && cashback > 0 && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold">{cashback}%</span> cashback
             </span>
           )}
-
-          {/* Reward badges */}
-          <div className="flex items-center gap-1">
-            {cashback && (
-              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                {cashback}
-              </span>
-            )}
-            {bonus && (
-              <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-400">
-                +{bonus}
-              </span>
-            )}
-          </div>
+          {bonus !== null && bonus > 0 && (
+            <span className="text-sky-600 dark:text-sky-400">
+              +₹{Math.round(bonus)} bonus
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -490,10 +502,14 @@ function TrendingCard({
 // Tab button component
 function TabButton({
   label,
+  icon: Icon,
+  iconColor,
   isActive,
   onClick,
 }: {
   label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  iconColor?: string;
   isActive: boolean;
   onClick: () => void;
 }) {
@@ -501,12 +517,13 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium ring-1 ${
+      className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ring-1 ${
         isActive
           ? "bg-zinc-900 text-white ring-zinc-900 dark:bg-white dark:text-zinc-900 dark:ring-white"
           : "bg-white text-zinc-600 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700 dark:active:bg-zinc-700"
       }`}
     >
+      {Icon && <Icon className={`size-4 ${isActive ? "" : iconColor || ""}`} />}
       {label}
     </button>
   );
@@ -718,11 +735,15 @@ export function CampaignsList() {
       <div className="-mx-0.5 flex items-center gap-1.5 overflow-x-auto px-0.5 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <TabButton
           label="Active"
+          icon={PlayCircleIcon}
+          iconColor="text-emerald-500"
           isActive={activeTab === "active"}
           onClick={() => setActiveTab("active")}
         />
         <TabButton
           label="Ended"
+          icon={ArchiveBoxIcon}
+          iconColor="text-zinc-400"
           isActive={activeTab === "ended"}
           onClick={() => setActiveTab("ended")}
         />

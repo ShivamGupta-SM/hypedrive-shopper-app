@@ -1,5 +1,3 @@
-import { cardStyles } from "@/lib/typography";
-
 type StatVariant = "default" | "success" | "warning" | "info";
 
 interface StatCardProps {
