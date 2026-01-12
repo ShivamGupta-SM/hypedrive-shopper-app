@@ -246,16 +246,62 @@ export function useAvailableCoupons(campaignId: string) {
   }, [campaignId]);
 }
 
-// Enrollments List
+// Enrollments List with campaign enrichment
 export function useEnrollments(params?: {
   cursor?: string;
   limit?: number;
   status?: shared.EnrollmentStatus;
   campaignId?: string;
-}) {
+}): AsyncState<{ data: EnrichedEnrollment[]; nextCursor: string | null; hasMore: boolean }> {
   return useAsync(async () => {
     const client = getAuthenticatedClient();
-    return client.enrollments.listEnrollments(params || {});
+    const result = await client.enrollments.listEnrollments(params || {});
+
+    // Fetch campaign data for all enrollments
+    const uniqueCampaignIds = [...new Set(result.data.map(e => e.campaignId))];
+    const campaignMap = new Map<string, campaigns.ShopperCampaign>();
+
+    await Promise.all(
+      uniqueCampaignIds.map(async (id) => {
+        try {
+          const campaign = await client.campaigns.getCampaign(id);
+          campaignMap.set(id, campaign);
+        } catch {
+          // Campaign fetch failed, continue without it
+        }
+      })
+    );
+
+    // Enrich enrollments with campaign data
+    const enrichedData: EnrichedEnrollment[] = result.data.map(enrollment => {
+      const campaign = campaignMap.get(enrollment.campaignId);
+
+      // Get primary image directly from ShopperCampaign.product
+      const primaryImage = campaign?.product?.primaryImage
+        || campaign?.product?.productImages?.find(img => img.isPrimary)?.imageUrl
+        || campaign?.product?.productImages?.[0]?.imageUrl;
+
+      return {
+        ...enrollment,
+        campaign: campaign ? {
+          title: campaign.title,
+          product: campaign.product ? {
+            name: campaign.product.name,
+            primaryImage,
+          } : undefined,
+          platform: campaign.platform ? {
+            name: campaign.platform.name,
+            icon: campaign.platform.icon || campaign.platform.logo,
+          } : undefined,
+        } : undefined,
+      };
+    });
+
+    return {
+      data: enrichedData,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    };
   }, [params?.cursor, params?.limit, params?.status, params?.campaignId]);
 }
 
@@ -283,11 +329,9 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
   }>;
 }
 
-// Cache types for campaign and product data
+// Cache types for campaign data (ShopperCampaign includes product and platform)
 interface CampaignCache {
   campaign: campaigns.ShopperCampaign;
-  product?: products.ProductWithStats;
-  platform?: platforms.Platform;
 }
 
 // Infinite Enrollments List with campaign enrichment
@@ -338,42 +382,22 @@ export function useInfiniteEnrollments(params?: {
       const uniqueCampaignIds = [...new Set(enrollmentData.map(e => e.campaignId))]
         .filter(id => !campaignCacheRef.current.has(id));
 
-      // Fetch campaign, product, and platform data for uncached campaigns
+      // Fetch campaign data for uncached campaigns
+      // ShopperCampaign already includes product and platform info, no extra fetches needed
       if (uniqueCampaignIds.length > 0) {
         const campaignPromises = uniqueCampaignIds.map(async (id) => {
           try {
             const campaign = await client.campaigns.getCampaign(id);
-
-            // Fetch product data if campaign has productId
-            let product: products.ProductWithStats | undefined;
-            let platform: platforms.Platform | undefined;
-
-            if (campaign.productId) {
-              try {
-                product = await client.products.getProduct(campaign.productId);
-                // Fetch platform if product has platformId
-                if (product?.platformId) {
-                  try {
-                    platform = await client.platforms.getPlatform(product.platformId);
-                  } catch {
-                    // Platform fetch failed, continue without it
-                  }
-                }
-              } catch {
-                // Product fetch failed, continue without it
-              }
-            }
-
-            return { id, campaign, product, platform };
+            return { id, campaign };
           } catch {
-            return { id, campaign: null, product: undefined, platform: undefined };
+            return { id, campaign: null };
           }
         });
 
         const campaignResults = await Promise.all(campaignPromises);
-        campaignResults.forEach(({ id, campaign, product, platform }) => {
+        campaignResults.forEach(({ id, campaign }) => {
           if (campaign) {
-            campaignCacheRef.current.set(id, { campaign, product, platform });
+            campaignCacheRef.current.set(id, { campaign });
           }
         });
       }
@@ -382,24 +406,23 @@ export function useInfiniteEnrollments(params?: {
       const enrichedEnrollments: EnrichedEnrollment[] = enrollmentData.map(enrollment => {
         const cached = campaignCacheRef.current.get(enrollment.campaignId);
         const campaign = cached?.campaign;
-        const product = cached?.product;
-        const platform = cached?.platform;
 
-        // Get primary image from product
-        const primaryImage = product?.productImages?.find(img => img.isPrimary)?.imageUrl
-          || product?.productImages?.[0]?.imageUrl;
+        // Get primary image directly from ShopperCampaign.product
+        const primaryImage = campaign?.product?.primaryImage
+          || campaign?.product?.productImages?.find(img => img.isPrimary)?.imageUrl
+          || campaign?.product?.productImages?.[0]?.imageUrl;
 
         return {
           ...enrollment,
           campaign: campaign ? {
             title: campaign.title,
-            product: product ? {
-              name: product.name,
+            product: campaign.product ? {
+              name: campaign.product.name,
               primaryImage,
             } : undefined,
-            platform: platform ? {
-              name: platform.name,
-              icon: platform.icon || platform.logo,
+            platform: campaign.platform ? {
+              name: campaign.platform.name,
+              icon: campaign.platform.icon || campaign.platform.logo,
             } : undefined,
           } : undefined,
           // Map deliverables to submissions format expected by EnrollmentCard
@@ -637,6 +660,182 @@ export function useUnreadNotificationCount() {
     const client = getAuthenticatedClient();
     return client.notifications.getUnreadCount();
   }, []);
+}
+
+// =============================================================================
+// SEARCH HOOKS
+// =============================================================================
+
+// Unified Search - searches across campaigns, enrollments, and withdrawals
+export function useUnifiedSearch(params: shoppers.UnifiedSearchParams | null) {
+  return useAsync(async () => {
+    if (!params || !params.q?.trim()) return null;
+    const client = getAuthenticatedClient();
+    return client.shoppers.unifiedSearch(params);
+  }, [
+    params?.q,
+    params?.resourceType,
+    params?.cursor,
+    params?.limit,
+    params?.platformId,
+    params?.organizationId,
+    params?.bonusMin,
+    params?.bonusMax,
+    params?.enrollmentStatus,
+    params?.withdrawalStatus,
+    params?.amountMin,
+    params?.amountMax,
+  ]);
+}
+
+// Infinite Unified Search
+export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchParams, 'cursor'>): InfiniteState<shoppers.SearchResult> & { facets: shoppers.SearchFacets | null } {
+  const [data, setData] = useState<shoppers.SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [facets, setFacets] = useState<shoppers.SearchFacets | null>(null);
+  const cursorRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Extract primitive values from params
+  const q = params?.q;
+  const resourceType = params?.resourceType;
+  const limit = params?.limit;
+
+  const fetchData = useCallback(async (isLoadMore = false) => {
+    if (!q?.trim()) {
+      setData([]);
+      setLoading(false);
+      setHasMore(false);
+      setFacets(null);
+      return;
+    }
+
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setData([]); // Clear data immediately for non-load-more fetches
+      cursorRef.current = null;
+    }
+    setError(null);
+
+    try {
+      const client = getAuthenticatedClient();
+      const result = await client.shoppers.unifiedSearch({
+        q: q,
+        resourceType: resourceType,
+        limit: limit,
+        cursor: isLoadMore ? cursorRef.current || undefined : undefined,
+      });
+
+      // Check if this request was aborted
+      if (abortControllerRef.current?.signal.aborted) return;
+
+      if (isLoadMore) {
+        setData(prev => [...prev, ...(result.data || [])]);
+      } else {
+        setData(result.data || []);
+      }
+      cursorRef.current = result.nextCursor;
+      setHasMore(result.hasMore);
+      setFacets(result.facets);
+    } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [q, resourceType, limit]);
+
+  // Fetch when params change
+  useEffect(() => {
+    fetchData(false);
+  }, [fetchData]);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore && cursorRef.current && q?.trim()) {
+      fetchData(true);
+    }
+  }, [loadingMore, hasMore, fetchData, q]);
+
+  const refetch = useCallback(() => {
+    fetchData(false);
+  }, [fetchData]);
+
+  return { data, loading, loadingMore, error, hasMore, loadMore, refetch, facets };
+}
+
+// Search Campaigns Only
+export function useSearchCampaigns(params: {
+  q: string;
+  cursor?: string;
+  limit?: number;
+  platformId?: string;
+  organizationId?: string;
+  bonusMin?: number;
+  bonusMax?: number;
+} | null) {
+  return useAsync(async () => {
+    if (!params || !params.q?.trim()) return null;
+    const client = getAuthenticatedClient();
+    return client.shoppers.searchCampaignsEndpoint(params);
+  }, [
+    params?.q,
+    params?.cursor,
+    params?.limit,
+    params?.platformId,
+    params?.organizationId,
+    params?.bonusMin,
+    params?.bonusMax,
+  ]);
+}
+
+// Search Enrollments Only
+export function useSearchEnrollments(params: {
+  q: string;
+  cursor?: string;
+  limit?: number;
+  status?: shared.EnrollmentStatus;
+} | null) {
+  return useAsync(async () => {
+    if (!params || !params.q?.trim()) return null;
+    const client = getAuthenticatedClient();
+    return client.shoppers.searchEnrollmentsEndpoint(params);
+  }, [params?.q, params?.cursor, params?.limit, params?.status]);
+}
+
+// Search Withdrawals Only
+export function useSearchWithdrawals(params: {
+  q: string;
+  cursor?: string;
+  limit?: number;
+  status?: shared.WithdrawalStatus;
+  amountMin?: number;
+  amountMax?: number;
+} | null) {
+  return useAsync(async () => {
+    if (!params || !params.q?.trim()) return null;
+    const client = getAuthenticatedClient();
+    return client.shoppers.searchWithdrawalsEndpoint(params);
+  }, [
+    params?.q,
+    params?.cursor,
+    params?.limit,
+    params?.status,
+    params?.amountMin,
+    params?.amountMax,
+  ]);
 }
 
 // Export types for components

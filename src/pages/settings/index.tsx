@@ -4,33 +4,36 @@ import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogActions } fro
 import { Heading, Subheading } from "@/components/heading";
 import { MenuSection, MenuRow, MenuSeparator, MenuDangerButton } from "@/components/menu-list";
 import { Text } from "@/components/text";
-import { useShopperProfile, useKYCStatus, useWithdrawalMethods } from "@/hooks/use-api";
+import { useShopperProfile, useKYCStatus, useWithdrawalMethods, useNotificationPreferences } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
 import type { wallets } from "@/lib/api-client";
 import {
   CheckCircleIcon,
   XCircleIcon,
   IdentificationIcon,
-  UserCircleIcon,
+  UserIcon,
   ArrowRightStartOnRectangleIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  CalendarIcon,
+  AtSymbolIcon,
+  DevicePhoneMobileIcon,
+  CalendarDaysIcon,
   BuildingLibraryIcon,
   CreditCardIcon,
   PlusIcon,
   TrashIcon,
   StarIcon,
-  QuestionMarkCircleIcon,
+  ChatBubbleLeftRightIcon,
   DocumentTextIcon,
-  LockClosedIcon,
+  ShieldCheckIcon as ShieldCheckIconSolid,
   MapPinIcon,
   CameraIcon,
   ShieldCheckIcon,
   ExclamationCircleIcon,
+  BellIcon,
+  EnvelopeIcon,
+  DeviceTabletIcon,
 } from "@heroicons/react/16/solid";
 import { useLogout } from "@refinedev/core";
-import { useState, useId, useRef } from "react";
+import { useState, useId, useRef, useEffect } from "react";
 
 function LoadingSpinner() {
   return (
@@ -128,7 +131,7 @@ function EditProfileSheet({
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                 placeholder="Your display name"
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
             <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -140,7 +143,7 @@ function EditProfileSheet({
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                 placeholder="+91 98765 43210"
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
             <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -153,7 +156,7 @@ function EditProfileSheet({
                 placeholder="Tell us a bit about yourself..."
                 rows={3}
                 maxLength={200}
-                className="mt-1 w-full resize-none bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full resize-none bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
               <p className="mt-1 text-right text-[11px] text-zinc-400">{formData.bio.length}/200</p>
             </div>
@@ -306,7 +309,7 @@ function AddBankAccountDialog({
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500">
                   <BuildingLibraryIcon className="size-4 text-white" />
                 </div>
-                <span className="flex-1 text-[15px] text-zinc-900 dark:text-white">Bank Account</span>
+                <span className="flex-1 text-base text-zinc-900 dark:text-white">Bank Account</span>
                 {accountType === "bank_account" && (
                   <CheckCircleIcon className="size-5 text-emerald-500" />
                 )}
@@ -322,7 +325,7 @@ function AddBankAccountDialog({
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500">
                   <span className="text-[11px] font-bold text-white">UPI</span>
                 </div>
-                <span className="flex-1 text-[15px] text-zinc-900 dark:text-white">UPI</span>
+                <span className="flex-1 text-base text-zinc-900 dark:text-white">UPI</span>
                 {accountType === "upi" && (
                   <CheckCircleIcon className="size-5 text-emerald-500" />
                 )}
@@ -346,7 +349,7 @@ function AddBankAccountDialog({
                       value={formData.accountHolderName}
                       onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
                       placeholder="Name as per bank records"
-                      className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                      className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                     />
                   </div>
                   <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -358,7 +361,7 @@ function AddBankAccountDialog({
                       value={formData.accountNumber}
                       onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                       placeholder="Enter account number"
-                      className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                      className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                     />
                   </div>
                   <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -370,7 +373,7 @@ function AddBankAccountDialog({
                       value={formData.confirmAccountNumber}
                       onChange={(e) => setFormData({ ...formData, confirmAccountNumber: e.target.value })}
                       placeholder="Re-enter account number"
-                      className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                      className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                     />
                   </div>
                   <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -382,7 +385,7 @@ function AddBankAccountDialog({
                       value={formData.bankName}
                       onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                       placeholder="e.g., State Bank of India"
-                      className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                      className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                     />
                   </div>
                   <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -395,7 +398,7 @@ function AddBankAccountDialog({
                       onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value.toUpperCase() })}
                       placeholder="e.g., SBIN0001234"
                       maxLength={11}
-                      className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                      className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                     />
                   </div>
                 </>
@@ -408,7 +411,7 @@ function AddBankAccountDialog({
                     value={formData.upiId}
                     onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
                     placeholder="e.g., yourname@upi"
-                    className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                    className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                   />
                 </div>
               )}
@@ -536,7 +539,7 @@ function EditAddressDialog({
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="House no., Building, Street, Area"
                 rows={2}
-                className="mt-1 w-full resize-none bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full resize-none bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
             <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -548,7 +551,7 @@ function EditAddressDialog({
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="Enter city"
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
             <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
@@ -558,7 +561,7 @@ function EditAddressDialog({
                 id={stateId}
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 focus:outline-none dark:text-white [&>option]:bg-white [&>option]:text-zinc-900 dark:[&>option]:bg-zinc-800 dark:[&>option]:text-white"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 focus:outline-none dark:text-white [&>option]:bg-white [&>option]:text-zinc-900 dark:[&>option]:bg-zinc-800 dark:[&>option]:text-white"
               >
                 <option value="">Select state</option>
                 {indianStates.map((state) => (
@@ -577,7 +580,7 @@ function EditAddressDialog({
                 placeholder="6-digit PIN code"
                 maxLength={6}
                 inputMode="numeric"
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
           </div>
@@ -684,7 +687,7 @@ function ChangeEmailDialog({
           <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
             <div className="px-4 py-3">
               <p className="text-[13px] text-zinc-500 dark:text-zinc-400">Current Email</p>
-              <p className="mt-1 text-[15px] text-zinc-600 dark:text-zinc-300">{currentEmail}</p>
+              <p className="mt-1 text-base text-zinc-600 dark:text-zinc-300">{currentEmail}</p>
             </div>
             <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
             <div className="px-4 py-3">
@@ -695,7 +698,7 @@ function ChangeEmailDialog({
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="Enter new email address"
-                className="mt-1 w-full bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
               />
             </div>
           </div>
@@ -919,7 +922,7 @@ function KYCVerificationDialog({
                   onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
                   placeholder="ABCDE1234F"
                   maxLength={10}
-                  className="mt-1 w-full bg-transparent font-mono text-[15px] uppercase tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                  className="mt-1 w-full bg-transparent font-mono text-base uppercase tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                 />
               </div>
             </div>
@@ -946,7 +949,7 @@ function KYCVerificationDialog({
                   placeholder="0000 0000 0000"
                   maxLength={14}
                   inputMode="numeric"
-                  className="mt-1 w-full bg-transparent font-mono text-[15px] tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                  className="mt-1 w-full bg-transparent font-mono text-base tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                 />
               </div>
             </div>
@@ -969,7 +972,7 @@ function KYCVerificationDialog({
                     placeholder="000000"
                     maxLength={6}
                     inputMode="numeric"
-                    className="mt-1 w-full bg-transparent font-mono text-[15px] tracking-[0.5em] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+                    className="mt-1 w-full bg-transparent font-mono text-base tracking-[0.5em] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
                   />
                 </div>
               </div>
@@ -1115,10 +1118,10 @@ function ProfileCard({
 
           {/* Info */}
           <div className="min-w-0 flex-1 text-center sm:text-left">
-            <p className="text-lg font-semibold text-zinc-900 dark:text-white">
+            <p className="truncate text-lg font-semibold text-zinc-900 dark:text-white">
               {profile.userName}
             </p>
-            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
               {profile.userEmail}
             </p>
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
@@ -1155,7 +1158,7 @@ function KYCCard({
 
   if (isFullyVerified) {
     return (
-      <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
+      <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:ring-emerald-800">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500">
           <ShieldCheckIcon className="size-5 text-white" />
         </div>
@@ -1169,14 +1172,14 @@ function KYCCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-amber-50 p-4 sm:flex-row sm:items-center dark:bg-amber-950/30">
+    <div className="flex flex-col gap-3 rounded-xl bg-orange-50 p-4 shadow-sm ring-1 ring-orange-200 sm:flex-row sm:items-center dark:bg-orange-950/30 dark:ring-orange-800">
       <div className="flex items-center gap-3 sm:flex-1">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange-500">
           <IdentificationIcon className="size-5 text-white" />
         </div>
         <div className="min-w-0">
-          <p className="font-medium text-amber-900 dark:text-amber-100">Complete KYC</p>
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+          <p className="font-medium text-orange-900 dark:text-orange-100">Complete KYC</p>
+          <p className="text-sm text-orange-700 dark:text-orange-300">
             {isPartiallyVerified ? (
               <span className="flex items-center gap-2">
                 <span className={isPanVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
@@ -1193,9 +1196,68 @@ function KYCCard({
           </p>
         </div>
       </div>
-      <Button onClick={onStartKYC} color="amber" className="w-full shrink-0 sm:w-auto">
+      <Button onClick={onStartKYC} color="orange" className="w-full shrink-0 sm:w-auto">
         {isPartiallyVerified ? "Continue" : "Verify Now"}
       </Button>
+    </div>
+  );
+}
+
+// Notification Toggle Row
+function NotificationToggle({
+  icon: Icon,
+  iconColor,
+  label,
+  description,
+  enabled,
+  onToggle,
+  isFirst,
+  isLast,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: "sky" | "emerald" | "amber" | "red" | "zinc" | "orange";
+  label: string;
+  description: string;
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
+  isFirst?: boolean;
+  isLast?: boolean;
+}) {
+  const colorMap = {
+    sky: "bg-sky-500",
+    emerald: "bg-emerald-500",
+    amber: "bg-amber-500",
+    red: "bg-red-500",
+    zinc: "bg-zinc-500",
+    orange: "bg-orange-500",
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3.5 ${isFirst ? "rounded-t-xl" : ""} ${isLast ? "rounded-b-xl" : ""}`}
+    >
+      <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${colorMap[iconColor]}`}>
+        <Icon className="size-4 text-white" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-base text-zinc-900 dark:text-white">{label}</p>
+        <p className="text-[13px] text-zinc-500 dark:text-zinc-400">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        onClick={() => onToggle(!enabled)}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+          enabled ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+            enabled ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
     </div>
   );
 }
@@ -1224,13 +1286,13 @@ function BankAccountRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[15px] text-zinc-900 dark:text-white">
+          <span className="truncate text-base text-zinc-900 dark:text-white">
             {method.accountType === "upi"
               ? method.upiId
               : method.bankName || "Bank Account"}
           </span>
           {method.isDefault && (
-            <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+            <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
               Default
             </span>
           )}
@@ -1242,7 +1304,7 @@ function BankAccountRow({
         </p>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5">
         {method.isVerified ? (
           <CheckCircleIcon className="size-5 text-emerald-500" />
         ) : (
@@ -1290,6 +1352,11 @@ export function Settings() {
     loading: methodsLoading,
     refetch: refetchMethods,
   } = useWithdrawalMethods();
+  const {
+    data: notificationPrefs,
+    loading: notifLoading,
+    refetch: refetchNotifPrefs,
+  } = useNotificationPreferences();
   const { mutate: logout } = useLogout();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -1298,6 +1365,22 @@ export function Settings() {
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+
+  // Local state for optimistic notification toggle updates
+  const [localNotifPrefs, setLocalNotifPrefs] = useState<{ email: boolean; inApp: boolean }>({
+    email: true,
+    inApp: true,
+  });
+
+  // Sync local state with API data when it loads
+  useEffect(() => {
+    if (notificationPrefs?.global) {
+      setLocalNotifPrefs({
+        email: notificationPrefs.global.email ?? true,
+        inApp: notificationPrefs.global.inApp ?? true,
+      });
+    }
+  }, [notificationPrefs]);
 
   if (profileLoading || kycLoading) {
     return <LoadingSpinner />;
@@ -1397,6 +1480,31 @@ export function Settings() {
     }
   };
 
+  const handleNotificationToggle = async (channel: "email" | "inApp", enabled: boolean) => {
+    // Optimistic update - change UI immediately
+    const previousPrefs = { ...localNotifPrefs };
+    setLocalNotifPrefs((prev) => ({
+      ...prev,
+      [channel]: enabled,
+    }));
+
+    try {
+      const client = getAuthenticatedClient();
+      await client.notifications.updateNotificationPreferences({
+        channels: {
+          ...localNotifPrefs,
+          [channel]: enabled,
+        },
+      });
+      // Refetch to ensure we're in sync with server
+      refetchNotifPrefs();
+    } catch (err) {
+      // Revert on error
+      setLocalNotifPrefs(previousPrefs);
+      console.error("Failed to update notification preferences:", err);
+    }
+  };
+
   const shopper = profile?.shopper;
 
   const userName =
@@ -1458,7 +1566,7 @@ export function Settings() {
         {/* Account & Contact Info */}
         <MenuSection>
           <MenuRow
-            icon={UserCircleIcon}
+            icon={UserIcon}
             iconColor="sky"
             label="Display Name"
             value={displayName}
@@ -1467,7 +1575,7 @@ export function Settings() {
           />
           <MenuSeparator />
           <MenuRow
-            icon={EnvelopeIcon}
+            icon={AtSymbolIcon}
             iconColor="orange"
             label="Email"
             value={userEmail}
@@ -1475,7 +1583,7 @@ export function Settings() {
           />
           <MenuSeparator />
           <MenuRow
-            icon={PhoneIcon}
+            icon={DevicePhoneMobileIcon}
             iconColor="emerald"
             label="Phone"
             value={phoneNumber}
@@ -1491,8 +1599,8 @@ export function Settings() {
           />
           <MenuSeparator />
           <MenuRow
-            icon={CalendarIcon}
-            iconColor="amber"
+            icon={CalendarDaysIcon}
+            iconColor="zinc"
             label="Member Since"
             value={memberSince}
             isLast
@@ -1551,11 +1659,48 @@ export function Settings() {
         </MenuSection>
       </div>
 
+      {/* Notification Preferences */}
+      <MenuSection>
+        <div className="flex items-center justify-between border-b border-zinc-950/5 px-4 py-3 dark:border-white/5">
+          <div className="flex items-center gap-2">
+            <BellIcon className="size-4 text-zinc-400" />
+            <Subheading className="text-sm">Notifications</Subheading>
+          </div>
+        </div>
+        {notifLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="size-5 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+          </div>
+        ) : (
+          <>
+            <NotificationToggle
+              icon={EnvelopeIcon}
+              iconColor="sky"
+              label="Email notifications"
+              description="Receive updates via email"
+              enabled={localNotifPrefs.email}
+              onToggle={(enabled) => handleNotificationToggle("email", enabled)}
+              isFirst
+            />
+            <MenuSeparator />
+            <NotificationToggle
+              icon={DeviceTabletIcon}
+              iconColor="emerald"
+              label="In-app notifications"
+              description="Show notifications in the app"
+              enabled={localNotifPrefs.inApp}
+              onToggle={(enabled) => handleNotificationToggle("inApp", enabled)}
+              isLast
+            />
+          </>
+        )}
+      </MenuSection>
+
       {/* Support Section */}
       <MenuSection>
         <MenuRow
-          icon={QuestionMarkCircleIcon}
-          iconColor="zinc"
+          icon={ChatBubbleLeftRightIcon}
+          iconColor="sky"
           label="Help & FAQ"
           onClick={() => {}}
           isFirst
@@ -1569,8 +1714,8 @@ export function Settings() {
         />
         <MenuSeparator />
         <MenuRow
-          icon={LockClosedIcon}
-          iconColor="zinc"
+          icon={ShieldCheckIconSolid}
+          iconColor="emerald"
           label="Privacy Policy"
           onClick={() => {}}
           isLast
@@ -1628,6 +1773,14 @@ export function Settings() {
         open={isAddingBank}
         onSuccess={handleAddBankSuccess}
         onCancel={() => setIsAddingBank(false)}
+      />
+
+      {/* KYC Verification Dialog */}
+      <KYCVerificationDialog
+        open={isVerifyingKYC}
+        kycStatus={kycStatus}
+        onSuccess={handleKYCSuccess}
+        onCancel={() => setIsVerifyingKYC(false)}
       />
     </div>
   );

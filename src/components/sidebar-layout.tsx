@@ -81,7 +81,7 @@ export function SidebarLayout({
   let [showSidebar, setShowSidebar] = useState(false)
 
   return (
-    <div className="relative isolate flex h-svh w-full bg-zinc-100 max-lg:flex-col lg:bg-zinc-100 dark:bg-zinc-950 dark:lg:bg-zinc-950">
+    <div className="relative isolate flex h-svh w-full overflow-hidden bg-stone-100 max-lg:flex-col lg:bg-stone-100 dark:bg-zinc-950 dark:lg:bg-zinc-950">
       {/* Sidebar on desktop */}
       <motion.div layoutScroll className="fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto max-lg:hidden">
         {sidebar}
@@ -96,23 +96,27 @@ export function SidebarLayout({
 
       {/* Navbar on mobile - hidden when using TabBar */}
       {!hideNavbarOnMobile && (
-        <header className="flex h-14 items-center gap-3 px-4 pt-safe lg:hidden">
-          <IconButton onClick={() => setShowSidebar(true)} aria-label="Open navigation">
-            <OpenMenuIcon />
-          </IconButton>
-          <div className="min-w-0 flex-1">{navbar}</div>
+        <header className="shrink-0 bg-stone-100 pt-safe dark:bg-zinc-950 lg:hidden">
+          <div className="flex h-14 items-center gap-3 px-4">
+            <IconButton onClick={() => setShowSidebar(true)} aria-label="Open navigation">
+              <OpenMenuIcon />
+            </IconButton>
+            <div className="min-w-0 flex-1">{navbar}</div>
+          </div>
         </header>
       )}
 
       {/* Mobile header with branding - when using TabBar */}
       {mobileHeader && (
-        <header className="flex h-14 shrink-0 items-center bg-zinc-100 px-4 pt-safe dark:bg-zinc-950 lg:hidden">
-          {mobileHeader}
+        <header className="shrink-0 touch-none bg-stone-100 pt-safe dark:bg-zinc-950 lg:hidden">
+          <div className="flex h-14 items-center px-4">
+            {mobileHeader}
+          </div>
         </header>
       )}
 
-      {/* Content */}
-      <main className="flex min-h-0 flex-1 flex-col p-2 pb-20 lg:min-w-0 lg:p-2 lg:pb-2 lg:pl-66">
+      {/* Content - pb for TabBar: h-14 (56px) + safe area handled by CSS calc */}
+      <main className="flex min-h-0 flex-1 flex-col p-2 pb-[calc(56px+env(safe-area-inset-bottom)+8px)] lg:min-w-0 lg:p-2 lg:pb-2 lg:pl-64">
         <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
           <div className="mx-auto max-w-7xl">{children}</div>
         </div>

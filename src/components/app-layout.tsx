@@ -44,7 +44,10 @@ import {
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import clsx from "clsx";
-import { useShopperProfile } from "@/hooks/use-api";
+import { useState } from "react";
+import { useShopperProfile, useUnreadNotificationCount } from "@/hooks/use-api";
+import { CommandMenu } from "@/components/command-menu";
+import { NotificationPanel } from "@/components/notification-panel";
 
 interface UserIdentity {
 	id: string;
@@ -95,8 +98,9 @@ const tabItems = [
 
 function TabBar({ pathname }: { pathname: string }) {
 	return (
-		<nav className="fixed inset-x-0 bottom-0 z-50 px-2 pb-safe lg:hidden">
-			<div className="flex items-stretch justify-around">
+		<nav className="fixed inset-x-0 bottom-0 z-50 touch-none bg-stone-100 dark:bg-zinc-950 lg:hidden">
+			{/* Tab buttons container - fixed 56px height */}
+			<div className="flex h-14 items-stretch justify-around px-2">
 				{tabItems.map((item) => {
 					const isActive = item.href === "/"
 						? pathname === "/"
@@ -107,19 +111,22 @@ function TabBar({ pathname }: { pathname: string }) {
 						<Link
 							key={item.href}
 							to={item.href}
-							className="flex flex-1 flex-col items-center justify-center gap-1 py-3"
+							className="flex min-w-16 flex-1 flex-col items-center justify-center gap-0.5 py-1"
 						>
-							<Icon
-								className={clsx(
-									"size-6",
-									isActive
-										? "text-zinc-900 dark:text-white"
-										: "text-zinc-400 dark:text-zinc-500"
-								)}
-							/>
+							{/* Icon container with 44px touch target */}
+							<span className="flex h-7 w-11 items-center justify-center">
+								<Icon
+									className={clsx(
+										"size-6",
+										isActive
+											? "text-zinc-900 dark:text-white"
+											: "text-zinc-400 dark:text-zinc-500"
+									)}
+								/>
+							</span>
 							<span
 								className={clsx(
-									"text-[10px] font-medium",
+									"text-[10px] font-medium leading-tight",
 									isActive
 										? "text-zinc-900 dark:text-white"
 										: "text-zinc-400 dark:text-zinc-500"
@@ -131,6 +138,8 @@ function TabBar({ pathname }: { pathname: string }) {
 					);
 				})}
 			</div>
+			{/* Safe area spacer - separate from button area */}
+			<div className="pb-safe" />
 		</nav>
 	);
 }
@@ -172,10 +181,16 @@ function MobileHeader({
 	pathname,
 	identity,
 	onLogout,
+	onSearchClick,
+	onNotificationClick,
+	unreadCount,
 }: {
 	pathname: string;
 	identity?: UserIdentity | null;
 	onLogout: () => void;
+	onSearchClick: () => void;
+	onNotificationClick: () => void;
+	unreadCount: number;
 }) {
 	const navigate = useNavigate();
 
@@ -191,20 +206,29 @@ function MobileHeader({
 						<ArrowLeftIcon />
 					</IconButton>
 				) : (
-					<IconButton onClick={() => console.log("Search clicked")} aria-label="Search">
+					<IconButton onClick={onSearchClick} aria-label="Search">
 						<MagnifyingGlassIcon />
 					</IconButton>
 				)}
 			</div>
 
-			{/* Center: Logo */}
-			<Logo className="h-6" />
+			{/* Center: Logo - clickable to home */}
+			<Link to="/" className="flex items-center">
+				<Logo className="h-6" />
+			</Link>
 
 			{/* Right: Notification + Profile */}
 			<div className="flex w-20 shrink-0 items-center justify-end gap-2">
-				<IconButton onClick={() => console.log("Notifications clicked")} aria-label="Notifications">
-					<BellIcon />
-				</IconButton>
+				<div className="relative">
+					<IconButton onClick={onNotificationClick} aria-label="Notifications">
+						<BellIcon />
+					</IconButton>
+					{unreadCount > 0 && (
+						<span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+							{unreadCount > 99 ? "99+" : unreadCount}
+						</span>
+					)}
+				</div>
 				<Dropdown>
 					<DropdownButton as="div" className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:ring-white/10 dark:active:bg-zinc-700">
 						{identity?.avatar ? (
@@ -231,7 +255,12 @@ export function AppLayout() {
 	const pathname = location.pathname;
 	const { data: identity } = useGetIdentity<UserIdentity>();
 	const { data: shopperProfile } = useShopperProfile();
+	const { data: notificationCountData } = useUnreadNotificationCount();
 	const { mutate: logout } = useLogout();
+	const [searchOpen, setSearchOpen] = useState(false);
+	const [notificationOpen, setNotificationOpen] = useState(false);
+
+	const unreadCount = notificationCountData?.count ?? 0;
 
 	// Use shopper avatar if available, fallback to identity avatar
 	const avatarUrl = shopperProfile?.shopper?.avatarUrl || identity?.avatar;
@@ -275,6 +304,20 @@ export function AppLayout() {
 					</SidebarHeader>
 
 					<SidebarBody>
+						{/* Search Button */}
+						<SidebarSection>
+							<button
+								onClick={() => setSearchOpen(true)}
+								className="flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-sm text-zinc-500 shadow-sm ring-1 ring-zinc-200 hover:ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700 dark:hover:ring-zinc-600"
+							>
+								<MagnifyingGlassIcon className="size-4 text-zinc-400 dark:text-zinc-500" />
+								<span className="flex-1">Search...</span>
+								<kbd className="hidden rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500 lg:inline">
+									⌘K
+								</kbd>
+							</button>
+						</SidebarSection>
+
 						<SidebarSection>
 							<SidebarItem href="/" current={pathname === "/"}>
 								<Squares2X2Icon />
@@ -338,12 +381,18 @@ export function AppLayout() {
 				</Sidebar>
 			}
 			tabBar={<TabBar pathname={pathname} />}
-			mobileHeader={<MobileHeader pathname={pathname} identity={enhancedIdentity} onLogout={handleLogout} />}
+			mobileHeader={<MobileHeader pathname={pathname} identity={enhancedIdentity} onLogout={handleLogout} onSearchClick={() => setSearchOpen(true)} onNotificationClick={() => setNotificationOpen(true)} unreadCount={unreadCount} />}
 		>
 			{/* Content */}
 			<div className="px-4 py-6 lg:px-10 lg:py-8">
 				<Outlet />
 			</div>
+
+			{/* Global Search Modal */}
+			<CommandMenu open={searchOpen} onOpenChange={setSearchOpen} />
+
+			{/* Notification Panel */}
+			<NotificationPanel open={notificationOpen} onClose={() => setNotificationOpen(false)} />
 		</SidebarLayout>
 	);
 }
