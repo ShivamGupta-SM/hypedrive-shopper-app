@@ -48,7 +48,7 @@ export function ForgotPassword() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-zinc-950">
         <div className="w-full max-w-sm text-center">
           <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50">
             <CheckCircleIcon className="size-8 text-emerald-600 dark:text-emerald-400" />
@@ -61,10 +61,10 @@ export function ForgotPassword() {
             check your inbox and follow the instructions.
           </Text>
 
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 text-left dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mt-8 rounded-2xl border border-stone-200 bg-white p-5 text-left dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-start gap-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-zinc-800">
-                <EnvelopeIcon className="size-5 text-slate-500 dark:text-zinc-400" />
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-stone-200 dark:bg-zinc-800">
+                <EnvelopeIcon className="size-5 text-stone-500 dark:text-zinc-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-white">
@@ -98,7 +98,7 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-zinc-950">
+    <div className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-zinc-950">
       <div className="w-full max-w-sm">
         <div className="text-center">
           <Logo className="mx-auto h-6" />

@@ -4,18 +4,18 @@ import { Link } from "@/components/link";
 import { Text } from "@/components/text";
 import {
   useActiveCampaigns,
-  useEarningsHistory,
   useEnrollments,
   useShopperProfile,
   useShopperStats,
 } from "@/hooks/use-api";
+import { DashboardSkeleton } from "@/lib/skeleton";
 import { getStatusColors } from "@/lib/theme";
 import {
   ArrowRightIcon,
-  ArrowTrendingUpIcon,
   CheckCircleIcon,
   ChevronRightIcon,
   ClockIcon,
+  CurrencyRupeeIcon,
   DocumentArrowUpIcon,
   ExclamationTriangleIcon,
   SparklesIcon,
@@ -25,56 +25,22 @@ import {
 // HELPER FUNCTIONS
 // =============================================================================
 
-function formatWeekLabel(period: string): string {
-  // Format: "2024-W01" -> "W1"
-  if (period.includes("W")) {
-    const weekNum = parseInt(period.split("W")[1], 10);
-    return `W${weekNum}`;
-  }
-  return period;
+// Helper to check if string is a valid URL (not a color hex code)
+function _isValidImageUrl(url?: string): boolean {
+  if (!url) return false;
+  // Check if it's a hex color (6 chars without #, or starts with #)
+  if (/^#?[0-9A-Fa-f]{6}$/.test(url)) return false;
+  // Check if it looks like a URL
+  return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:');
 }
+void _isValidImageUrl; // suppress unused warning
 
 // =============================================================================
 // LOADING STATE
 // =============================================================================
 
 function LoadingSkeleton() {
-  return (
-    <div className="space-y-5">
-      {/* Header skeleton */}
-      <div className="space-y-2">
-        <div className="h-7 w-48 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
-        <div className="h-4 w-32 rounded bg-zinc-100 dark:bg-zinc-800" />
-      </div>
-      {/* Balance card skeleton */}
-      <div className="h-32 rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
-      {/* Stats skeleton */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-        <div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-        <div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-      </div>
-      {/* Campaigns skeleton */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="h-4 w-24 rounded bg-zinc-100 dark:bg-zinc-800" />
-          <div className="h-4 w-16 rounded bg-zinc-100 dark:bg-zinc-800" />
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-              <div className="aspect-4/3 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800" />
-              <div className="space-y-2 p-3 sm:p-4">
-                <div className="h-3 w-16 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-                <div className="h-4 w-full animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-                <div className="h-4 w-20 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <DashboardSkeleton />;
 }
 
 // =============================================================================
@@ -97,33 +63,42 @@ function BalanceCard({
   const hasPending = parseFloat(pending) > 0;
 
   return (
-    <div className="rounded-2xl bg-emerald-600 p-5 dark:bg-emerald-700">
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       {/* Available Balance - Hero */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between p-4">
         <div>
-          <p className="text-xs font-medium text-emerald-100">Available to withdraw</p>
-          <p className="mt-1 text-4xl font-bold tracking-tight text-white">
+          <div className="flex items-center gap-1.5">
+            <CurrencyRupeeIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Available to withdraw</p>
+          </div>
+          <p className="text-glaze mt-1 text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
             ₹{available}
           </p>
         </div>
         {hasBalance && canWithdraw && (
-          <Button href="/wallet" color="white">
+          <Button href="/wallet" color="emerald">
             Withdraw
           </Button>
         )}
       </div>
 
       {/* Money stats only - enrollment stats moved to JourneyStats */}
-      <div className="mt-5 flex gap-6 border-t border-emerald-500/40 pt-4">
+      <div className="flex border-t border-zinc-200 dark:border-zinc-700">
         {hasPending && (
-          <div>
-            <p className="text-xs text-emerald-200">Pending</p>
-            <p className="text-sm font-semibold text-amber-300">₹{pending}</p>
+          <div className="flex-1 border-r border-zinc-200 px-4 py-3 dark:border-zinc-700">
+            <div className="flex items-center gap-1">
+              <ClockIcon className="size-3.5 text-amber-500 dark:text-amber-400" />
+              <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pending</p>
+            </div>
+            <p className="mt-0.5 text-base font-semibold text-amber-600 dark:text-amber-400">₹{pending}</p>
           </div>
         )}
-        <div>
-          <p className="text-xs text-emerald-200">Lifetime earnings</p>
-          <p className="text-sm font-semibold text-white">₹{lifetime}</p>
+        <div className="flex-1 px-4 py-3">
+          <div className="flex items-center gap-1">
+            <CheckCircleIcon className="size-3.5 text-zinc-400 dark:text-zinc-500" />
+            <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Lifetime</p>
+          </div>
+          <p className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-white">₹{lifetime}</p>
         </div>
       </div>
     </div>
@@ -229,84 +204,6 @@ function JourneyStats({
           </p>
         </div>
       ))}
-    </div>
-  );
-}
-
-// =============================================================================
-// EARNINGS CHART - Weekly trend with bar visualization
-// Purpose: Show growth pattern visually with bars
-// =============================================================================
-
-function EarningsChart({
-  data,
-  thisWeek,
-  trend,
-}: {
-  data: Array<{ label: string; value: number }>;
-  thisWeek: string;
-  trend: number;
-}) {
-  if (data.length === 0) return null;
-
-  const maxValue = Math.max(...data.map((d) => d.value), 1);
-
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            This week
-          </p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-            ₹{thisWeek}
-          </p>
-        </div>
-        {trend !== 0 && (
-          <div
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-              trend > 0
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                : "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400"
-            }`}
-          >
-            <ArrowTrendingUpIcon
-              className={`size-3.5 ${trend < 0 ? "rotate-180" : ""}`}
-            />
-            {trend > 0 ? "+" : ""}
-            {trend}%
-          </div>
-        )}
-      </div>
-
-      {/* Bar Chart */}
-      <div className="mt-4 flex items-end gap-2">
-        {data.map((item, i) => {
-          const height = (item.value / maxValue) * 100;
-          const isLast = i === data.length - 1;
-          return (
-            <div
-              key={item.label}
-              className="flex flex-1 flex-col items-center gap-2"
-            >
-              <div className="relative h-16 w-full">
-                <div
-                  className={`absolute inset-x-0 bottom-0 rounded-md transition-all ${
-                    isLast
-                      ? "bg-emerald-500 dark:bg-emerald-400"
-                      : "bg-zinc-200 dark:bg-zinc-700"
-                  }`}
-                  style={{ height: `${Math.max(height, 8)}%` }}
-                />
-              </div>
-              <span className="text-[10px] font-medium tabular-nums text-zinc-400">
-                {item.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -724,7 +621,6 @@ export function Dashboard() {
     limit: 10,
   });
   const { data: campaigns, loading: campaignsLoading } = useActiveCampaigns(10);
-  const { data: earningsData } = useEarningsHistory("weekly");
 
   // Loading state
   if (profileLoading || statsLoading || enrollmentsLoading || campaignsLoading) {
@@ -788,24 +684,6 @@ export function Dashboard() {
     });
   }
 
-  // Earnings data with chart
-  const earnings = earningsData?.earnings || [];
-  const chartData = earnings.slice(-4).map((e) => ({
-    label: formatWeekLabel(e.period),
-    value: parseFloat(e.earningsDecimal) || 0,
-  }));
-  const thisWeek = earnings[earnings.length - 1]?.earningsDecimal || "0.00";
-  const lastWeek = parseFloat(
-    earnings[earnings.length - 2]?.earningsDecimal || "0"
-  );
-  const thisWeekNum = parseFloat(thisWeek);
-  const trend =
-    lastWeek > 0
-      ? Math.round(((thisWeekNum - lastWeek) / lastWeek) * 100)
-      : thisWeekNum > 0
-        ? 100
-        : 0;
-
   // Total enrolled for stats
   const enrolled = stats?.totalEnrollments || 0;
 
@@ -850,11 +728,6 @@ export function Dashboard() {
             inProgress={inProgress}
             completed={completed}
           />
-
-          {/* Earnings Chart - Weekly trend with bars */}
-          {chartData.length > 0 && (
-            <EarningsChart data={chartData} thisWeek={thisWeek} trend={trend} />
-          )}
 
           {/* Campaigns to explore */}
           <CampaignsSection campaigns={campaigns || []} />

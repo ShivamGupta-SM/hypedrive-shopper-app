@@ -389,12 +389,12 @@ export namespace admin {
         currency: string
         amount: number
         amountDecimal: string
-        payoutStatus: string
-        gatewayPayoutId?: string
+        status: string
+        gatewayTransactionId?: string
+        gatewayProvider?: string
         utr?: string
         failureReason?: string
         retryCount: number
-        withdrawalId?: string
         createdAt: string
         processedAt?: string
     }
@@ -1027,6 +1027,11 @@ export namespace admin {
          * Clean existing fake data first (default: false)
          */
         cleanFirst?: boolean
+
+        /**
+         * Skip Blnk ledger transactions (default: false) - useful when circuit breaker is open
+         */
+        skipBlnk?: boolean
     }
 
     export interface FakeDataResponse {
@@ -1329,10 +1334,25 @@ export namespace admin {
         take?: number
     }
 
+    export interface ListPlatformsQuery {
+        search?: string
+        type?: string
+        status?: string
+        sortBy?: "createdAt" | "name" | "productCount"
+        sortOrder?: "asc" | "desc"
+        skip?: number
+        take?: number
+    }
+
     export interface ListShoppersQuery {
         kycVerified?: boolean
         payoutReady?: boolean
+        isBanned?: boolean
         search?: string
+        createdFrom?: string
+        createdTo?: string
+        sortBy?: "createdAt" | "firstName" | "lastName" | "enrollmentCount"
+        sortOrder?: "asc" | "desc"
         skip?: number
         take?: number
     }
@@ -1615,6 +1635,23 @@ export namespace admin {
             latencyMs: number
         }
         uptime: number
+    }
+
+    export interface PlatformListItem {
+        productCount: number
+        deliverableCount: number
+        id: string
+        name: string
+        description?: string
+        type: PlatformType
+        websiteUrl?: string
+        logo?: string
+        icon?: string
+        status: PlatformStatus
+        createdBy: string
+        updatedBy?: string
+        createdAt: string
+        updatedAt: string
     }
 
     export interface PlatformOverview {
@@ -2192,6 +2229,4945 @@ export namespace admin {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.activatePlatform = this.activatePlatform.bind(this)
+            this.adminExtractOrder = this.adminExtractOrder.bind(this)
+            this.approveCampaign = this.approveCampaign.bind(this)
+            this.approveDocumentVerification = this.approveDocumentVerification.bind(this)
+            this.approveEnrollment = this.approveEnrollment.bind(this)
+            this.approveOrganization = this.approveOrganization.bind(this)
+            this.approveWithdrawal = this.approveWithdrawal.bind(this)
+            this.archiveCampaign = this.archiveCampaign.bind(this)
+            this.banShopper = this.banShopper.bind(this)
+            this.batchEnrollments = this.batchEnrollments.bind(this)
+            this.bootstrapOrganization = this.bootstrapOrganization.bind(this)
+            this.broadcastNotification = this.broadcastNotification.bind(this)
+            this.bulkApproveVerifications = this.bulkApproveVerifications.bind(this)
+            this.bulkCreateCoupons = this.bulkCreateCoupons.bind(this)
+            this.bulkDisableCoupons = this.bulkDisableCoupons.bind(this)
+            this.bulkEnableCoupons = this.bulkEnableCoupons.bind(this)
+            this.bulkProcessOCR = this.bulkProcessOCR.bind(this)
+            this.bulkUpdateConfigs = this.bulkUpdateConfigs.bind(this)
+            this.bulkUpdateDeliverableStatus = this.bulkUpdateDeliverableStatus.bind(this)
+            this.cancelCampaign = this.cancelCampaign.bind(this)
+            this.cancelInvoice = this.cancelInvoice.bind(this)
+            this.cancelPayout = this.cancelPayout.bind(this)
+            this.changeAdminRole = this.changeAdminRole.bind(this)
+            this.checkOrderIdDuplicate = this.checkOrderIdDuplicate.bind(this)
+            this.cleanFakeData = this.cleanFakeData.bind(this)
+            this.cleanupExpiredSessions = this.cleanupExpiredSessions.bind(this)
+            this.cloneCoupon = this.cloneCoupon.bind(this)
+            this.completeCampaign = this.completeCampaign.bind(this)
+            this.createAdminDeliverable = this.createAdminDeliverable.bind(this)
+            this.createCategory = this.createCategory.bind(this)
+            this.createCoupon = this.createCoupon.bind(this)
+            this.createDepositAccount = this.createDepositAccount.bind(this)
+            this.createPermissionRule = this.createPermissionRule.bind(this)
+            this.createPlatform = this.createPlatform.bind(this)
+            this.createSystemConfig = this.createSystemConfig.bind(this)
+            this.creditWallet = this.creditWallet.bind(this)
+            this.deactivateDepositAccount = this.deactivateDepositAccount.bind(this)
+            this.deactivatePlatform = this.deactivatePlatform.bind(this)
+            this.debitWallet = this.debitWallet.bind(this)
+            this.deleteAdminDeliverable = this.deleteAdminDeliverable.bind(this)
+            this.deleteCampaign = this.deleteCampaign.bind(this)
+            this.deleteCategory = this.deleteCategory.bind(this)
+            this.deleteCoupon = this.deleteCoupon.bind(this)
+            this.deleteDepositAccount = this.deleteDepositAccount.bind(this)
+            this.deleteEnrollment = this.deleteEnrollment.bind(this)
+            this.deleteKycDocumentsFile = this.deleteKycDocumentsFile.bind(this)
+            this.deleteOrganization = this.deleteOrganization.bind(this)
+            this.deletePermissionRule = this.deletePermissionRule.bind(this)
+            this.deletePlatform = this.deletePlatform.bind(this)
+            this.deleteProduct = this.deleteProduct.bind(this)
+            this.deleteProfilePicturesFile = this.deleteProfilePicturesFile.bind(this)
+            this.deleteShopper = this.deleteShopper.bind(this)
+            this.deleteSystemConfig = this.deleteSystemConfig.bind(this)
+            this.deleteUploadsFile = this.deleteUploadsFile.bind(this)
+            this.deleteWithdrawalMethod = this.deleteWithdrawalMethod.bind(this)
+            this.disableCoupon = this.disableCoupon.bind(this)
+            this.disableMaintenanceMode = this.disableMaintenanceMode.bind(this)
+            this.enableCoupon = this.enableCoupon.bind(this)
+            this.enableMaintenanceMode = this.enableMaintenanceMode.bind(this)
+            this.endCampaign = this.endCampaign.bind(this)
+            this.exportAnalyticsReport = this.exportAnalyticsReport.bind(this)
+            this.exportAuditLogs = this.exportAuditLogs.bind(this)
+            this.exportCoupons = this.exportCoupons.bind(this)
+            this.exportDeliverables = this.exportDeliverables.bind(this)
+            this.exportEnrollments = this.exportEnrollments.bind(this)
+            this.exportInvoices = this.exportInvoices.bind(this)
+            this.exportProducts = this.exportProducts.bind(this)
+            this.exportSystemConfigs = this.exportSystemConfigs.bind(this)
+            this.exportVerifications = this.exportVerifications.bind(this)
+            this.extendCouponValidity = this.extendCouponValidity.bind(this)
+            this.extendEnrollmentDeadline = this.extendEnrollmentDeadline.bind(this)
+            this.flagProduct = this.flagProduct.bind(this)
+            this.forceCompleteWithdrawal = this.forceCompleteWithdrawal.bind(this)
+            this.forceVerifyShopperKyc = this.forceVerifyShopperKyc.bind(this)
+            this.freezeWallet = this.freezeWallet.bind(this)
+            this.generateFakeData = this.generateFakeData.bind(this)
+            this.generateInvoice = this.generateInvoice.bind(this)
+            this.getActivityFeed = this.getActivityFeed.bind(this)
+            this.getActivityLogStats = this.getActivityLogStats.bind(this)
+            this.getAdminDeliverable = this.getAdminDeliverable.bind(this)
+            this.getAdminSubmission = this.getAdminSubmission.bind(this)
+            this.getAuditLogSummary = this.getAuditLogSummary.bind(this)
+            this.getAuthStats = this.getAuthStats.bind(this)
+            this.getCampaign = this.getCampaign.bind(this)
+            this.getCampaignPerformance = this.getCampaignPerformance.bind(this)
+            this.getCampaignStats = this.getCampaignStats.bind(this)
+            this.getCircuitBreakerStatus = this.getCircuitBreakerStatus.bind(this)
+            this.getComplianceReport = this.getComplianceReport.bind(this)
+            this.getConfigValue = this.getConfigValue.bind(this)
+            this.getCoupon = this.getCoupon.bind(this)
+            this.getCouponAnalytics = this.getCouponAnalytics.bind(this)
+            this.getCouponRedemptionAnalytics = this.getCouponRedemptionAnalytics.bind(this)
+            this.getCouponStats = this.getCouponStats.bind(this)
+            this.getDeliverableStats = this.getDeliverableStats.bind(this)
+            this.getDepositAccount = this.getDepositAccount.bind(this)
+            this.getDepositAccountStats = this.getDepositAccountStats.bind(this)
+            this.getDocumentVerification = this.getDocumentVerification.bind(this)
+            this.getDocumentVerificationStats = this.getDocumentVerificationStats.bind(this)
+            this.getEnrollment = this.getEnrollment.bind(this)
+            this.getEnrollmentStats = this.getEnrollmentStats.bind(this)
+            this.getEnrollmentTrends = this.getEnrollmentTrends.bind(this)
+            this.getFeatureFlag = this.getFeatureFlag.bind(this)
+            this.getGrowthMetrics = this.getGrowthMetrics.bind(this)
+            this.getInvoice = this.getInvoice.bind(this)
+            this.getInvoiceLineItems = this.getInvoiceLineItems.bind(this)
+            this.getInvoiceStats = this.getInvoiceStats.bind(this)
+            this.getKycDocumentsDownloadUrl = this.getKycDocumentsDownloadUrl.bind(this)
+            this.getMaintenanceStatus = this.getMaintenanceStatus.bind(this)
+            this.getNotificationHistory = this.getNotificationHistory.bind(this)
+            this.getNotificationStats = this.getNotificationStats.bind(this)
+            this.getOCRStats = this.getOCRStats.bind(this)
+            this.getOrganization = this.getOrganization.bind(this)
+            this.getOrganizationAnalytics = this.getOrganizationAnalytics.bind(this)
+            this.getOrganizationBankAccounts = this.getOrganizationBankAccounts.bind(this)
+            this.getOrganizationMembers = this.getOrganizationMembers.bind(this)
+            this.getOrganizationStats = this.getOrganizationStats.bind(this)
+            this.getPayout = this.getPayout.bind(this)
+            this.getPlatform = this.getPlatform.bind(this)
+            this.getPlatformHealth = this.getPlatformHealth.bind(this)
+            this.getPlatformOverview = this.getPlatformOverview.bind(this)
+            this.getProduct = this.getProduct.bind(this)
+            this.getProductCampaigns = this.getProductCampaigns.bind(this)
+            this.getProductStats = this.getProductStats.bind(this)
+            this.getProfilePicturesDownloadUrl = this.getProfilePicturesDownloadUrl.bind(this)
+            this.getRevenueAnalytics = this.getRevenueAnalytics.bind(this)
+            this.getShopper = this.getShopper.bind(this)
+            this.getShopperEarnings = this.getShopperEarnings.bind(this)
+            this.getShopperEnrollments = this.getShopperEnrollments.bind(this)
+            this.getShopperKYCDocuments = this.getShopperKYCDocuments.bind(this)
+            this.getShopperKycDetails = this.getShopperKycDetails.bind(this)
+            this.getShopperStats = this.getShopperStats.bind(this)
+            this.getStorageStats = this.getStorageStats.bind(this)
+            this.getSystemConfigById = this.getSystemConfigById.bind(this)
+            this.getSystemConfigByKey = this.getSystemConfigByKey.bind(this)
+            this.getSystemHealth = this.getSystemHealth.bind(this)
+            this.getTemplate = this.getTemplate.bind(this)
+            this.getUploadsDownloadUrl = this.getUploadsDownloadUrl.bind(this)
+            this.getVerificationHistory = this.getVerificationHistory.bind(this)
+            this.getWallet = this.getWallet.bind(this)
+            this.getWalletHolds = this.getWalletHolds.bind(this)
+            this.getWalletStats = this.getWalletStats.bind(this)
+            this.getWalletTransactions = this.getWalletTransactions.bind(this)
+            this.getWithdrawalAnalytics = this.getWithdrawalAnalytics.bind(this)
+            this.getWithdrawalMethod = this.getWithdrawalMethod.bind(this)
+            this.getWithdrawalMethodStats = this.getWithdrawalMethodStats.bind(this)
+            this.getWithdrawalStats = this.getWithdrawalStats.bind(this)
+            this.importSystemConfigs = this.importSystemConfigs.bind(this)
+            this.invalidatePermissionCache = this.invalidatePermissionCache.bind(this)
+            this.listActivityLogs = this.listActivityLogs.bind(this)
+            this.listActivityLogsAdvanced = this.listActivityLogsAdvanced.bind(this)
+            this.listAdminActivityLogs = this.listAdminActivityLogs.bind(this)
+            this.listAdminDeliverables = this.listAdminDeliverables.bind(this)
+            this.listAllSubmissions = this.listAllSubmissions.bind(this)
+            this.listCampaigns = this.listCampaigns.bind(this)
+            this.listConfigCategories = this.listConfigCategories.bind(this)
+            this.listCoupons = this.listCoupons.bind(this)
+            this.listDepositAccounts = this.listDepositAccounts.bind(this)
+            this.listDocumentVerifications = this.listDocumentVerifications.bind(this)
+            this.listEnrollments = this.listEnrollments.bind(this)
+            this.listEnrollmentsForOCR = this.listEnrollmentsForOCR.bind(this)
+            this.listExpiringVerifications = this.listExpiringVerifications.bind(this)
+            this.listFeatureFlags = this.listFeatureFlags.bind(this)
+            this.listInvoices = this.listInvoices.bind(this)
+            this.listKycDocumentsFiles = this.listKycDocumentsFiles.bind(this)
+            this.listOrganizationDepositAccounts = this.listOrganizationDepositAccounts.bind(this)
+            this.listOrganizations = this.listOrganizations.bind(this)
+            this.listPayouts = this.listPayouts.bind(this)
+            this.listPendingVerifications = this.listPendingVerifications.bind(this)
+            this.listPendingWithdrawals = this.listPendingWithdrawals.bind(this)
+            this.listPermissionRules = this.listPermissionRules.bind(this)
+            this.listPlatforms = this.listPlatforms.bind(this)
+            this.listProducts = this.listProducts.bind(this)
+            this.listProfilePicturesFiles = this.listProfilePicturesFiles.bind(this)
+            this.listRateLimits = this.listRateLimits.bind(this)
+            this.listShoppersAdmin = this.listShoppersAdmin.bind(this)
+            this.listSystemConfigs = this.listSystemConfigs.bind(this)
+            this.listTemplates = this.listTemplates.bind(this)
+            this.listUploadsFiles = this.listUploadsFiles.bind(this)
+            this.listUserFilesAll = this.listUserFilesAll.bind(this)
+            this.listWallets = this.listWallets.bind(this)
+            this.listWithdrawalMethodVerifications = this.listWithdrawalMethodVerifications.bind(this)
+            this.listWithdrawalMethods = this.listWithdrawalMethods.bind(this)
+            this.listWithdrawals = this.listWithdrawals.bind(this)
+            this.markInvoicePaid = this.markInvoicePaid.bind(this)
+            this.markOrganizationVerified = this.markOrganizationVerified.bind(this)
+            this.pauseCampaign = this.pauseCampaign.bind(this)
+            this.processEnrollmentOCR = this.processEnrollmentOCR.bind(this)
+            this.reactivateDepositAccount = this.reactivateDepositAccount.bind(this)
+            this.reinstateOrganization = this.reinstateOrganization.bind(this)
+            this.rejectCampaign = this.rejectCampaign.bind(this)
+            this.rejectDocumentVerification = this.rejectDocumentVerification.bind(this)
+            this.rejectEnrollment = this.rejectEnrollment.bind(this)
+            this.rejectOrganization = this.rejectOrganization.bind(this)
+            this.rejectWithdrawal = this.rejectWithdrawal.bind(this)
+            this.releaseWalletHold = this.releaseWalletHold.bind(this)
+            this.removeOrganizationMember = this.removeOrganizationMember.bind(this)
+            this.requestChanges = this.requestChanges.bind(this)
+            this.requestReVerification = this.requestReVerification.bind(this)
+            this.resetAllCircuitBreakersEndpoint = this.resetAllCircuitBreakersEndpoint.bind(this)
+            this.resetCircuitBreaker = this.resetCircuitBreaker.bind(this)
+            this.resetCouponUsage = this.resetCouponUsage.bind(this)
+            this.resetRateLimit = this.resetRateLimit.bind(this)
+            this.resetShopperKyc = this.resetShopperKyc.bind(this)
+            this.resetUserTwoFactor = this.resetUserTwoFactor.bind(this)
+            this.resumeCampaign = this.resumeCampaign.bind(this)
+            this.retryPayout = this.retryPayout.bind(this)
+            this.reversePayout = this.reversePayout.bind(this)
+            this.sendInvoice = this.sendInvoice.bind(this)
+            this.sendNotification = this.sendNotification.bind(this)
+            this.sendTestNotification = this.sendTestNotification.bind(this)
+            this.setCreditLimit = this.setCreditLimit.bind(this)
+            this.setPlatformMaintenance = this.setPlatformMaintenance.bind(this)
+            this.setupDepositAccount = this.setupDepositAccount.bind(this)
+            this.setupOrganizationWallet = this.setupOrganizationWallet.bind(this)
+            this.suspendOrganization = this.suspendOrganization.bind(this)
+            this.suspendShopper = this.suspendShopper.bind(this)
+            this.syncPayoutStatus = this.syncPayoutStatus.bind(this)
+            this.syncZohoBooks = this.syncZohoBooks.bind(this)
+            this.testSetUserRole = this.testSetUserRole.bind(this)
+            this.toggleFeatureFlag = this.toggleFeatureFlag.bind(this)
+            this.togglePermissionRule = this.togglePermissionRule.bind(this)
+            this.unarchiveCampaign = this.unarchiveCampaign.bind(this)
+            this.unbanShopper = this.unbanShopper.bind(this)
+            this.unflagProduct = this.unflagProduct.bind(this)
+            this.unfreezeWallet = this.unfreezeWallet.bind(this)
+            this.unverifyWithdrawalMethod = this.unverifyWithdrawalMethod.bind(this)
+            this.updateAdminDeliverable = this.updateAdminDeliverable.bind(this)
+            this.updateCampaign = this.updateCampaign.bind(this)
+            this.updateCategory = this.updateCategory.bind(this)
+            this.updateCoupon = this.updateCoupon.bind(this)
+            this.updateDepositAccount = this.updateDepositAccount.bind(this)
+            this.updateEnrollment = this.updateEnrollment.bind(this)
+            this.updateOrganization = this.updateOrganization.bind(this)
+            this.updatePermissionRule = this.updatePermissionRule.bind(this)
+            this.updatePlatform = this.updatePlatform.bind(this)
+            this.updateProduct = this.updateProduct.bind(this)
+            this.updateRateLimit = this.updateRateLimit.bind(this)
+            this.updateShopper = this.updateShopper.bind(this)
+            this.updateSystemConfigById = this.updateSystemConfigById.bind(this)
+            this.validateOrderScreenshot = this.validateOrderScreenshot.bind(this)
+            this.verifyBankAccount = this.verifyBankAccount.bind(this)
+            this.verifyGst = this.verifyGst.bind(this)
+            this.verifyOrganizationGST = this.verifyOrganizationGST.bind(this)
+            this.verifyShopperAadhaar = this.verifyShopperAadhaar.bind(this)
+            this.verifyShopperPAN = this.verifyShopperPAN.bind(this)
+            this.verifyWithdrawalMethod = this.verifyWithdrawalMethod.bind(this)
+            this.voidInvoice = this.voidInvoice.bind(this)
+            this.withdrawEnrollment = this.withdrawEnrollment.bind(this)
+        }
+
+        /**
+         * Activate platform
+         */
+        public async activatePlatform(id: string): Promise<Platform> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platforms/${encodeURIComponent(id)}/activate`)
+            return await resp.json() as Platform
+        }
+
+        /**
+         * Extract order data from screenshot (admin manual trigger)
+         */
+        public async adminExtractOrder(params: {
+    imageUrl: string
+    campaignProductName?: string
+}): Promise<integrations.ExtractedOrderData> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/ocr/extract`, JSON.stringify(params))
+            return await resp.json() as integrations.ExtractedOrderData
+        }
+
+        /**
+         * POST /admin/campaigns/:id/approve
+         * Approve campaign (pending_approval → approved)
+         */
+        public async approveCampaign(id: string, params: {
+    rebatePercentage: number
+    platformFee: number
+    billRate?: number
+    bonusAmount?: number
+}): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Approve document verification (admin)
+         */
+        public async approveDocumentVerification(id: string, params: {
+    notes?: string
+    expiresAt?: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/document-verifications/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/enrollments/:id/approve
+         * Approve enrollment (awaiting_review → approved)
+         */
+        public async approveEnrollment(id: string, params: {
+    remarks?: string
+}): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
+        }
+
+        /**
+         * Approve organization
+         */
+        public async approveOrganization(id: string, params: ApproveOrganizationRequest): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Approve withdrawal (≥₹10,000 require approval)
+         * NOTE: This only updates status and publishes event.
+         * The WithdrawalApproved subscriber handles RazorpayX payout initiation.
+         */
+        public async approveWithdrawal(id: string, params: ApproveWithdrawalRequest): Promise<{
+    success: boolean
+    withdrawalId: string
+    status: string
+    approvedBy: string
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/withdrawals/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    withdrawalId: string
+    status: string
+    approvedBy: string
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/archive
+         * Archive campaign (completed/ended → archived)
+         */
+        public async archiveCampaign(id: string): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/archive`)
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        public async banShopper(shopperId: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/ban`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/enrollments/batch
+         * Unified batch operations for enrollments
+         * Replaces: batchApprove, batchReject
+         */
+        public async batchEnrollments(params: BatchEnrollmentsRequest): Promise<{
+    processed: number
+    failed: number
+    errors: { [key: string]: string }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/batch`, JSON.stringify(params))
+            return await resp.json() as {
+    processed: number
+    failed: number
+    errors: { [key: string]: string }
+}
+        }
+
+        /**
+         * Full bootstrap - combines all setup operations (idempotent)
+         * Runs: verify GST -> setup wallet (Blnk) -> setup deposit account (Razorpay) -> sync Zoho -> approve
+         * Each step is idempotent - skips if already done
+         * Uses real integrations for production use
+         */
+        public async bootstrapOrganization(id: string, params: {
+    creditLimit?: number
+    accountTier?: shared.AccountTier
+    /**
+     * Skip Zoho sync (default: false)
+     */
+    skipZoho?: boolean
+}): Promise<{
+    success: boolean
+    organizationId: string
+    steps: {
+        gstVerified: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        wallet: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        depositAccount: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        zohoSync: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        approved: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+    }
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/bootstrap`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    organizationId: string
+    steps: {
+        gstVerified: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        wallet: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        depositAccount: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        zohoSync: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+        approved: {
+            done: boolean
+            skipped: boolean
+            error?: string
+        }
+    }
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/notifications/broadcast - Broadcast to audience
+         */
+        public async broadcastNotification(params: {
+    title: string
+    message: string
+    targetAudience: "all" | "shoppers" | "organizations"
+    actionUrl?: string
+}): Promise<{
+    sent: number
+    targetCount: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/notifications/broadcast`, JSON.stringify(params))
+            return await resp.json() as {
+    sent: number
+    targetCount: number
+}
+        }
+
+        /**
+         * Bulk approve verifications (admin)
+         */
+        public async bulkApproveVerifications(params: {
+    verificationIds: string[]
+    notes?: string
+}): Promise<{
+    success: boolean
+    approved: number
+    failed: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/document-verifications/bulk-approve`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    approved: number
+    failed: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Bulk create coupons (admin)
+         */
+        public async bulkCreateCoupons(params: BulkCouponRequest): Promise<{
+    success: boolean
+    created: number
+    codes: string[]
+    errors: {
+        code: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/bulk-create`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    created: number
+    codes: string[]
+    errors: {
+        code: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Bulk disable coupons (admin)
+         */
+        public async bulkDisableCoupons(params: {
+    couponIds: string[]
+}): Promise<{
+    success: boolean
+    disabled: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/bulk-disable`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    disabled: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Bulk enable coupons (admin)
+         */
+        public async bulkEnableCoupons(params: {
+    couponIds: string[]
+}): Promise<{
+    success: boolean
+    enabled: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/bulk-enable`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enabled: number
+    errors: {
+        id: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Bulk process OCR for multiple enrollments (admin)
+         */
+        public async bulkProcessOCR(params: {
+    enrollmentIds: string[]
+}): Promise<{
+    processed: number
+    failed: number
+    results: {
+        enrollmentId: string
+        success: boolean
+        error?: string
+        extractedOrderId?: string
+        confidence?: number
+        isSuspicious?: boolean
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/ocr/bulk-process`, JSON.stringify(params))
+            return await resp.json() as {
+    processed: number
+    failed: number
+    results: {
+        enrollmentId: string
+        success: boolean
+        error?: string
+        extractedOrderId?: string
+        confidence?: number
+        isSuspicious?: boolean
+    }[]
+}
+        }
+
+        /**
+         * Bulk update configs (super admin only)
+         */
+        public async bulkUpdateConfigs(params: {
+    configs: {
+        key: string
+        value: string
+    }[]
+}): Promise<{
+    success: boolean
+    updated: number
+    errors: {
+        key: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/system-config/bulk-update`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    updated: number
+    errors: {
+        key: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Bulk update deliverable status (admin)
+         */
+        public async bulkUpdateDeliverableStatus(params: {
+    ids: string[]
+    status: "active" | "inactive" | "deprecated"
+}): Promise<{
+    success: boolean
+    updatedCount: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/deliverables/bulk-status`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    updatedCount: number
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/cancel
+         * Cancel campaign (draft/pending_approval → cancelled)
+         */
+        public async cancelCampaign(id: string, params: {
+    reason?: string
+}): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/cancel`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * POST /admin/invoices/:id/cancel - Cancel invoice
+         */
+        public async cancelInvoice(id: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/invoices/${encodeURIComponent(id)}/cancel`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Cancel a queued payout.
+         * 
+         * IMPORTANT: This also voids the Blnk hold to return funds to the wallet.
+         * Without voiding, the funds would remain locked until hold expiry.
+         */
+        public async cancelPayout(id: string, params: {
+    reason?: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/payouts/${encodeURIComponent(id)}/cancel`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Change admin role (super admin only)
+         * NOTE: Admin roles are stored in user.role (Better Auth admin plugin pattern)
+         * The admin table only stores profile info (name, phone, picture)
+         */
+        public async changeAdminRole(adminId: string, params: ChangeAdminRoleRequest): Promise<{
+    success: boolean
+    adminId: string
+    userId: string
+    newRole: shared.AdminRole
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/admins/${encodeURIComponent(adminId)}/change-role`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    adminId: string
+    userId: string
+    newRole: shared.AdminRole
+}
+        }
+
+        /**
+         * Check for duplicate order ID (admin)
+         */
+        public async checkOrderIdDuplicate(params: {
+    orderId: string
+    excludeEnrollmentId?: string
+}): Promise<{
+    isDuplicate: boolean
+    existingEnrollmentIds: string[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/ocr/check-duplicate`, JSON.stringify(params))
+            return await resp.json() as {
+    isDuplicate: boolean
+    existingEnrollmentIds: string[]
+}
+        }
+
+        /**
+         * Clean all fake data from database
+         * 
+         * ⚠️ ONLY available in development/test environments
+         * 
+         * Removes all data created by the fake data factory.
+         * Only affects records with @hypedrive.fake emails.
+         */
+        public async cleanFakeData(): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/fake-data/clean`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Clean up expired sessions (admin) - Not available in Better Auth SDK
+         */
+        public async cleanupExpiredSessions(): Promise<{
+    success: boolean
+    deletedCount: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/sessions/cleanup`)
+            return await resp.json() as {
+    success: boolean
+    deletedCount: number
+}
+        }
+
+        /**
+         * Clone coupon (admin)
+         */
+        public async cloneCoupon(id: string, params: {
+    newCode: string
+}): Promise<{
+    success: boolean
+    coupon: AdminCoupon
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/${encodeURIComponent(id)}/clone`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    coupon: AdminCoupon
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/complete
+         * Mark campaign as completed (ended → completed)
+         */
+        public async completeCampaign(id: string): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/complete`)
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Create a new deliverable type (admin)
+         */
+        public async createAdminDeliverable(params: {
+    name: string
+    category: string
+    platformId?: string
+    description?: string
+    requireLink?: boolean
+    requireScreenshot?: boolean
+    status?: "active" | "inactive" | "deprecated"
+    metadata?: DeliverableMetadata
+}): Promise<AdminDeliverable> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/deliverables`, JSON.stringify(params))
+            return await resp.json() as AdminDeliverable
+        }
+
+        /**
+         * POST /admin/product-categories - Create category
+         */
+        public async createCategory(params: {
+    name: string
+    description?: string
+    icon?: string
+    logo?: string
+}): Promise<AdminProductCategory> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/product-categories`, JSON.stringify(params))
+            return await resp.json() as AdminProductCategory
+        }
+
+        /**
+         * Create single coupon (admin)
+         */
+        public async createCoupon(params: {
+    code: string
+    bonusAmount: number
+    usageLimit?: number
+    oneTimeUse?: boolean
+    specificCampaignId?: string
+    validFrom?: string
+    validUntil?: string
+}): Promise<{
+    success: boolean
+    coupon: AdminCoupon
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    coupon: AdminCoupon
+}
+        }
+
+        /**
+         * Create deposit account for organization (admin)
+         */
+        public async createDepositAccount(params: CreateDepositAccountRequest): Promise<AdminDepositAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/deposit-accounts`, JSON.stringify(params))
+            return await resp.json() as AdminDepositAccount
+        }
+
+        /**
+         * Create a new permission rule (super admin only)
+         */
+        public async createPermissionRule(params: CreatePermissionRuleRequest): Promise<{
+    success: boolean
+    rule: PermissionRuleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/permissions`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    rule: PermissionRuleResponse
+}
+        }
+
+        /**
+         * Create platform
+         */
+        public async createPlatform(params: CreatePlatformRequest): Promise<Platform> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platforms`, JSON.stringify(params))
+            return await resp.json() as Platform
+        }
+
+        /**
+         * Create system config (super admin only)
+         */
+        public async createSystemConfig(params: CreateConfigRequest): Promise<SystemConfigItem> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/system-configs`, JSON.stringify(params))
+            return await resp.json() as SystemConfigItem
+        }
+
+        /**
+         * POST /admin/wallets/:holderId/credit - Credit/top-up wallet
+         */
+        public async creditWallet(holderId: string, params: {
+    amount: number
+    reason: string
+    reference: string
+}): Promise<{
+    success: boolean
+    transactionId: string
+    newBalance: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/wallets/${encodeURIComponent(holderId)}/credit`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    transactionId: string
+    newBalance: number
+}
+        }
+
+        /**
+         * Deactivate deposit account (admin)
+         */
+        public async deactivateDepositAccount(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/deposit-accounts/${encodeURIComponent(id)}/deactivate`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Deactivate platform
+         */
+        public async deactivatePlatform(id: string): Promise<Platform> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platforms/${encodeURIComponent(id)}/deactivate`)
+            return await resp.json() as Platform
+        }
+
+        /**
+         * POST /admin/wallets/:holderId/debit - Debit/charge wallet
+         */
+        public async debitWallet(holderId: string, params: {
+    amount: number
+    reason: string
+    reference: string
+}): Promise<{
+    success: boolean
+    transactionId: string
+    newBalance: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/wallets/${encodeURIComponent(holderId)}/debit`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    transactionId: string
+    newBalance: number
+}
+        }
+
+        /**
+         * Delete a deliverable type (admin)
+         */
+        public async deleteAdminDeliverable(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/deliverables/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        public async deleteCampaign(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/campaigns/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * DELETE /admin/product-categories/:id - Delete category
+         */
+        public async deleteCategory(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/product-categories/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Delete coupon (admin)
+         */
+        public async deleteCoupon(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/coupons/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Delete deposit account (super admin only)
+         */
+        public async deleteDepositAccount(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/deposit-accounts/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        public async deleteEnrollment(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/enrollments/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Delete file from kyc-documents bucket (admin)
+         */
+        public async deleteKycDocumentsFile(params: {
+    key: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                key: params.key,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/storage/kyc-documents/files`, undefined, {query})
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        public async deleteOrganization(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/organizations/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Delete a permission rule (super admin only)
+         */
+        public async deletePermissionRule(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/permissions/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Delete platform
+         */
+        public async deletePlatform(id: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/platforms/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * DELETE /admin/products/:id - Delete product
+         */
+        public async deleteProduct(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/products/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Delete file from profile-pictures bucket (admin)
+         */
+        public async deleteProfilePicturesFile(params: {
+    key: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                key: params.key,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/storage/profile-pictures/files`, undefined, {query})
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        public async deleteShopper(shopperId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/shoppers/${encodeURIComponent(shopperId)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Delete system config (super admin only)
+         */
+        public async deleteSystemConfig(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/system-config/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Delete file from uploads bucket (admin)
+         */
+        public async deleteUploadsFile(params: {
+    key: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                key: params.key,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/storage/uploads/files`, undefined, {query})
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * DELETE /admin/withdrawal-methods/:id - Delete withdrawal method
+         */
+        public async deleteWithdrawalMethod(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/admin/withdrawal-methods/${encodeURIComponent(id)}`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Disable coupon (admin)
+         */
+        public async disableCoupon(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/${encodeURIComponent(id)}/disable`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Disable maintenance mode (super admin only)
+         */
+        public async disableMaintenanceMode(): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platform/maintenance/disable`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Enable coupon (admin)
+         */
+        public async enableCoupon(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/${encodeURIComponent(id)}/enable`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Enable maintenance mode (super admin only)
+         */
+        public async enableMaintenanceMode(params: {
+    message: string
+    estimatedEndAt?: string
+}): Promise<{
+    success: boolean
+    status: MaintenanceStatus
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platform/maintenance/enable`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    status: MaintenanceStatus
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/end
+         * End campaign (active/paused → ended)
+         */
+        public async endCampaign(id: string, params: {
+    reason?: string
+}): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/end`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Export analytics report (super admin)
+         */
+        public async exportAnalyticsReport(params: {
+    reportType: "overview" | "campaigns" | "organizations" | "revenue" | "withdrawals"
+    startDate: string
+    endDate: string
+    format?: "json" | "csv"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/analytics/export`, JSON.stringify(params))
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        /**
+         * Export audit logs (super admin only)
+         */
+        public async exportAuditLogs(params: {
+    startDate: string
+    endDate: string
+    format?: "json" | "csv"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platform/audit-logs/export`, JSON.stringify(params))
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        /**
+         * Export all coupons (admin)
+         */
+        public async exportCoupons(params: {
+    format?: "json" | "csv"
+    status?: "active" | "inactive" | "expired"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                format: params.format === undefined ? undefined : String(params.format),
+                status: params.status === undefined ? undefined : String(params.status),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/coupons/export`, undefined, {query})
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        /**
+         * Export deliverables data (admin)
+         */
+        public async exportDeliverables(params: {
+    format?: "csv" | "json"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                format: params.format === undefined ? undefined : String(params.format),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverables/export`, undefined, {query})
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        public async exportEnrollments(params: ListEnrollmentsQuery): Promise<{
+    csv: string
+    filename: string
+    count: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId: params.campaignId,
+                fromDate:   params.fromDate,
+                search:     params.search,
+                shopperId:  params.shopperId,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                status:     params.status,
+                take:       params.take === undefined ? undefined : String(params.take),
+                toDate:     params.toDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/enrollments/export`, undefined, {query})
+            return await resp.json() as {
+    csv: string
+    filename: string
+    count: number
+}
+        }
+
+        /**
+         * GET /admin/invoices/export - Export invoices to CSV
+         */
+        public async exportInvoices(params: {
+    organizationId?: string
+    status?: shared.InvoiceStatus
+    periodStart?: string
+    periodEnd?: string
+}): Promise<{
+    csv: string
+    filename: string
+    recordCount: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                organizationId: params.organizationId,
+                periodEnd:      params.periodEnd,
+                periodStart:    params.periodStart,
+                status:         params.status === undefined ? undefined : String(params.status),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/invoices/export`, undefined, {query})
+            return await resp.json() as {
+    csv: string
+    filename: string
+    recordCount: number
+}
+        }
+
+        /**
+         * GET /admin/products/export - Export products to CSV
+         */
+        public async exportProducts(params: {
+    organizationId?: string
+    categoryId?: string
+    platformId?: string
+}): Promise<{
+    csv: string
+    filename: string
+    recordCount: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                categoryId:     params.categoryId,
+                organizationId: params.organizationId,
+                platformId:     params.platformId,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/products/export`, undefined, {query})
+            return await resp.json() as {
+    csv: string
+    filename: string
+    recordCount: number
+}
+        }
+
+        /**
+         * Export all configs (super admin only)
+         */
+        public async exportSystemConfigs(params: {
+    category?: string
+    format?: "json" | "env"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                category: params.category,
+                format:   params.format === undefined ? undefined : String(params.format),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-config/export`, undefined, {query})
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        /**
+         * Export verifications report (admin)
+         */
+        public async exportVerifications(params: {
+    status?: string
+    subjectType?: string
+    format?: "json" | "csv"
+}): Promise<{
+    data: string
+    filename: string
+    contentType: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                format:      params.format === undefined ? undefined : String(params.format),
+                status:      params.status,
+                subjectType: params.subjectType,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications/export`, undefined, {query})
+            return await resp.json() as {
+    data: string
+    filename: string
+    contentType: string
+}
+        }
+
+        /**
+         * Extend coupon validity (admin)
+         */
+        public async extendCouponValidity(id: string, params: {
+    newValidUntil: string
+}): Promise<{
+    success: boolean
+    message: string
+    previousValidUntil: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/${encodeURIComponent(id)}/extend`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+    previousValidUntil: string
+}
+        }
+
+        /**
+         * POST /admin/enrollments/:id/extend
+         * Extend enrollment deadline
+         */
+        public async extendEnrollmentDeadline(id: string, params: {
+    expiresAt: string
+}): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(id)}/extend`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
+        }
+
+        /**
+         * POST /admin/products/:id/flag - Flag product for review
+         */
+        public async flagProduct(id: string, params: {
+    reason: string
+    flagType?: "inappropriate" | "policy_violation" | "duplicate" | "other"
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/products/${encodeURIComponent(id)}/flag`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Force complete a withdrawal that is stuck.
+         * 
+         * SAFETY CHECKS (using merged withdrawal table):
+         * 1. Withdrawal must not be in terminal state
+         * 2. Withdrawal must have Blnk hold transaction
+         * 3. Blnk hold must not already be committed (prevents double-deduction)
+         * 4. Cannot force-complete while gateway is actively processing
+         */
+        public async forceCompleteWithdrawal(id: string, params: {
+    utr?: string
+    notes?: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/withdrawals/${encodeURIComponent(id)}/force-complete`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Force verify shopper KYC (admin)
+         */
+        public async forceVerifyShopperKyc(shopperId: string, params: {
+    notes?: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/kyc/verify`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/wallets/:holderId/freeze - Freeze wallet
+         * NOTE: This only freezes the wallet, does NOT ban the entity.
+         * Use ban/suspend endpoints to ban AND freeze wallet together.
+         */
+        public async freezeWallet(holderId: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/wallets/${encodeURIComponent(holderId)}/freeze`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Generate fake data for the entire database
+         * 
+         * ⚠️ ONLY available in development/test environments
+         * 
+         * Uses @faker-js/faker with Indian locale for realistic data.
+         * All money values follow PAISE-FIRST architecture.
+         * 
+         * Default credentials:
+         * - Admin users: admin1@hypedrive.fake, admin2@hypedrive.fake, etc.
+         * Password: AdminPassword123!
+         * - Regular users: random emails ending in @hypedrive.fake
+         * Password: UserPassword123!
+         */
+        public async generateFakeData(params: FakeDataRequest): Promise<FakeDataResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/fake-data/generate`, JSON.stringify(params))
+            return await resp.json() as FakeDataResponse
+        }
+
+        /**
+         * POST /admin/invoices/generate - Generate invoice for organization
+         */
+        public async generateInvoice(params: {
+    organizationId: string
+    periodStart: string
+    periodEnd: string
+    dueDate: string
+    gstPercent?: number
+    tdsPercentage?: number
+    notes?: string
+    autoSend?: boolean
+}): Promise<AdminInvoiceResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/invoices/generate`, JSON.stringify(params))
+            return await resp.json() as AdminInvoiceResponse
+        }
+
+        /**
+         * Get real-time activity feed (admin) - CURSOR PAGINATION
+         * Combines recent enrollments, organizations, and campaigns into a single feed
+         */
+        public async getActivityFeed(params: {
+    cursor?: string
+    limit?: number
+}): Promise<{
+    data: ActivityFeedItem[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                cursor: params.cursor,
+                limit:  params.limit === undefined ? undefined : String(params.limit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/activity-feed`, undefined, {query})
+            return await resp.json() as {
+    data: ActivityFeedItem[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get activity log statistics (admin)
+         */
+        public async getActivityLogStats(params: {
+    startDate?: string
+    endDate?: string
+}): Promise<{
+    totalActions: number
+    byAction: {
+        action: string
+        count: number
+    }[]
+    byEntityType: {
+        entityType: string
+        count: number
+    }[]
+    byAdmin: {
+        adminId: string
+        count: number
+    }[]
+    recentActivity: AdminActivityLogEntry[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/activity-logs/stats`, undefined, {query})
+            return await resp.json() as {
+    totalActions: number
+    byAction: {
+        action: string
+        count: number
+    }[]
+    byEntityType: {
+        entityType: string
+        count: number
+    }[]
+    byAdmin: {
+        adminId: string
+        count: number
+    }[]
+    recentActivity: AdminActivityLogEntry[]
+}
+        }
+
+        /**
+         * Get deliverable details with full stats (admin)
+         */
+        public async getAdminDeliverable(id: string): Promise<{
+    id: string
+    name: string
+    platformId?: string
+    category: string
+    requireLink: boolean
+    requireScreenshot: boolean
+    status: string
+    usageCount: number
+    createdAt: string
+    updatedAt: string
+    campaigns: {
+        id: string
+        name: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverables/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    id: string
+    name: string
+    platformId?: string
+    category: string
+    requireLink: boolean
+    requireScreenshot: boolean
+    status: string
+    usageCount: number
+    createdAt: string
+    updatedAt: string
+    campaigns: {
+        id: string
+        name: string
+    }[]
+}
+        }
+
+        /**
+         * Get submission details (admin)
+         */
+        public async getAdminSubmission(id: string): Promise<AdminDeliverableSubmission> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverable-submissions/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminDeliverableSubmission
+        }
+
+        /**
+         * Get audit log actions summary (admin)
+         */
+        public async getAuditLogSummary(params: {
+    startDate?: string
+    endDate?: string
+}): Promise<{
+    totalActions: number
+    byAction: {
+        action: string
+        count: number
+    }[]
+    byAdmin: {
+        adminId: string
+        count: number
+    }[]
+    byTargetType: {
+        targetType: string
+        count: number
+    }[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/audit-logs/summary`, undefined, {query})
+            return await resp.json() as {
+    totalActions: number
+    byAction: {
+        action: string
+        count: number
+    }[]
+    byAdmin: {
+        adminId: string
+        count: number
+    }[]
+    byTargetType: {
+        targetType: string
+        count: number
+    }[]
+}
+        }
+
+        /**
+         * Get auth statistics (admin) - Not available in Better Auth SDK
+         */
+        public async getAuthStats(): Promise<AuthStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/auth/admin/stats`)
+            return await resp.json() as AuthStats
+        }
+
+        public async getCampaign(id: string): Promise<CampaignDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/campaigns/${encodeURIComponent(id)}`)
+            return await resp.json() as CampaignDetail
+        }
+
+        /**
+         * Get campaign performance analytics (admin)
+         */
+        public async getCampaignPerformance(params: {
+    startDate?: string
+    endDate?: string
+    limit?: number
+}): Promise<{
+    campaigns: CampaignAnalytics[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                limit:     params.limit === undefined ? undefined : String(params.limit),
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/campaigns/performance`, undefined, {query})
+            return await resp.json() as {
+    campaigns: CampaignAnalytics[]
+}
+        }
+
+        public async getCampaignStats(): Promise<CampaignStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/campaigns/stats`)
+            return await resp.json() as CampaignStats
+        }
+
+        /**
+         * Get status of all circuit breakers
+         * Used for monitoring external service health
+         */
+        public async getCircuitBreakerStatus(): Promise<{
+    circuitBreakers: { [key: string]: CircuitBreakerStatus }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/circuit-breakers`)
+            return await resp.json() as {
+    circuitBreakers: { [key: string]: CircuitBreakerStatus }
+}
+        }
+
+        public async getComplianceReport(): Promise<{
+    totalOrganizations: number
+    gstVerified: number
+    gstPending: number
+    bankVerified: number
+    bankPending: number
+    fullyCompliant: number
+    nonCompliant: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/compliance`)
+            return await resp.json() as {
+    totalOrganizations: number
+    gstVerified: number
+    gstPending: number
+    bankVerified: number
+    bankPending: number
+    fullyCompliant: number
+    nonCompliant: number
+}
+        }
+
+        /**
+         * Get config value by key (for internal use, returns parsed value)
+         */
+        public async getConfigValue(key: string): Promise<{
+    key: string
+    value: ParsedConfigValue
+    valueType: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-config/value/${encodeURIComponent(key)}`)
+            return await resp.json() as {
+    key: string
+    value: ParsedConfigValue
+    valueType: string
+}
+        }
+
+        /**
+         * Get single coupon by ID (admin)
+         */
+        public async getCoupon(id: string): Promise<{
+    coupon: AdminCoupon
+    redemptionCount: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/coupons/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    coupon: AdminCoupon
+    redemptionCount: number
+}
+        }
+
+        /**
+         * Get coupon analytics (admin)
+         */
+        public async getCouponAnalytics(params: DateRangeParams): Promise<{
+    totalCoupons: number
+    activeCoupons: number
+    totalRedemptions: number
+    topCoupons: {
+        code: string
+        redemptions: number
+    }[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/coupons`, undefined, {query})
+            return await resp.json() as {
+    totalCoupons: number
+    activeCoupons: number
+    totalRedemptions: number
+    topCoupons: {
+        code: string
+        redemptions: number
+    }[]
+}
+        }
+
+        /**
+         * Get coupon redemption analytics (admin)
+         */
+        public async getCouponRedemptionAnalytics(id: string, params: {
+    startDate?: string
+    endDate?: string
+}): Promise<{
+    couponId: string
+    code: string
+    totalRedemptions: number
+    redemptionsByDay: {
+        date: string
+        count: number
+    }[]
+    topUsers: {
+        userId: string | null
+        redemptions: number
+    }[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/coupons/${encodeURIComponent(id)}/analytics`, undefined, {query})
+            return await resp.json() as {
+    couponId: string
+    code: string
+    totalRedemptions: number
+    redemptionsByDay: {
+        date: string
+        count: number
+    }[]
+    topUsers: {
+        userId: string | null
+        redemptions: number
+    }[]
+}
+        }
+
+        /**
+         * Get coupon statistics (admin)
+         */
+        public async getCouponStats(): Promise<{
+    total: number
+    active: number
+    inactive: number
+    expired: number
+    totalRedemptions: number
+    totalBonusPaid: number
+    totalBonusPaidDecimal: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/coupons/stats`)
+            return await resp.json() as {
+    total: number
+    active: number
+    inactive: number
+    expired: number
+    totalRedemptions: number
+    totalBonusPaid: number
+    totalBonusPaidDecimal: string
+}
+        }
+
+        /**
+         * Get deliverable statistics (admin)
+         */
+        public async getDeliverableStats(): Promise<DeliverableStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverables/stats`)
+            return await resp.json() as DeliverableStats
+        }
+
+        /**
+         * Get deposit account details (admin)
+         */
+        public async getDepositAccount(id: string): Promise<AdminDepositAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deposit-accounts/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminDepositAccount
+        }
+
+        /**
+         * Get deposit account statistics (admin)
+         */
+        public async getDepositAccountStats(): Promise<DepositAccountStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deposit-accounts/stats`)
+            return await resp.json() as DepositAccountStats
+        }
+
+        /**
+         * Get document verification details (admin)
+         */
+        public async getDocumentVerification(id: string): Promise<{
+    id: string
+    subjectId: string
+    subjectType: string
+    subjectName?: string
+    verificationType: string
+    status: string
+    method: string | null
+    documents: KycDocuments | null
+    result: KycVerificationResult | null
+    verifiedBy: string | null
+    verifiedAt: string | null
+    rejectionReason: string | null
+    retryCount: number
+    expiresAt: string | null
+    createdAt: string
+    updatedAt: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    id: string
+    subjectId: string
+    subjectType: string
+    subjectName?: string
+    verificationType: string
+    status: string
+    method: string | null
+    documents: KycDocuments | null
+    result: KycVerificationResult | null
+    verifiedBy: string | null
+    verifiedAt: string | null
+    rejectionReason: string | null
+    retryCount: number
+    expiresAt: string | null
+    createdAt: string
+    updatedAt: string
+}
+        }
+
+        /**
+         * Get verification statistics (admin)
+         */
+        public async getDocumentVerificationStats(): Promise<VerificationStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications/stats`)
+            return await resp.json() as VerificationStats
+        }
+
+        public async getEnrollment(id: string): Promise<EnrollmentDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/enrollments/${encodeURIComponent(id)}`)
+            return await resp.json() as EnrollmentDetail
+        }
+
+        public async getEnrollmentStats(): Promise<EnrollmentStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/enrollments/stats`)
+            return await resp.json() as EnrollmentStats
+        }
+
+        /**
+         * Get enrollment trends over time (admin)
+         */
+        public async getEnrollmentTrends(params: {
+    startDate?: string
+    endDate?: string
+    interval?: "day" | "week" | "month"
+}): Promise<{
+    data: TimeSeriesDataPoint[]
+    interval: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                interval:  params.interval === undefined ? undefined : String(params.interval),
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/enrollments/trends`, undefined, {query})
+            return await resp.json() as {
+    data: TimeSeriesDataPoint[]
+    interval: string
+}
+        }
+
+        /**
+         * Get feature flag by key (admin)
+         */
+        public async getFeatureFlag(key: string): Promise<FeatureFlag> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/feature-flags/${encodeURIComponent(key)}`)
+            return await resp.json() as FeatureFlag
+        }
+
+        /**
+         * Get growth metrics (admin)
+         */
+        public async getGrowthMetrics(params: {
+    startDate?: string
+    endDate?: string
+    interval?: "day" | "week" | "month"
+}): Promise<{
+    data: GrowthMetrics[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                interval:  params.interval === undefined ? undefined : String(params.interval),
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/growth`, undefined, {query})
+            return await resp.json() as {
+    data: GrowthMetrics[]
+}
+        }
+
+        /**
+         * GET /admin/invoices/:id - Get invoice details
+         */
+        public async getInvoice(id: string): Promise<AdminInvoiceResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/invoices/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminInvoiceResponse
+        }
+
+        /**
+         * GET /admin/invoices/:id/line-items - Get invoice line items
+         */
+        public async getInvoiceLineItems(id: string): Promise<{
+    lineItems: InvoiceLineItemResponse[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/invoices/${encodeURIComponent(id)}/line-items`)
+            return await resp.json() as {
+    lineItems: InvoiceLineItemResponse[]
+}
+        }
+
+        /**
+         * GET /admin/invoices/stats - Invoice statistics
+         */
+        public async getInvoiceStats(): Promise<InvoiceStatsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/invoices/stats`)
+            return await resp.json() as InvoiceStatsResponse
+        }
+
+        /**
+         * Get download URL for kyc-documents bucket (admin)
+         */
+        public async getKycDocumentsDownloadUrl(params: {
+    key: string
+}): Promise<AdminDownloadUrlResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/storage/kyc-documents/download-url`, JSON.stringify(params))
+            return await resp.json() as AdminDownloadUrlResponse
+        }
+
+        /**
+         * Get maintenance status (admin)
+         */
+        public async getMaintenanceStatus(): Promise<MaintenanceStatus> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/maintenance`)
+            return await resp.json() as MaintenanceStatus
+        }
+
+        /**
+         * GET /admin/notifications/history - Get notification history (cursor paginated)
+         */
+        public async getNotificationHistory(params: shared.CursorPaginationParams): Promise<{
+    data: {
+        id: string
+        action: string
+        entityType: string
+        entityId: string
+        details: NotificationHistoryDetails | null
+        adminId: string
+        timestamp: string
+    }[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                cursor: params.cursor,
+                limit:  params.limit === undefined ? undefined : String(params.limit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/notifications/history`, undefined, {query})
+            return await resp.json() as {
+    data: {
+        id: string
+        action: string
+        entityType: string
+        entityId: string
+        details: NotificationHistoryDetails | null
+        adminId: string
+        timestamp: string
+    }[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/notifications/stats - Get notification statistics
+         */
+        public async getNotificationStats(): Promise<NotificationStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/notifications/stats`)
+            return await resp.json() as NotificationStats
+        }
+
+        /**
+         * Get OCR statistics (admin)
+         */
+        public async getOCRStats(): Promise<OCRStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/ocr/stats`)
+            return await resp.json() as OCRStats
+        }
+
+        public async getOrganization(id: string): Promise<OrganizationDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/${encodeURIComponent(id)}`)
+            return await resp.json() as OrganizationDetail
+        }
+
+        /**
+         * Get organization analytics (admin)
+         */
+        public async getOrganizationAnalytics(params: {
+    limit?: number
+}): Promise<{
+    organizations: OrganizationAnalytics[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                limit: params.limit === undefined ? undefined : String(params.limit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/organizations`, undefined, {query})
+            return await resp.json() as {
+    organizations: OrganizationAnalytics[]
+}
+        }
+
+        public async getOrganizationBankAccounts(id: string): Promise<{
+    bankAccounts: OrganizationBankAccount[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/${encodeURIComponent(id)}/bank-accounts`)
+            return await resp.json() as {
+    bankAccounts: OrganizationBankAccount[]
+}
+        }
+
+        public async getOrganizationMembers(id: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: OrganizationMember[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/${encodeURIComponent(id)}/members`, undefined, {query})
+            return await resp.json() as {
+    data: OrganizationMember[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        public async getOrganizationStats(): Promise<OrganizationStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/stats`)
+            return await resp.json() as OrganizationStats
+        }
+
+        /**
+         * GET /admin/payouts/:id - View payout details
+         */
+        public async getPayout(id: string): Promise<AdminPayoutResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/payouts/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminPayoutResponse
+        }
+
+        /**
+         * Get single platform by ID
+         */
+        public async getPlatform(id: string): Promise<PlatformListItem> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platforms/${encodeURIComponent(id)}`)
+            return await resp.json() as PlatformListItem
+        }
+
+        /**
+         * Get platform health (admin)
+         */
+        public async getPlatformHealth(): Promise<PlatformHealth> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/health`)
+            return await resp.json() as PlatformHealth
+        }
+
+        /**
+         * Get platform overview dashboard (admin)
+         */
+        public async getPlatformOverview(): Promise<PlatformOverview> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/overview`)
+            return await resp.json() as PlatformOverview
+        }
+
+        /**
+         * GET /admin/products/:id - Get product details
+         */
+        public async getProduct(id: string): Promise<AdminProductResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/products/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminProductResponse
+        }
+
+        /**
+         * GET /admin/products/:id/campaigns - View product campaigns
+         */
+        public async getProductCampaigns(id: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: {
+        id: string
+        title: string
+        status: string
+        startDate: string
+        endDate: string
+        enrollmentCount: number
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/products/${encodeURIComponent(id)}/campaigns`, undefined, {query})
+            return await resp.json() as {
+    data: {
+        id: string
+        title: string
+        status: string
+        startDate: string
+        endDate: string
+        enrollmentCount: number
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/products/stats - Product statistics
+         */
+        public async getProductStats(): Promise<ProductStatsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/products/stats`)
+            return await resp.json() as ProductStatsResponse
+        }
+
+        /**
+         * Get download URL for profile-pictures bucket (admin)
+         */
+        public async getProfilePicturesDownloadUrl(params: {
+    key: string
+}): Promise<AdminDownloadUrlResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/storage/profile-pictures/download-url`, JSON.stringify(params))
+            return await resp.json() as AdminDownloadUrlResponse
+        }
+
+        /**
+         * Get revenue analytics (admin)
+         */
+        public async getRevenueAnalytics(params: {
+    startDate?: string
+    endDate?: string
+    interval?: "day" | "week" | "month"
+}): Promise<{
+    data: RevenueAnalytics[]
+    totals: {
+        invoiced: number
+        paid: number
+        pending: number
+    }
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                interval:  params.interval === undefined ? undefined : String(params.interval),
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/revenue`, undefined, {query})
+            return await resp.json() as {
+    data: RevenueAnalytics[]
+    totals: {
+        invoiced: number
+        paid: number
+        pending: number
+    }
+}
+        }
+
+        public async getShopper(shopperId: string): Promise<ShopperDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/${encodeURIComponent(shopperId)}`)
+            return await resp.json() as ShopperDetail
+        }
+
+        public async getShopperEarnings(shopperId: string): Promise<ShopperEarnings> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/${encodeURIComponent(shopperId)}/earnings`)
+            return await resp.json() as ShopperEarnings
+        }
+
+        public async getShopperEnrollments(shopperId: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: ShopperEnrollment[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/${encodeURIComponent(shopperId)}/enrollments`, undefined, {query})
+            return await resp.json() as {
+    data: ShopperEnrollment[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get shopper KYC documents with signed URLs (15 min expiry)
+         */
+        public async getShopperKYCDocuments(shopperId: string): Promise<ShopperKYCDocuments> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/${encodeURIComponent(shopperId)}/kyc-documents`)
+            return await resp.json() as ShopperKYCDocuments
+        }
+
+        /**
+         * Get shopper KYC details (admin)
+         */
+        public async getShopperKycDetails(shopperId: string): Promise<ShopperKycDetails> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/${encodeURIComponent(shopperId)}/kyc`)
+            return await resp.json() as ShopperKycDetails
+        }
+
+        public async getShopperStats(): Promise<ShopperStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers/stats`)
+            return await resp.json() as ShopperStats
+        }
+
+        /**
+         * Get storage statistics (admin)
+         */
+        public async getStorageStats(): Promise<StorageStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/storage/stats`)
+            return await resp.json() as StorageStats
+        }
+
+        /**
+         * Get system config by ID (admin)
+         */
+        public async getSystemConfigById(id: string): Promise<SystemConfigItem> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-configs/${encodeURIComponent(id)}`)
+            return await resp.json() as SystemConfigItem
+        }
+
+        /**
+         * Get system config by key (admin)
+         */
+        public async getSystemConfigByKey(key: string): Promise<SystemConfigItem> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-configs/key/${encodeURIComponent(key)}`)
+            return await resp.json() as SystemConfigItem
+        }
+
+        /**
+         * Get health check endpoint (admin)
+         */
+        public async getSystemHealth(): Promise<{
+    status: "healthy" | "degraded" | "unhealthy"
+    uptime: number
+    database: {
+        status: string
+        latencyMs?: number
+    }
+    services: { [key: string]: {
+        status: string
+        lastChecked: string
+    } }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/health`)
+            return await resp.json() as {
+    status: "healthy" | "degraded" | "unhealthy"
+    uptime: number
+    database: {
+        status: string
+        latencyMs?: number
+    }
+    services: { [key: string]: {
+        status: string
+        lastChecked: string
+    } }
+}
+        }
+
+        /**
+         * GET /admin/notifications/templates/:id - Get template details
+         */
+        public async getTemplate(id: string): Promise<NotificationTemplate> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/notifications/templates/${encodeURIComponent(id)}`)
+            return await resp.json() as NotificationTemplate
+        }
+
+        /**
+         * Get download URL for uploads bucket (admin)
+         */
+        public async getUploadsDownloadUrl(params: {
+    key: string
+}): Promise<AdminDownloadUrlResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/storage/uploads/download-url`, JSON.stringify(params))
+            return await resp.json() as AdminDownloadUrlResponse
+        }
+
+        /**
+         * GET /admin/withdrawal-methods/:id/verification-history - Get verification history
+         */
+        public async getVerificationHistory(id: string): Promise<{
+    history: VerificationHistoryItem[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawal-methods/${encodeURIComponent(id)}/verification-history`)
+            return await resp.json() as {
+    history: VerificationHistoryItem[]
+}
+        }
+
+        /**
+         * GET /admin/wallets/:holderId - View specific wallet
+         */
+        public async getWallet(holderId: string): Promise<AdminWalletResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/wallets/${encodeURIComponent(holderId)}`)
+            return await resp.json() as AdminWalletResponse
+        }
+
+        /**
+         * GET /admin/wallets/:holderId/holds - View all holds
+         */
+        public async getWalletHolds(holderId: string): Promise<{
+    holds: ActiveHold[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/wallets/${encodeURIComponent(holderId)}/holds`)
+            return await resp.json() as {
+    holds: ActiveHold[]
+}
+        }
+
+        /**
+         * GET /admin/wallets/stats - Wallet stats
+         */
+        public async getWalletStats(): Promise<WalletStatsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/wallets/stats`)
+            return await resp.json() as WalletStatsResponse
+        }
+
+        /**
+         * GET /admin/wallets/:holderId/transactions - View transactions
+         */
+        public async getWalletTransactions(holderId: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: WalletTransaction[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/wallets/${encodeURIComponent(holderId)}/transactions`, undefined, {query})
+            return await resp.json() as {
+    data: WalletTransaction[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get withdrawal analytics (admin)
+         */
+        public async getWithdrawalAnalytics(params: DateRangeParams): Promise<{
+    byStatus: {
+        status: string
+        count: number
+        totalAmount: number
+    }[]
+    avgProcessingTime: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/analytics/withdrawals`, undefined, {query})
+            return await resp.json() as {
+    byStatus: {
+        status: string
+        count: number
+        totalAmount: number
+    }[]
+    avgProcessingTime: number
+}
+        }
+
+        /**
+         * GET /admin/withdrawal-methods/:id - Get withdrawal method details
+         */
+        public async getWithdrawalMethod(id: string): Promise<AdminWithdrawalMethodResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawal-methods/${encodeURIComponent(id)}`)
+            return await resp.json() as AdminWithdrawalMethodResponse
+        }
+
+        /**
+         * GET /admin/withdrawal-methods/stats - Get withdrawal method statistics
+         */
+        public async getWithdrawalMethodStats(): Promise<WithdrawalMethodStatsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawal-methods/stats`)
+            return await resp.json() as WithdrawalMethodStatsResponse
+        }
+
+        /**
+         * GET /admin/withdrawals/stats - Withdrawal stats
+         */
+        public async getWithdrawalStats(): Promise<WithdrawalStatsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawals/stats`)
+            return await resp.json() as WithdrawalStatsResponse
+        }
+
+        /**
+         * Import configs (super admin only)
+         */
+        public async importSystemConfigs(params: {
+    configs: {
+        key: string
+        value: string
+        valueType?: string
+        description?: string
+        category?: string
+    }[]
+    overwrite?: boolean
+}): Promise<{
+    success: boolean
+    created: number
+    updated: number
+    skipped: number
+    errors: {
+        key: string
+        error: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/system-config/import`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    created: number
+    updated: number
+    skipped: number
+    errors: {
+        key: string
+        error: string
+    }[]
+}
+        }
+
+        /**
+         * Invalidate permission cache (useful after bulk changes)
+         * Uses distributed pub/sub to invalidate caches across all service instances
+         * Supports pattern-based invalidation for granular control
+         */
+        public async invalidatePermissionCache(params: {
+    pattern?: string
+    reason?: string
+}): Promise<{
+    success: boolean
+    message: string
+    pattern: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/permissions/invalidate-cache`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+    pattern: string
+}
+        }
+
+        /**
+         * List activity logs (audit trail for admin actions) - CURSOR PAGINATION
+         * High-volume audit logs benefit from cursor pagination for consistent performance
+         */
+        public async listActivityLogs(params: {
+    cursor?: string
+    limit?: number
+    action?: string
+}): Promise<{
+    data: ActivityLog[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                action: params.action,
+                cursor: params.cursor,
+                limit:  params.limit === undefined ? undefined : String(params.limit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/activity-logs`, undefined, {query})
+            return await resp.json() as {
+    data: ActivityLog[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List admin activity logs with advanced filtering (admin) - CURSOR PAGINATION
+         * High-volume audit logs benefit from cursor pagination for consistent performance
+         */
+        public async listActivityLogsAdvanced(params: {
+    cursor?: string
+    limit?: number
+    adminId?: string
+    action?: string
+    entityType?: string
+    startDate?: string
+    endDate?: string
+}): Promise<{
+    data: AdminActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                action:     params.action,
+                adminId:    params.adminId,
+                cursor:     params.cursor,
+                endDate:    params.endDate,
+                entityType: params.entityType,
+                limit:      params.limit === undefined ? undefined : String(params.limit),
+                startDate:  params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/activity-logs/advanced`, undefined, {query})
+            return await resp.json() as {
+    data: AdminActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List admin activity logs (admin) - cursor paginated
+         */
+        public async listAdminActivityLogs(params: {
+    cursor?: string
+    limit?: number
+    adminId?: string
+    action?: string
+    targetType?: string
+    startDate?: string
+    endDate?: string
+}): Promise<{
+    data: AdminActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                action:     params.action,
+                adminId:    params.adminId,
+                cursor:     params.cursor,
+                endDate:    params.endDate,
+                limit:      params.limit === undefined ? undefined : String(params.limit),
+                startDate:  params.startDate,
+                targetType: params.targetType,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/audit-logs`, undefined, {query})
+            return await resp.json() as {
+    data: AdminActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all deliverable types with usage stats (admin)
+         */
+        public async listAdminDeliverables(params: ListAdminDeliverablesParams): Promise<{
+    data: AdminDeliverable[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                category:   params.category,
+                platformId: params.platformId,
+                search:     params.search,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                sortBy:     params.sortBy,
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:     params.status === undefined ? undefined : String(params.status),
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverables`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDeliverable[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all submissions for review (admin)
+         */
+        public async listAllSubmissions(params: ListSubmissionsParams): Promise<{
+    data: AdminDeliverableSubmission[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId:    params.campaignId,
+                deliverableId: params.deliverableId,
+                hasProof:      params.hasProof === undefined ? undefined : String(params.hasProof),
+                search:        params.search,
+                shopperId:     params.shopperId,
+                skip:          params.skip === undefined ? undefined : String(params.skip),
+                sortBy:        params.sortBy,
+                sortOrder:     params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:          params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deliverable-submissions`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDeliverableSubmission[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        public async listCampaigns(params: ListCampaignsQuery): Promise<{
+    data: CampaignListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                organizationId: params.organizationId,
+                search:         params.search,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                startDateFrom:  params.startDateFrom,
+                startDateTo:    params.startDateTo,
+                status:         params.status,
+                take:           params.take === undefined ? undefined : String(params.take),
+                type:           params.type,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/campaigns`, undefined, {query})
+            return await resp.json() as {
+    data: CampaignListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List config categories (admin)
+         */
+        public async listConfigCategories(): Promise<{
+    categories: {
+        name: string
+        count: number
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-config/categories`)
+            return await resp.json() as {
+    categories: {
+        name: string
+        count: number
+    }[]
+}
+        }
+
+        /**
+         * List all coupons (admin)
+         */
+        public async listCoupons(params: {
+    page?: number
+    pageSize?: number
+    status?: "active" | "inactive" | "expired"
+    search?: string
+    campaignId?: string
+    sortBy?: "createdAt" | "code" | "bonusAmount" | "timesUsed" | "validUntil"
+    sortOrder?: "asc" | "desc"
+}): Promise<{
+    coupons: AdminCoupon[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId: params.campaignId,
+                page:       params.page === undefined ? undefined : String(params.page),
+                pageSize:   params.pageSize === undefined ? undefined : String(params.pageSize),
+                search:     params.search,
+                sortBy:     params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:     params.status === undefined ? undefined : String(params.status),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/coupons`, undefined, {query})
+            return await resp.json() as {
+    coupons: AdminCoupon[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}
+        }
+
+        /**
+         * List all deposit accounts (admin)
+         */
+        public async listDepositAccounts(params: ListDepositAccountsParams): Promise<{
+    data: AdminDepositAccount[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                organizationId: params.organizationId,
+                provider:       params.provider,
+                receiverType:   params.receiverType,
+                search:         params.search,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                sortBy:         params.sortBy,
+                sortOrder:      params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:         params.status,
+                take:           params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/deposit-accounts`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDepositAccount[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all document verifications (admin)
+         */
+        public async listDocumentVerifications(params: ListDocVerificationsParams): Promise<{
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                expiringSoon:     params.expiringSoon === undefined ? undefined : String(params.expiringSoon),
+                search:           params.search,
+                skip:             params.skip === undefined ? undefined : String(params.skip),
+                sortBy:           params.sortBy,
+                sortOrder:        params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:           params.status,
+                subjectType:      params.subjectType,
+                take:             params.take === undefined ? undefined : String(params.take),
+                verificationType: params.verificationType,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        public async listEnrollments(params: ListEnrollmentsQuery): Promise<{
+    data: EnrollmentListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId: params.campaignId,
+                fromDate:   params.fromDate,
+                search:     params.search,
+                shopperId:  params.shopperId,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                status:     params.status,
+                take:       params.take === undefined ? undefined : String(params.take),
+                toDate:     params.toDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/enrollments`, undefined, {query})
+            return await resp.json() as {
+    data: EnrollmentListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List enrollments with OCR data (admin)
+         */
+        public async listEnrollmentsForOCR(params: ListEnrollmentsForOCRParams): Promise<{
+    data: EnrollmentOCRData[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId:              params.campaignId,
+                hasScreenshot:           params.hasScreenshot === undefined ? undefined : String(params.hasScreenshot),
+                hasSuspiciousScreenshot: params.hasSuspiciousScreenshot === undefined ? undefined : String(params.hasSuspiciousScreenshot),
+                skip:                    params.skip === undefined ? undefined : String(params.skip),
+                take:                    params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/ocr/enrollments`, undefined, {query})
+            return await resp.json() as {
+    data: EnrollmentOCRData[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List expiring verifications (admin)
+         */
+        public async listExpiringVerifications(params: {
+    skip?: number
+    take?: number
+    daysAhead?: number
+}): Promise<{
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                daysAhead: params.daysAhead === undefined ? undefined : String(params.daysAhead),
+                skip:      params.skip === undefined ? undefined : String(params.skip),
+                take:      params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications/expiring`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all feature flags (admin)
+         */
+        public async listFeatureFlags(params: {
+    category?: string
+}): Promise<{
+    flags: FeatureFlag[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                category: params.category,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/feature-flags`, undefined, {query})
+            return await resp.json() as {
+    flags: FeatureFlag[]
+}
+        }
+
+        /**
+         * GET /admin/invoices - List all invoices
+         */
+        public async listInvoices(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    organizationId?: string
+    status?: shared.InvoiceStatus
+    overdue?: boolean
+    periodStart?: string
+    periodEnd?: string
+}): Promise<{
+    data: AdminInvoiceResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                organizationId: params.organizationId,
+                overdue:        params.overdue === undefined ? undefined : String(params.overdue),
+                periodEnd:      params.periodEnd,
+                periodStart:    params.periodStart,
+                search:         params.search,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                sortBy:         params.sortBy,
+                sortOrder:      params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:         params.status === undefined ? undefined : String(params.status),
+                take:           params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/invoices`, undefined, {query})
+            return await resp.json() as {
+    data: AdminInvoiceResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List files in kyc-documents bucket (admin)
+         */
+        public async listKycDocumentsFiles(params: ListFilesParams): Promise<{
+    data: StorageFile[]
+    total: number
+    bucket: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                prefix: params.prefix,
+                skip:   params.skip === undefined ? undefined : String(params.skip),
+                take:   params.take === undefined ? undefined : String(params.take),
+                userId: params.userId,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/storage/kyc-documents/files`, undefined, {query})
+            return await resp.json() as {
+    data: StorageFile[]
+    total: number
+    bucket: string
+}
+        }
+
+        /**
+         * List deposit accounts for an organization (admin)
+         */
+        public async listOrganizationDepositAccounts(organizationId: string): Promise<{
+    accounts: AdminDepositAccount[]
+    total: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations/${encodeURIComponent(organizationId)}/deposit-accounts`)
+            return await resp.json() as {
+    accounts: AdminDepositAccount[]
+    total: number
+}
+        }
+
+        public async listOrganizations(params: ListOrganizationsQuery): Promise<{
+    data: OrganizationListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                accountTier:    params.accountTier,
+                approvalStatus: params.approvalStatus,
+                gstVerified:    params.gstVerified === undefined ? undefined : String(params.gstVerified),
+                search:         params.search,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                take:           params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/organizations`, undefined, {query})
+            return await resp.json() as {
+    data: OrganizationListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/payouts - List all payouts (withdrawals with gateway interaction)
+         */
+        public async listPayouts(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    status?: string
+    holderType?: "organization" | "shopper"
+}): Promise<{
+    data: AdminPayoutResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                holderType: params.holderType === undefined ? undefined : String(params.holderType),
+                search:     params.search,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                sortBy:     params.sortBy,
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:     params.status,
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/payouts`, undefined, {query})
+            return await resp.json() as {
+    data: AdminPayoutResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List pending verifications (admin)
+         */
+        public async listPendingVerifications(params: PaginationQuery): Promise<{
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/document-verifications/pending`, undefined, {query})
+            return await resp.json() as {
+    data: AdminDocumentVerification[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List pending withdrawals requiring approval (≥₹10,000)
+         */
+        public async listPendingWithdrawals(params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: WithdrawalResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawals/pending`, undefined, {query})
+            return await resp.json() as {
+    data: WithdrawalResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all permission rules (super admin only)
+         */
+        public async listPermissionRules(): Promise<{
+    data: PermissionRuleResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/permissions`)
+            return await resp.json() as {
+    data: PermissionRuleResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List platforms with search, filtering, and sorting
+         */
+        public async listPlatforms(params: ListPlatformsQuery): Promise<{
+    data: PlatformListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                search:    params.search,
+                skip:      params.skip === undefined ? undefined : String(params.skip),
+                sortBy:    params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder: params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:    params.status,
+                take:      params.take === undefined ? undefined : String(params.take),
+                type:      params.type,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platforms`, undefined, {query})
+            return await resp.json() as {
+    data: PlatformListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/products - List all products
+         */
+        public async listProducts(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    organizationId?: string
+    categoryId?: string
+    platformId?: string
+}): Promise<{
+    data: AdminProductResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                categoryId:     params.categoryId,
+                organizationId: params.organizationId,
+                platformId:     params.platformId,
+                search:         params.search,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                sortBy:         params.sortBy,
+                sortOrder:      params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:           params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/products`, undefined, {query})
+            return await resp.json() as {
+    data: AdminProductResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List files in profile-pictures bucket (admin)
+         */
+        public async listProfilePicturesFiles(params: ListFilesParams): Promise<{
+    data: StorageFile[]
+    total: number
+    bucket: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                prefix: params.prefix,
+                skip:   params.skip === undefined ? undefined : String(params.skip),
+                take:   params.take === undefined ? undefined : String(params.take),
+                userId: params.userId,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/storage/profile-pictures/files`, undefined, {query})
+            return await resp.json() as {
+    data: StorageFile[]
+    total: number
+    bucket: string
+}
+        }
+
+        /**
+         * List rate limit configs (admin)
+         */
+        public async listRateLimits(): Promise<{
+    rateLimits: PlatformRateLimitConfig[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/platform/rate-limits`)
+            return await resp.json() as {
+    rateLimits: PlatformRateLimitConfig[]
+}
+        }
+
+        public async listShoppersAdmin(params: ListShoppersQuery): Promise<{
+    data: ShopperListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                createdFrom: params.createdFrom,
+                createdTo:   params.createdTo,
+                isBanned:    params.isBanned === undefined ? undefined : String(params.isBanned),
+                kycVerified: params.kycVerified === undefined ? undefined : String(params.kycVerified),
+                payoutReady: params.payoutReady === undefined ? undefined : String(params.payoutReady),
+                search:      params.search,
+                skip:        params.skip === undefined ? undefined : String(params.skip),
+                sortBy:      params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:   params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:        params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/shoppers`, undefined, {query})
+            return await resp.json() as {
+    data: ShopperListItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List all system configs with pagination (admin)
+         */
+        public async listSystemConfigs(params: ListSystemConfigParams): Promise<{
+    data: SystemConfigItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                category:   params.category,
+                isEditable: params.isEditable === undefined ? undefined : String(params.isEditable),
+                search:     params.search,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                sortBy:     params.sortBy,
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/system-configs`, undefined, {query})
+            return await resp.json() as {
+    data: SystemConfigItem[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/notifications/templates - List notification templates
+         */
+        public async listTemplates(): Promise<{
+    templates: NotificationTemplate[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/notifications/templates`)
+            return await resp.json() as {
+    templates: NotificationTemplate[]
+}
+        }
+
+        /**
+         * List files in uploads bucket (admin)
+         */
+        public async listUploadsFiles(params: ListFilesParams): Promise<{
+    data: StorageFile[]
+    total: number
+    bucket: string
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                prefix: params.prefix,
+                skip:   params.skip === undefined ? undefined : String(params.skip),
+                take:   params.take === undefined ? undefined : String(params.take),
+                userId: params.userId,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/storage/uploads/files`, undefined, {query})
+            return await resp.json() as {
+    data: StorageFile[]
+    total: number
+    bucket: string
+}
+        }
+
+        /**
+         * List all files for a specific user across all buckets (admin)
+         */
+        public async listUserFilesAll(userId: string): Promise<{
+    uploads: StorageFile[]
+    profilePictures: StorageFile[]
+    kycDocuments: StorageFile[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/users/${encodeURIComponent(userId)}/files/all`)
+            return await resp.json() as {
+    uploads: StorageFile[]
+    profilePictures: StorageFile[]
+    kycDocuments: StorageFile[]
+}
+        }
+
+        /**
+         * GET /admin/wallets - List all wallets
+         * PRODUCTION-GRADE: DB-level pagination + parallel Blnk calls
+         */
+        public async listWallets(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    holderType?: "organization" | "shopper"
+    isFrozen?: boolean
+}): Promise<{
+    data: AdminWalletResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                holderType: params.holderType === undefined ? undefined : String(params.holderType),
+                isFrozen:   params.isFrozen === undefined ? undefined : String(params.isFrozen),
+                search:     params.search,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                sortBy:     params.sortBy,
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/wallets`, undefined, {query})
+            return await resp.json() as {
+    data: AdminWalletResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List withdrawal method verifications (admin)
+         */
+        public async listWithdrawalMethodVerifications(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    status?: string
+}): Promise<{
+    data: {
+        id: string
+        withdrawalMethodId: string
+        method: string
+        success: boolean
+        attemptedAt: string
+        verifiedBy: string | null
+        details: WithdrawalMethodVerificationDetails | null
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                search:    params.search,
+                skip:      params.skip === undefined ? undefined : String(params.skip),
+                sortBy:    params.sortBy,
+                sortOrder: params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:    params.status,
+                take:      params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawal-methods/verifications`, undefined, {query})
+            return await resp.json() as {
+    data: {
+        id: string
+        withdrawalMethodId: string
+        method: string
+        success: boolean
+        attemptedAt: string
+        verifiedBy: string | null
+        details: WithdrawalMethodVerificationDetails | null
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/withdrawal-methods - List all withdrawal methods
+         */
+        public async listWithdrawalMethods(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    shopperId?: string
+    accountType?: "bank_account" | "upi"
+    isVerified?: boolean
+}): Promise<{
+    data: AdminWithdrawalMethodResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                accountType: params.accountType === undefined ? undefined : String(params.accountType),
+                isVerified:  params.isVerified === undefined ? undefined : String(params.isVerified),
+                search:      params.search,
+                shopperId:   params.shopperId,
+                skip:        params.skip === undefined ? undefined : String(params.skip),
+                sortBy:      params.sortBy,
+                sortOrder:   params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:        params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawal-methods`, undefined, {query})
+            return await resp.json() as {
+    data: AdminWithdrawalMethodResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * GET /admin/withdrawals - List ALL withdrawals
+         */
+        public async listWithdrawals(params: {
+    sortBy?: string
+    sortOrder?: "asc" | "desc"
+    search?: string
+    skip?: number
+    take?: number
+    status?: shared.WithdrawalStatus
+    holderType?: "organization" | "shopper"
+    requiresApproval?: boolean
+    q?: string
+    amountMin?: number
+    amountMax?: number
+    requestedFrom?: string
+    requestedTo?: string
+}): Promise<{
+    data: AdminWithdrawalResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                amountMax:        params.amountMax === undefined ? undefined : String(params.amountMax),
+                amountMin:        params.amountMin === undefined ? undefined : String(params.amountMin),
+                holderType:       params.holderType === undefined ? undefined : String(params.holderType),
+                q:                params.q,
+                requestedFrom:    params.requestedFrom,
+                requestedTo:      params.requestedTo,
+                requiresApproval: params.requiresApproval === undefined ? undefined : String(params.requiresApproval),
+                search:           params.search,
+                skip:             params.skip === undefined ? undefined : String(params.skip),
+                sortBy:           params.sortBy,
+                sortOrder:        params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:           params.status === undefined ? undefined : String(params.status),
+                take:             params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/admin/withdrawals`, undefined, {query})
+            return await resp.json() as {
+    data: AdminWithdrawalResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * POST /admin/invoices/:id/mark-paid - Mark invoice as paid
+         */
+        public async markInvoicePaid(id: string, params: {
+    paymentReference?: string
+    paymentDate?: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/invoices/${encodeURIComponent(id)}/mark-paid`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Mark organization as verified (all verifications complete)
+         */
+        public async markOrganizationVerified(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/mark-verified`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/campaigns/:id/pause
+         * Pause campaign (active → paused)
+         */
+        public async pauseCampaign(id: string, params: {
+    reason?: string
+}): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/pause`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Process OCR for enrollment screenshot (admin)
+         */
+        public async processEnrollmentOCR(enrollmentId: string): Promise<OCRExtractionResult> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(enrollmentId)}/ocr`)
+            return await resp.json() as OCRExtractionResult
+        }
+
+        /**
+         * Reactivate deposit account (admin)
+         */
+        public async reactivateDepositAccount(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/deposit-accounts/${encodeURIComponent(id)}/reactivate`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reinstate organization
+         */
+        public async reinstateOrganization(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/reinstate`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/campaigns/:id/reject
+         * Reject campaign (pending_approval → rejected)
+         */
+        public async rejectCampaign(id: string, params: {
+    reason: string
+}): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Reject document verification (admin)
+         */
+        public async rejectDocumentVerification(id: string, params: {
+    reason: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/document-verifications/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/enrollments/:id/reject
+         * Permanently reject enrollment (awaiting_review → permanently_rejected)
+         */
+        public async rejectEnrollment(id: string, params: {
+    reason: string
+    feedback?: { [key: string]: string }
+}): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
+        }
+
+        /**
+         * Reject organization
+         */
+        public async rejectOrganization(id: string, params: RejectOrganizationRequest): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reject withdrawal and refund funds to wallet
+         */
+        public async rejectWithdrawal(id: string, params: RejectWithdrawalRequest): Promise<{
+    success: boolean
+    withdrawalId: string
+    status: string
+    rejectedBy: string
+    reason: string
+    fundsRefunded: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/withdrawals/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    withdrawalId: string
+    status: string
+    rejectedBy: string
+    reason: string
+    fundsRefunded: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/wallets/:holderId/holds/:holdId/release - Release hold
+         */
+        public async releaseWalletHold(holderId: string, holdId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/wallets/${encodeURIComponent(holderId)}/holds/${encodeURIComponent(holdId)}/release`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Remove member from organization
+         */
+        public async removeOrganizationMember(id: string, userId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}/remove`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/enrollments/:id/request-changes
+         * Request changes from shopper (awaiting_review → changes_requested)
+         */
+        public async requestChanges(id: string, params: {
+    reason: string
+    feedback?: { [key: string]: string }
+}): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(id)}/request-changes`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
+        }
+
+        /**
+         * Request re-verification (admin)
+         */
+        public async requestReVerification(id: string, params: {
+    reason: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/document-verifications/${encodeURIComponent(id)}/request-reverification`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reset all circuit breakers (emergency use)
+         */
+        public async resetAllCircuitBreakersEndpoint(): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/circuit-breakers/reset-all`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reset a specific circuit breaker
+         * Use when a service has recovered and you want to force retry
+         */
+        public async resetCircuitBreaker(name: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/circuit-breakers/${encodeURIComponent(name)}/reset`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reset coupon usage count (admin)
+         */
+        public async resetCouponUsage(id: string): Promise<{
+    success: boolean
+    message: string
+    previousUsage: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/coupons/${encodeURIComponent(id)}/reset-usage`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+    previousUsage: number
+}
+        }
+
+        /**
+         * Reset rate limit for a specific key pattern (super admin only)
+         */
+        public async resetRateLimit(key: string, params: {
+    targetId?: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platform/rate-limits/${encodeURIComponent(key)}/reset`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reset shopper KYC (admin)
+         */
+        public async resetShopperKyc(shopperId: string, params: {
+    reason: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/kyc/reset`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Reset user's two-factor authentication (admin) - Not available in Better Auth SDK
+         */
+        public async resetUserTwoFactor(params: {
+    userId: string
+}): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/reset-2fa`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/resume
+         * Resume campaign (paused → active)
+         */
+        public async resumeCampaign(id: string): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/resume`)
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * Retry a failed payout.
+         * 
+         * SAFETY: This endpoint first syncs with gateway to ensure we don't
+         * retry a payout that was actually processed (webhook missed scenario).
+         */
+        public async retryPayout(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/payouts/${encodeURIComponent(id)}/retry`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /admin/payouts/:id/reverse - Reverse payout (manual status update)
+         */
+        public async reversePayout(id: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/payouts/${encodeURIComponent(id)}/reverse`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/invoices/:id/send - Send invoice
+         */
+        public async sendInvoice(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/invoices/${encodeURIComponent(id)}/send`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/notifications/send - Send notification to specific users
+         */
+        public async sendNotification(params: {
+    templateId: string
+    userIds: string[]
+    payload?: NotificationPayload
+}): Promise<{
+    sent: number
+    failed: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/notifications/send`, JSON.stringify(params))
+            return await resp.json() as {
+    sent: number
+    failed: number
+}
+        }
+
+        /**
+         * POST /admin/notifications/test - Send test notification
+         */
+        public async sendTestNotification(params: {
+    templateId: string
+    payload?: NotificationPayload
+}): Promise<{
+    success: boolean
+    transactionId?: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/notifications/test`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    transactionId?: string
+}
+        }
+
+        /**
+         * Set organization credit limit
+         */
+        public async setCreditLimit(organizationId: string, params: SetCreditLimitRequest): Promise<{
+    success: boolean
+    creditLimit: number
+    accountTier: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(organizationId)}/credit-limit`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    creditLimit: number
+    accountTier: string
+}
+        }
+
+        /**
+         * Set platform to maintenance mode
+         */
+        public async setPlatformMaintenance(id: string): Promise<Platform> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platforms/${encodeURIComponent(id)}/maintenance`)
+            return await resp.json() as Platform
+        }
+
+        /**
+         * Setup deposit account for organization (idempotent)
+         * Creates virtual account via Razorpay Smart Collect, or returns existing
+         */
+        public async setupDepositAccount(id: string): Promise<{
+    success: boolean
+    created: boolean
+    depositAccount: {
+        id: string
+        externalId: string
+        provider: string
+        status: string
+        details?: { [key: string]: any }
+    }
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/setup-deposit-account`)
+            return await resp.json() as {
+    success: boolean
+    created: boolean
+    depositAccount: {
+        id: string
+        externalId: string
+        provider: string
+        status: string
+        details?: { [key: string]: any }
+    }
+    message: string
+}
+        }
+
+        /**
+         * Setup wallet for organization (idempotent)
+         * Creates wallet with real Blnk integration, or returns existing
+         * Uses actual Blnk API to create identity and balance
+         */
+        public async setupOrganizationWallet(id: string): Promise<{
+    success: boolean
+    created: boolean
+    wallet: {
+        id: string
+        blnkIdentityId: string | null
+        blnkBalanceId: string | null
+    }
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/setup-wallet`)
+            return await resp.json() as {
+    success: boolean
+    created: boolean
+    wallet: {
+        id: string
+        blnkIdentityId: string | null
+        blnkBalanceId: string | null
+    }
+    message: string
+}
+        }
+
+        /**
+         * Suspend organization (different from freeze - more severe)
+         */
+        public async suspendOrganization(id: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/suspend`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        public async suspendShopper(shopperId: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/suspend`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Sync payout status from gateway (RazorpayX).
+         * 
+         * Use this when:
+         * - Webhook was missed
+         * - Payout stuck in "processing" status
+         * - Need to verify actual gateway status
+         * 
+         * SAFETY: If gateway shows "processed" but our DB doesn't, this will
+         * trigger WithdrawalCompleted event to commit the Blnk hold.
+         */
+        public async syncPayoutStatus(id: string): Promise<{
+    success: boolean
+    previousStatus: string
+    currentStatus: string
+    gatewayStatus?: string
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/payouts/${encodeURIComponent(id)}/sync`)
+            return await resp.json() as {
+    success: boolean
+    previousStatus: string
+    currentStatus: string
+    gatewayStatus?: string
+    message: string
+}
+        }
+
+        /**
+         * Sync organization to Zoho Books (idempotent)
+         * Creates or updates customer in Zoho Books
+         */
+        public async syncZohoBooks(id: string): Promise<{
+    success: boolean
+    synced: boolean
+    zohoCustomerId?: string
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/sync-zoho`)
+            return await resp.json() as {
+    success: boolean
+    synced: boolean
+    zohoCustomerId?: string
+    message: string
+}
+        }
+
+        /**
+         * Set user role directly (for testing only)
+         * Bypasses super_admin requirement - only available in local/test environments
+         */
+        public async testSetUserRole(params: {
+    userId: string
+    role: shared.AdminRole
+}): Promise<{
+    success: boolean
+    userId: string
+    role: shared.AdminRole
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/admin/set-user-role`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    userId: string
+    role: shared.AdminRole
+}
+        }
+
+        /**
+         * Toggle feature flag (super admin only)
+         */
+        public async toggleFeatureFlag(key: string, params: {
+    enabled: boolean
+}): Promise<{
+    success: boolean
+    flag: FeatureFlag
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/platform/feature-flags/${encodeURIComponent(key)}/toggle`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    flag: FeatureFlag
+}
+        }
+
+        /**
+         * Toggle a permission rule active/inactive (super admin only)
+         */
+        public async togglePermissionRule(id: string): Promise<{
+    success: boolean
+    rule: PermissionRuleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/permissions/${encodeURIComponent(id)}/toggle`)
+            return await resp.json() as {
+    success: boolean
+    rule: PermissionRuleResponse
+}
+        }
+
+        /**
+         * POST /admin/campaigns/:id/unarchive
+         * Unarchive campaign (archived → ended)
+         */
+        public async unarchiveCampaign(id: string): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/campaigns/${encodeURIComponent(id)}/unarchive`)
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        public async unbanShopper(shopperId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/unban`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/products/:id/unflag - Remove flag from product
+         */
+        public async unflagProduct(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/products/${encodeURIComponent(id)}/unflag`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/wallets/:holderId/unfreeze - Unfreeze wallet
+         * NOTE: This only unfreezes the wallet, does NOT unban/reinstate the entity.
+         * Use unban/reinstate endpoints to unban AND unfreeze wallet together.
+         * Consolidated endpoint that handles both shopper and organization wallets
+         */
+        public async unfreezeWallet(holderId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/wallets/${encodeURIComponent(holderId)}/unfreeze`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/withdrawal-methods/:id/unverify - Remove verification
+         */
+        public async unverifyWithdrawalMethod(id: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/withdrawal-methods/${encodeURIComponent(id)}/unverify`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Update a deliverable type (admin)
+         */
+        public async updateAdminDeliverable(id: string, params: {
+    name?: string
+    category?: string
+    platformId?: string | null
+    description?: string | null
+    requireLink?: boolean
+    requireScreenshot?: boolean
+    status?: "active" | "inactive" | "deprecated"
+    metadata?: DeliverableMetadata | null
+}): Promise<AdminDeliverable> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/deliverables/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as AdminDeliverable
+        }
+
+        public async updateCampaign(id: string, params: UpdateCampaignRequest): Promise<{
+    success: boolean
+    campaign: CampaignDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/campaigns/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    campaign: CampaignDetail
+}
+        }
+
+        /**
+         * PATCH /admin/product-categories/:id - Update category
+         */
+        public async updateCategory(id: string, params: {
+    name?: string
+    description?: string
+    icon?: string
+    logo?: string
+}): Promise<AdminProductCategory> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/product-categories/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as AdminProductCategory
+        }
+
+        /**
+         * Update coupon (admin)
+         */
+        public async updateCoupon(id: string, params: {
+    bonusAmount?: number
+    usageLimit?: number | null
+    oneTimeUse?: boolean
+    specificCampaignId?: string | null
+    validFrom?: string
+    validUntil?: string
+    status?: "active" | "inactive" | "expired"
+}): Promise<{
+    success: boolean
+    coupon: AdminCoupon
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/coupons/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    coupon: AdminCoupon
+}
+        }
+
+        /**
+         * Update deposit account (admin)
+         */
+        public async updateDepositAccount(id: string, params: {
+    externalId?: string
+    provider?: string
+    receiverType?: string
+    details?: DepositAccountDetails
+    status?: string
+}): Promise<AdminDepositAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/deposit-accounts/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as AdminDepositAccount
+        }
+
+        public async updateEnrollment(id: string, params: UpdateEnrollmentRequest): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/enrollments/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
+        }
+
+        public async updateOrganization(id: string, params: UpdateOrganizationRequest): Promise<{
+    success: boolean
+    organization: OrganizationDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/organizations/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    organization: OrganizationDetail
+}
+        }
+
+        /**
+         * Update a permission rule (super admin only)
+         */
+        public async updatePermissionRule(id: string, params: UpdatePermissionRuleRequest): Promise<{
+    success: boolean
+    rule: PermissionRuleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/permissions/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    rule: PermissionRuleResponse
+}
+        }
+
+        /**
+         * Update platform
+         */
+        public async updatePlatform(id: string, params: UpdatePlatformRequest): Promise<Platform> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/platforms/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as Platform
+        }
+
+        /**
+         * PATCH /admin/products/:id - Update product
+         */
+        public async updateProduct(id: string, params: {
+    name?: string
+    description?: string
+    sku?: string
+    categoryId?: string
+    platformId?: string
+    price?: number
+    productLink?: string
+    productImages?: ProductImageInput[]
+}): Promise<AdminProductResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/products/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as AdminProductResponse
+        }
+
+        /**
+         * Update rate limit (super admin only)
+         */
+        public async updateRateLimit(key: string, params: {
+    limit?: number
+    windowSeconds?: number
+}): Promise<{
+    success: boolean
+    rateLimit: PlatformRateLimitConfig
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/platform/rate-limits/${encodeURIComponent(key)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    rateLimit: PlatformRateLimitConfig
+}
+        }
+
+        public async updateShopper(shopperId: string, params: UpdateShopperRequest): Promise<{
+    success: boolean
+    shopper: ShopperDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/shoppers/${encodeURIComponent(shopperId)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    shopper: ShopperDetail
+}
+        }
+
+        /**
+         * Update system config by ID (admin)
+         */
+        public async updateSystemConfigById(id: string, params: UpdateConfigRequest): Promise<SystemConfigItem> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/admin/system-configs/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as SystemConfigItem
+        }
+
+        /**
+         * Validate order screenshot manually (admin)
+         */
+        public async validateOrderScreenshot(params: {
+    imageUrl: string
+    expectedOrderId?: string
+    expectedAmount?: number
+    expectedMerchant?: string
+    campaignProductName?: string
+}): Promise<{
+    extractedData: integrations.ExtractedOrderData
+    validation: {
+        orderIdMatch: boolean | null
+        amountMatch: boolean | null
+        merchantMatch: boolean | null
+        productMatch: boolean | null
+        overallValid: boolean
+        issues: string[]
+    }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/ocr/validate`, JSON.stringify(params))
+            return await resp.json() as {
+    extractedData: integrations.ExtractedOrderData
+    validation: {
+        orderIdMatch: boolean | null
+        amountMatch: boolean | null
+        merchantMatch: boolean | null
+        productMatch: boolean | null
+        overallValid: boolean
+        issues: string[]
+    }
+}
+        }
+
+        /**
+         * Force verify bank account
+         */
+        public async verifyBankAccount(id: string, bankId: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/bank-accounts/${encodeURIComponent(bankId)}/verify`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * Verify GST for organization (idempotent)
+         * Sets GST as verified if not already
+         */
+        public async verifyGst(id: string): Promise<{
+    success: boolean
+    alreadyVerified: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/verify-gst`)
+            return await resp.json() as {
+    success: boolean
+    alreadyVerified: boolean
+    message: string
+}
+        }
+
+        public async verifyOrganizationGST(id: string): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/organizations/${encodeURIComponent(id)}/gst/verify`)
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        public async verifyShopperAadhaar(shopperId: string, params: {
+    useApi?: boolean
+}): Promise<{
+    success: boolean
+    message: string
+    verificationResult?: {
+        isValid: boolean
+        name?: string
+        error?: string
+    }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/verify-aadhaar`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+    verificationResult?: {
+        isValid: boolean
+        name?: string
+        error?: string
+    }
+}
+        }
+
+        public async verifyShopperPAN(shopperId: string, params: {
+    useApi?: boolean
+}): Promise<{
+    success: boolean
+    message: string
+    verificationResult?: {
+        isValid: boolean
+        name?: string
+        error?: string
+    }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/shoppers/${encodeURIComponent(shopperId)}/verify-pan`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    message: string
+    verificationResult?: {
+        isValid: boolean
+        name?: string
+        error?: string
+    }
+}
+        }
+
+        /**
+         * POST /admin/withdrawal-methods/:id/verify - Verify withdrawal method
+         */
+        public async verifyWithdrawalMethod(id: string, params: {
+    verificationNotes?: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/withdrawal-methods/${encodeURIComponent(id)}/verify`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/invoices/:id/void - Void invoice
+         */
+        public async voidInvoice(id: string, params: {
+    reason: string
+}): Promise<shared.SuccessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/invoices/${encodeURIComponent(id)}/void`, JSON.stringify(params))
+            return await resp.json() as shared.SuccessResponse
+        }
+
+        /**
+         * POST /admin/enrollments/:id/withdraw
+         * Withdraw enrollment (admin action)
+         */
+        public async withdrawEnrollment(id: string, params: {
+    reason?: string
+}): Promise<{
+    success: boolean
+    enrollment: EnrollmentDetail
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/admin/enrollments/${encodeURIComponent(id)}/withdraw`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    enrollment: EnrollmentDetail
+}
         }
     }
 }
@@ -2708,26 +7684,73 @@ export namespace auth {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.acceptInvitation = this.acceptInvitation.bind(this)
+            this.addMember = this.addMember.bind(this)
+            this.addTeamMember = this.addTeamMember.bind(this)
+            this.adminBanUser = this.adminBanUser.bind(this)
+            this.adminCreateUser = this.adminCreateUser.bind(this)
+            this.adminGetUser = this.adminGetUser.bind(this)
+            this.adminHasPermission = this.adminHasPermission.bind(this)
+            this.adminImpersonateUser = this.adminImpersonateUser.bind(this)
+            this.adminListUserSessions = this.adminListUserSessions.bind(this)
+            this.adminListUsers = this.adminListUsers.bind(this)
+            this.adminRemoveUser = this.adminRemoveUser.bind(this)
+            this.adminRevokeUserSession = this.adminRevokeUserSession.bind(this)
+            this.adminRevokeUserSessions = this.adminRevokeUserSessions.bind(this)
+            this.adminSetRole = this.adminSetRole.bind(this)
+            this.adminSetUserPassword = this.adminSetUserPassword.bind(this)
+            this.adminStopImpersonating = this.adminStopImpersonating.bind(this)
+            this.adminUnbanUser = this.adminUnbanUser.bind(this)
+            this.adminUpdateUser = this.adminUpdateUser.bind(this)
+            this.betterAuthHandler = this.betterAuthHandler.bind(this)
+            this.cancelInvitation = this.cancelInvitation.bind(this)
             this.changeEmail = this.changeEmail.bind(this)
             this.changePassword = this.changePassword.bind(this)
+            this.checkSlug = this.checkSlug.bind(this)
+            this.createOrganization = this.createOrganization.bind(this)
+            this.createOrganizationRole = this.createOrganizationRole.bind(this)
+            this.createTeam = this.createTeam.bind(this)
+            this.deleteOrganization = this.deleteOrganization.bind(this)
+            this.deleteOrganizationRole = this.deleteOrganizationRole.bind(this)
             this.deleteUser = this.deleteUser.bind(this)
             this.deleteUserCallback = this.deleteUserCallback.bind(this)
             this.errorInfo = this.errorInfo.bind(this)
             this.forgotPassword = this.forgotPassword.bind(this)
             this.getAccessToken = this.getAccessToken.bind(this)
             this.getAccountInfo = this.getAccountInfo.bind(this)
+            this.getActiveMember = this.getActiveMember.bind(this)
+            this.getActiveMemberRole = this.getActiveMemberRole.bind(this)
+            this.getFullOrganization = this.getFullOrganization.bind(this)
             this.getInvitation = this.getInvitation.bind(this)
             this.getOpenAPISpec = this.getOpenAPISpec.bind(this)
+            this.getOrganizationRole = this.getOrganizationRole.bind(this)
             this.getPermissions = this.getPermissions.bind(this)
             this.getSession = this.getSession.bind(this)
+            this.hasOrganizationPermission = this.hasOrganizationPermission.bind(this)
+            this.hasPermission = this.hasPermission.bind(this)
             this.healthCheck = this.healthCheck.bind(this)
+            this.inviteMemberAuth = this.inviteMemberAuth.bind(this)
+            this.leaveOrganization = this.leaveOrganization.bind(this)
             this.linkSocial = this.linkSocial.bind(this)
             this.listAccounts = this.listAccounts.bind(this)
             this.listDeviceSessions = this.listDeviceSessions.bind(this)
+            this.listInvitations = this.listInvitations.bind(this)
+            this.listMembersAuth = this.listMembersAuth.bind(this)
+            this.listOrganizationRoles = this.listOrganizationRoles.bind(this)
+            this.listOrganizations = this.listOrganizations.bind(this)
             this.listSessions = this.listSessions.bind(this)
+            this.listTeamMembers = this.listTeamMembers.bind(this)
+            this.listTeams = this.listTeams.bind(this)
+            this.listUserInvitations = this.listUserInvitations.bind(this)
+            this.listUserTeams = this.listUserTeams.bind(this)
             this.me = this.me.bind(this)
+            this.oauthCallback = this.oauthCallback.bind(this)
             this.refreshOAuthToken = this.refreshOAuthToken.bind(this)
             this.refreshToken = this.refreshToken.bind(this)
+            this.rejectInvitation = this.rejectInvitation.bind(this)
+            this.removeMember = this.removeMember.bind(this)
+            this.removeTeam = this.removeTeam.bind(this)
+            this.removeTeamMember = this.removeTeamMember.bind(this)
             this.resetPassword = this.resetPassword.bind(this)
             this.resetPasswordCallback = this.resetPasswordCallback.bind(this)
             this.revokeDeviceSession = this.revokeDeviceSession.bind(this)
@@ -2735,7 +7758,9 @@ export namespace auth {
             this.revokeSession = this.revokeSession.bind(this)
             this.revokeSessions = this.revokeSessions.bind(this)
             this.sendVerificationEmail = this.sendVerificationEmail.bind(this)
+            this.setActiveOrganization = this.setActiveOrganization.bind(this)
             this.setActiveSession = this.setActiveSession.bind(this)
+            this.setActiveTeam = this.setActiveTeam.bind(this)
             this.setPassword = this.setPassword.bind(this)
             this.signInEmail = this.signInEmail.bind(this)
             this.signInSocial = this.signInSocial.bind(this)
@@ -2751,8 +7776,347 @@ export namespace auth {
             this.twoFactorVerifyTotp = this.twoFactorVerifyTotp.bind(this)
             this.twoFactorViewBackupCodes = this.twoFactorViewBackupCodes.bind(this)
             this.unlinkAccount = this.unlinkAccount.bind(this)
+            this.updateMemberRole = this.updateMemberRole.bind(this)
+            this.updateOrganizationAuth = this.updateOrganizationAuth.bind(this)
+            this.updateOrganizationRole = this.updateOrganizationRole.bind(this)
+            this.updateTeam = this.updateTeam.bind(this)
             this.updateUser = this.updateUser.bind(this)
             this.verifyEmail = this.verifyEmail.bind(this)
+        }
+
+        /**
+         * Accept invitation
+         * NOTE: Better Auth SDK automatically sets the joined organization as active
+         */
+        public async acceptInvitation(organizationId: string, invitationId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}/accept`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Add member directly to organization (without invitation)
+         * SDK returns member object directly (not wrapped)
+         */
+        public async addMember(organizationId: string, params: {
+    userId: string
+    role: "owner" | "admin" | "member"
+}): Promise<MemberResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/members`, JSON.stringify(params))
+            return await resp.json() as MemberResponse
+        }
+
+        /**
+         * Add team member
+         */
+        public async addTeamMember(organizationId: string, teamId: string, params: {
+    userId: string
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/teams/${encodeURIComponent(teamId)}/members`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Ban user (admin only)
+         */
+        public async adminBanUser(params: {
+    userId: string
+    banReason?: string
+    banExpiresIn?: number
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/ban-user`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Create user (admin only)
+         */
+        public async adminCreateUser(params: {
+    name: string
+    email: string
+    password: string
+    role?: string | string[]
+    data?: AdminUserData
+}): Promise<{
+    user: UserResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/create-user`, JSON.stringify(params))
+            return await resp.json() as {
+    user: UserResponse
+}
+        }
+
+        /**
+         * Get user by ID (admin only) - SDK returns user directly (not wrapped)
+         * Note: Encore requires named types, so we wrap in { user } for null support
+         */
+        public async adminGetUser(params: {
+    userId: string
+}): Promise<{
+    user: UserResponse | null
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                userId: params.userId,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/auth/admin/get-user`, undefined, {query})
+            return await resp.json() as {
+    user: UserResponse | null
+}
+        }
+
+        /**
+         * Check admin permission - SDK returns { error, success }
+         */
+        public async adminHasPermission(params: {
+    userId?: string
+    role?: string
+    permission?: { [key: string]: string[] }
+    permissions?: { [key: string]: string[] }
+}): Promise<{
+    error: null
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/has-permission`, JSON.stringify(params))
+            return await resp.json() as {
+    error: null
+    success: boolean
+}
+        }
+
+        /**
+         * Impersonate user (admin only) - SDK returns { session, user }
+         */
+        public async adminImpersonateUser(params: {
+    userId: string
+}): Promise<{
+    session: SessionResponse
+    user: UserResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/impersonate-user`, JSON.stringify(params))
+            return await resp.json() as {
+    session: SessionResponse
+    user: UserResponse
+}
+        }
+
+        /**
+         * List user sessions (admin only)
+         * SDK method: POST with body (not GET with query)
+         * SDK returns { sessions: SDKSessionWithImpersonatedBy[] }
+         */
+        public async adminListUserSessions(params: {
+    userId: string
+}): Promise<{
+    sessions: SessionResponse[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/list-user-sessions`, JSON.stringify(params))
+            return await resp.json() as {
+    sessions: SessionResponse[]
+}
+        }
+
+        /**
+         * List users (admin only)
+         * SDK path: /admin/list-users
+         */
+        public async adminListUsers(params: {
+    limit?: number
+    offset?: number
+    searchField?: "email" | "name"
+    searchValue?: string
+}): Promise<{
+    users: UserResponse[]
+    total: number
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                limit:       params.limit === undefined ? undefined : String(params.limit),
+                offset:      params.offset === undefined ? undefined : String(params.offset),
+                searchField: params.searchField === undefined ? undefined : String(params.searchField),
+                searchValue: params.searchValue,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/auth/admin/list-users`, undefined, {query})
+            return await resp.json() as {
+    users: UserResponse[]
+    total: number
+}
+        }
+
+        /**
+         * Remove user (admin only)
+         */
+        public async adminRemoveUser(params: {
+    userId: string
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/remove-user`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Revoke user session (admin only)
+         */
+        public async adminRevokeUserSession(params: {
+    sessionToken: string
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/revoke-user-session`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Revoke all user sessions (admin only)
+         */
+        public async adminRevokeUserSessions(params: {
+    userId: string
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/revoke-user-sessions`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Set user role (admin only)
+         * Note: SDK's setRole is for setting user's global role, not organization role
+         * For organization roles, use organization.setRole
+         */
+        public async adminSetRole(params: {
+    userId: string
+    role: string | string[]
+}): Promise<{
+    success: boolean
+    user?: UserResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/set-role`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    user?: UserResponse
+}
+        }
+
+        /**
+         * Set user password (admin only) - SDK returns { status }
+         */
+        public async adminSetUserPassword(params: {
+    userId: string
+    newPassword: string
+}): Promise<{
+    status: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/set-user-password`, JSON.stringify(params))
+            return await resp.json() as {
+    status: boolean
+}
+        }
+
+        /**
+         * Stop impersonating (admin only)
+         */
+        public async adminStopImpersonating(): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/stop-impersonating`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Unban user (admin only)
+         */
+        public async adminUnbanUser(params: {
+    userId: string
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/unban-user`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Update user (admin only) - SDK returns SDKUserWithRole directly (not wrapped)
+         * Note: Encore requires named types, so we wrap in { user }
+         */
+        public async adminUpdateUser(params: {
+    userId: string
+    data: {
+        name?: string
+        email?: string
+        role?: string | string[]
+        additionalFields?: AdminUpdateUserAdditionalFields
+    }
+}): Promise<{
+    user: UserResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/auth/admin/update-user`, JSON.stringify(params))
+            return await resp.json() as {
+    user: UserResponse
+}
+        }
+
+        /**
+         * DEPRECATED: Raw catch-all endpoint for Better Auth
+         * Use typed endpoints at /auth/* instead (endpoints-*.ts files)
+         * This endpoint is kept for backwards compatibility and will be removed in future
+         */
+        public async betterAuthHandler(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "HEAD" | "OPTIONS" | "TRACE", path: string[], body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/deprecated/better-auth/${path.map(encodeURIComponent).join("/")}`, body, options)
+        }
+
+        /**
+         * Cancel invitation
+         */
+        public async cancelInvitation(organizationId: string, invitationId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}/cancel`)
+            return await resp.json() as {
+    success: boolean
+}
         }
 
         /**
@@ -2788,6 +8152,99 @@ export namespace auth {
 }> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("POST", `/auth/change-password`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Check if slug is available
+         * SDK returns { status: boolean } where true = available
+         */
+        public async checkSlug(params: {
+    slug: string
+}): Promise<{
+    status: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/slug/check`, JSON.stringify(params))
+            return await resp.json() as {
+    status: boolean
+}
+        }
+
+        public async createOrganization(params: CreateOrganizationRequest): Promise<CreateOrganizationResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations`, JSON.stringify(params))
+            return await resp.json() as CreateOrganizationResponse
+        }
+
+        /**
+         * Create custom organization role
+         * FIX: Better Auth expects 'role' and 'permission' (not 'name' and 'permissions')
+         */
+        public async createOrganizationRole(organizationId: string, params: {
+    role: string
+    permission?: { [key: string]: string[] }
+}): Promise<{
+    success: boolean
+    role: RoleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/roles`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    role: RoleResponse
+}
+        }
+
+        /**
+         * Create team within organization
+         */
+        public async createTeam(organizationId: string, params: {
+    name: string
+    metadata?: TeamMetadata
+}): Promise<{
+    team: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/teams`, JSON.stringify(params))
+            return await resp.json() as {
+    team: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }
+}
+        }
+
+        /**
+         * Delete organization
+         */
+        public async deleteOrganization(organizationId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Delete organization role
+         */
+        public async deleteOrganizationRole(organizationId: string, roleId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/roles/${encodeURIComponent(roleId)}`)
             return await resp.json() as {
     success: boolean
 }
@@ -2931,6 +8388,167 @@ export namespace auth {
         }
 
         /**
+         * Get active member
+         * SDK returns member object directly with user info (or null)
+         * NOTE: Encore doesn't allow union return types like `Promise<T | null>`, so we wrap in a response object
+         */
+        public async getActiveMember(organizationId: string): Promise<ActiveMemberResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/members/active`)
+            return await resp.json() as ActiveMemberResponse
+        }
+
+        /**
+         * Get active member role
+         * SDK returns { role: string }
+         */
+        public async getActiveMemberRole(organizationId: string): Promise<{
+    role: string | null
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/members/active/role`)
+            return await resp.json() as {
+    role: string | null
+}
+        }
+
+        /**
+         * Get full organization details - Returns ALL business fields from database
+         * NOTE: Better Auth SDK's getFullOrganization only returns basic fields (id, name, slug, logo, createdAt)
+         * So we bypass it and query the database directly to get all additionalFields
+         */
+        public async getFullOrganization(organizationId: string, params: {
+    membersLimit?: number
+}): Promise<{
+    id: string
+    name: string
+    slug: string
+    logo: string | null
+    createdAt: string
+    updatedAt: string
+    /**
+     * Business details
+     */
+    description: string | null
+
+    website: string | null
+    businessType: string | null
+    industryCategory: string | null
+    contactPerson: string | null
+    phoneNumber: string | null
+    email: string | null
+    /**
+     * Address
+     */
+    address: string | null
+
+    city: string | null
+    state: string | null
+    country: string | null
+    postalCode: string | null
+    /**
+     * GST details
+     */
+    gstNumber: string | null
+
+    gstVerified: boolean
+    gstLegalName: string | null
+    gstTradeName: string | null
+    /**
+     * CIN
+     */
+    cinNumber: string | null
+
+    /**
+     * Status & tier
+     */
+    approvalStatus: string
+
+    accountTier: string
+    /**
+     * Financial
+     */
+    creditLimit: number | null
+
+    tdsRate: string
+    /**
+     * Readiness flags
+     */
+    paymentInReady: boolean
+
+    payoutReady: boolean
+    members: MemberResponse[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                membersLimit: params.membersLimit === undefined ? undefined : String(params.membersLimit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/full`, undefined, {query})
+            return await resp.json() as {
+    id: string
+    name: string
+    slug: string
+    logo: string | null
+    createdAt: string
+    updatedAt: string
+    /**
+     * Business details
+     */
+    description: string | null
+
+    website: string | null
+    businessType: string | null
+    industryCategory: string | null
+    contactPerson: string | null
+    phoneNumber: string | null
+    email: string | null
+    /**
+     * Address
+     */
+    address: string | null
+
+    city: string | null
+    state: string | null
+    country: string | null
+    postalCode: string | null
+    /**
+     * GST details
+     */
+    gstNumber: string | null
+
+    gstVerified: boolean
+    gstLegalName: string | null
+    gstTradeName: string | null
+    /**
+     * CIN
+     */
+    cinNumber: string | null
+
+    /**
+     * Status & tier
+     */
+    approvalStatus: string
+
+    accountTier: string
+    /**
+     * Financial
+     */
+    creditLimit: number | null
+
+    tdsRate: string
+    /**
+     * Readiness flags
+     */
+    paymentInReady: boolean
+
+    payoutReady: boolean
+    members: MemberResponse[]
+}
+        }
+
+        /**
          * Get invitation details (public - allows invitees to view invitation before accepting)
          * FIX BUG-004: Add headers: {} to prevent "Headers is required" error
          */
@@ -2958,6 +8576,19 @@ export namespace auth {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/auth/openapi.json`)
             return await resp.json() as OpenAPISpec
+        }
+
+        /**
+         * Get specific organization role
+         */
+        public async getOrganizationRole(organizationId: string, roleId: string): Promise<{
+    role: RoleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/roles/${encodeURIComponent(roleId)}`)
+            return await resp.json() as {
+    role: RoleResponse
+}
         }
 
         /**
@@ -2998,6 +8629,36 @@ export namespace auth {
         }
 
         /**
+         * Check if user has specific permission in organization
+         */
+        public async hasOrganizationPermission(organizationId: string, params: {
+    permission: { [key: string]: string[] }
+}): Promise<{
+    hasPermission: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/permissions/check`, JSON.stringify(params))
+            return await resp.json() as {
+    hasPermission: boolean
+}
+        }
+
+        /**
+         * Check if user has permission(s) in organization
+         */
+        public async hasPermission(params: {
+    permissions: { [key: string]: string[] }
+}): Promise<{
+    hasPermission: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/permissions/check`, JSON.stringify(params))
+            return await resp.json() as {
+    hasPermission: boolean
+}
+        }
+
+        /**
          * Health check
          */
         public async healthCheck(): Promise<{
@@ -3007,6 +8668,35 @@ export namespace auth {
             const resp = await this.baseClient.callTypedAPI("GET", `/auth/ok`)
             return await resp.json() as {
     ok: boolean
+}
+        }
+
+        /**
+         * Invite member to organization
+         */
+        public async inviteMemberAuth(organizationId: string, params: {
+    email: string
+    role: "owner" | "admin" | "member"
+}): Promise<{
+    invitation: InvitationResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/invitations`, JSON.stringify(params))
+            return await resp.json() as {
+    invitation: InvitationResponse
+}
+        }
+
+        /**
+         * Leave organization
+         */
+        public async leaveOrganization(organizationId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/leave`)
+            return await resp.json() as {
+    success: boolean
 }
         }
 
@@ -3062,6 +8752,72 @@ export namespace auth {
         }
 
         /**
+         * List invitations for organization
+         * SDK returns array directly
+         */
+        public async listInvitations(organizationId: string): Promise<InvitationsListResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/invitations`)
+            return await resp.json() as InvitationsListResponse
+        }
+
+        /**
+         * List members of organization
+         * SDK returns { members: [...], total: number }
+         */
+        public async listMembersAuth(organizationId: string): Promise<{
+    members: MemberResponse[]
+    total: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/members`)
+            return await resp.json() as {
+    members: MemberResponse[]
+    total: number
+}
+        }
+
+        /**
+         * List organization roles
+         */
+        public async listOrganizationRoles(organizationId: string): Promise<{
+    roles: RoleResponse[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/roles`)
+            return await resp.json() as {
+    roles: RoleResponse[]
+}
+        }
+
+        /**
+         * List user's organizations
+         */
+        public async listOrganizations(): Promise<{
+    organizations: {
+        id: string
+        name: string
+        slug: string
+        logo: string | null
+        createdAt: string
+        approvalStatus?: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations`)
+            return await resp.json() as {
+    organizations: {
+        id: string
+        name: string
+        slug: string
+        logo: string | null
+        createdAt: string
+        approvalStatus?: string
+    }[]
+}
+        }
+
+        /**
          * List all sessions - SDK returns array directly
          * Note: Encore requires named types, so we wrap in { sessions } but SDK expects array
          */
@@ -3076,12 +8832,89 @@ export namespace auth {
         }
 
         /**
+         * List team members
+         */
+        public async listTeamMembers(organizationId: string, teamId: string): Promise<{
+    members: MemberResponse[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/teams/${encodeURIComponent(teamId)}/members`)
+            return await resp.json() as {
+    members: MemberResponse[]
+}
+        }
+
+        /**
+         * List teams in organization
+         */
+        public async listTeams(organizationId: string): Promise<{
+    teams: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/teams`)
+            return await resp.json() as {
+    teams: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }[]
+}
+        }
+
+        /**
+         * List user's invitations
+         * SDK returns array directly
+         */
+        public async listUserInvitations(): Promise<InvitationsListResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/user/invitations`)
+            return await resp.json() as InvitationsListResponse
+        }
+
+        /**
+         * List user's teams
+         */
+        public async listUserTeams(organizationId: string): Promise<{
+    teams: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/user-teams`)
+            return await resp.json() as {
+    teams: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }[]
+}
+        }
+
+        /**
          * Get current authenticated user info (includes display fields for frontend)
          */
         public async me(): Promise<MeResponse> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/auth/me`)
             return await resp.json() as MeResponse
+        }
+
+        /**
+         * OAuth provider callback - handles Google, GitHub, etc redirects
+         * This is a raw endpoint because it needs to handle redirects and various response types
+         */
+        public async oauthCallback(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "HEAD" | "OPTIONS" | "TRACE", id: string, body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/auth/callback/${encodeURIComponent(id)}`, body, options)
         }
 
         /**
@@ -3120,6 +8953,58 @@ export namespace auth {
             return await resp.json() as {
     token: string | null
     expiresAt: string | null
+}
+        }
+
+        /**
+         * Reject invitation
+         */
+        public async rejectInvitation(organizationId: string, invitationId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}/reject`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Remove member from organization
+         */
+        public async removeMember(organizationId: string, memberIdOrEmail: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(memberIdOrEmail)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Remove team from organization
+         */
+        public async removeTeam(organizationId: string, teamId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/teams/${encodeURIComponent(teamId)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Remove team member
+         */
+        public async removeTeamMember(organizationId: string, teamId: string, userId: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(userId)}`)
+            return await resp.json() as {
+    success: boolean
 }
         }
 
@@ -3232,6 +9117,22 @@ export namespace auth {
         }
 
         /**
+         * Set active organization
+         * SDK already validates membership - throws FORBIDDEN if not a member
+         */
+        public async setActiveOrganization(params: {
+    organizationId: string | null
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/active`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
          * Set active session (switch between multi-sessions)
          * FIX BUG-030: Wrap with callBetterAuth for proper error handling (invalid token → 400, not 500)
          */
@@ -3246,6 +9147,22 @@ export namespace auth {
             return await resp.json() as {
     success: boolean
     token: string | null
+}
+        }
+
+        /**
+         * Set active team
+         * FIX BUG-046: Handle gracefully - return success even if team not found (clears active team)
+         */
+        public async setActiveTeam(params: {
+    teamId: string | null
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/teams/active`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
 }
         }
 
@@ -3529,6 +9446,84 @@ export namespace auth {
         }
 
         /**
+         * Update member role
+         */
+        public async updateMemberRole(organizationId: string, memberId: string, params: {
+    role: "owner" | "admin" | "member"
+}): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(memberId)}/role`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Update organization
+         */
+        public async updateOrganizationAuth(organizationId: string, params: {
+    name?: string
+    slug?: string
+    logo?: string
+}): Promise<{
+    organization: OrganizationResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/update`, JSON.stringify(params))
+            return await resp.json() as {
+    organization: OrganizationResponse
+}
+        }
+
+        /**
+         * Update organization role
+         * FIX: Better Auth expects 'roleId' and 'data.permission' (Record format)
+         */
+        public async updateOrganizationRole(organizationId: string, roleId: string, params: {
+    permission?: { [key: string]: string[] }
+}): Promise<{
+    success: boolean
+    role: RoleResponse
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/roles/${encodeURIComponent(roleId)}`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    role: RoleResponse
+}
+        }
+
+        /**
+         * Update team
+         */
+        public async updateTeam(organizationId: string, teamId: string, params: {
+    data: {
+        name?: string
+        metadata?: TeamMetadata
+    }
+}): Promise<{
+    team: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/teams/${encodeURIComponent(teamId)}`, JSON.stringify(params))
+            return await resp.json() as {
+    team: {
+        id: string
+        name: string
+        organizationId: string
+        createdAt: string
+    }
+}
+        }
+
+        /**
          * Update user profile
          */
         public async updateUser(params: {
@@ -3800,11 +9795,17 @@ export namespace campaigns {
          * List public campaigns for shoppers with unified filtering
          * Returns enriched campaign data with product, organization, and platform details
          * Query params:
-         * - featured: boolean - Show featured campaigns (most recent)
-         * - sort: "trending" | "recent" - Sort order (trending = most enrollments in 7 days)
-         * - q: string - Search by title/description
+         * - q: string - Search by title/description/product name/organization name
          * - platformId: string - Filter by product's platform
          * - categoryId: string - Filter by product's category
+         * - organizationId: string - Filter by organization (brand)
+         * - priceMin: number - Filter by minimum product price (in paise)
+         * - priceMax: number - Filter by maximum product price (in paise)
+         * - bonusMin: number - Filter by minimum bonus amount (in paise)
+         * - bonusMax: number - Filter by maximum bonus amount (in paise)
+         * - hasCapacity: boolean - Only show campaigns with available slots
+         * - featured: boolean - Show featured campaigns (most recent)
+         * - sort: "trending" | "recent" - Sort order (trending = most enrollments in 7 days)
          * - cursor: string - Cursor for pagination
          * - limit: number - Page size (1-100)
          */
@@ -3813,6 +9814,12 @@ export namespace campaigns {
     limit?: number
     platformId?: string
     categoryId?: string
+    organizationId?: string
+    priceMin?: number
+    priceMax?: number
+    bonusMin?: number
+    bonusMax?: number
+    hasCapacity?: boolean
     q?: string
     featured?: boolean
     sort?: "trending" | "recent"
@@ -3823,13 +9830,19 @@ export namespace campaigns {
 }> {
             // Convert our params into the objects we need for the request
             const query = makeRecord<string, string | string[]>({
-                categoryId: params.categoryId,
-                cursor:     params.cursor,
-                featured:   params.featured === undefined ? undefined : String(params.featured),
-                limit:      params.limit === undefined ? undefined : String(params.limit),
-                platformId: params.platformId,
-                q:          params.q,
-                sort:       params.sort === undefined ? undefined : String(params.sort),
+                bonusMax:       params.bonusMax === undefined ? undefined : String(params.bonusMax),
+                bonusMin:       params.bonusMin === undefined ? undefined : String(params.bonusMin),
+                categoryId:     params.categoryId,
+                cursor:         params.cursor,
+                featured:       params.featured === undefined ? undefined : String(params.featured),
+                hasCapacity:    params.hasCapacity === undefined ? undefined : String(params.hasCapacity),
+                limit:          params.limit === undefined ? undefined : String(params.limit),
+                organizationId: params.organizationId,
+                platformId:     params.platformId,
+                priceMax:       params.priceMax === undefined ? undefined : String(params.priceMax),
+                priceMin:       params.priceMin === undefined ? undefined : String(params.priceMin),
+                q:              params.q,
+                sort:           params.sort === undefined ? undefined : String(params.sort),
             })
 
             // Now make the actual call to the API
@@ -4166,6 +10179,21 @@ export namespace enrollments {
 
             proofScreenshot?: string
         }[]
+
+        /**
+         * Embedded campaign data for list view (avoids N+1 API calls)
+         */
+        campaign?: {
+            title: string
+            product?: {
+                name: string
+                primaryImage?: string
+            }
+            platform?: {
+                name: string
+                icon?: string
+            }
+        }
     }
 
     export interface EnrollmentDeliverable {
@@ -4202,6 +10230,15 @@ export namespace enrollments {
             status: string
             type: string
             productName?: string
+            productImage?: string
+            product?: {
+                name: string
+                primaryImage?: string
+            }
+            platform?: {
+                name: string
+                icon?: string
+            }
         }
 
         /**
@@ -4514,14 +10551,23 @@ export namespace enrollments {
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
             this.createEnrollment = this.createEnrollment.bind(this)
+            this.createTestDeliverable = this.createTestDeliverable.bind(this)
+            this.createTestProduct = this.createTestProduct.bind(this)
+            this.createTestScan = this.createTestScan.bind(this)
             this.deleteDeliverable = this.deleteDeliverable.bind(this)
+            this.fastCreateEnrollment = this.fastCreateEnrollment.bind(this)
             this.getEnrollment = this.getEnrollment.bind(this)
             this.getEnrollmentDetail = this.getEnrollmentDetail.bind(this)
             this.getEnrollmentPricing = this.getEnrollmentPricing.bind(this)
+            this.getEnrollmentStateDiagram = this.getEnrollmentStateDiagram.bind(this)
+            this.getEnrollmentTransitions = this.getEnrollmentTransitions.bind(this)
             this.getScanStatus = this.getScanStatus.bind(this)
+            this.linkTestDeliverableToCampaign = this.linkTestDeliverableToCampaign.bind(this)
             this.listEnrollments = this.listEnrollments.bind(this)
             this.resubmitEnrollment = this.resubmitEnrollment.bind(this)
             this.scanOrder = this.scanOrder.bind(this)
+            this.seedTestDataEndpoint = this.seedTestDataEndpoint.bind(this)
+            this.seedTestPermissionRules = this.seedTestPermissionRules.bind(this)
             this.submitDeliverables = this.submitDeliverables.bind(this)
             this.updateDeliverable = this.updateDeliverable.bind(this)
             this.withdrawEnrollment = this.withdrawEnrollment.bind(this)
@@ -4538,6 +10584,37 @@ export namespace enrollments {
         }
 
         /**
+         * Create a deliverable template for E2E testing
+         * Only available in local/development/test environments
+         */
+        public async createTestDeliverable(params: CreateTestDeliverableRequest): Promise<CreateTestDeliverableResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/deliverables/create`, JSON.stringify(params))
+            return await resp.json() as CreateTestDeliverableResponse
+        }
+
+        /**
+         * Create a product for E2E testing (bypasses permissions)
+         * Only available in local/development/test environments
+         */
+        public async createTestProduct(params: CreateTestProductRequest): Promise<CreateTestProductResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/products/create`, JSON.stringify(params))
+            return await resp.json() as CreateTestProductResponse
+        }
+
+        /**
+         * Create a completed OCR scan for E2E testing
+         * Simulates a successful OCR scan without requiring actual image processing
+         * Only available in local/development/test environments
+         */
+        public async createTestScan(params: CreateTestScanRequest): Promise<CreateTestScanResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/scans/create`, JSON.stringify(params))
+            return await resp.json() as CreateTestScanResponse
+        }
+
+        /**
          * DELETE /enrollments/:enrollmentId/deliverables/:deliverableId
          * Delete enrollment deliverable
          */
@@ -4549,6 +10626,17 @@ export namespace enrollments {
             return await resp.json() as {
     success: boolean
 }
+        }
+
+        /**
+         * Fast-create enrollment for E2E testing
+         * Bypasses OCR scan requirement
+         * Only available in local/development/test environments
+         */
+        public async fastCreateEnrollment(params: FastEnrollmentRequest): Promise<FastEnrollmentResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/enrollments/fast-create`, JSON.stringify(params))
+            return await resp.json() as FastEnrollmentResponse
         }
 
         /**
@@ -4583,6 +10671,36 @@ export namespace enrollments {
         }
 
         /**
+         * Get the enrollment workflow state machine diagram
+         * Useful for documentation and debugging
+         */
+        public async getEnrollmentStateDiagram(): Promise<{
+    diagram: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/state-machine/enrollment/diagram`)
+            return await resp.json() as {
+    diagram: string
+}
+        }
+
+        /**
+         * Get allowed transitions for a specific enrollment
+         * Shows which actions are currently valid for the enrollment's state
+         */
+        public async getEnrollmentTransitions(enrollmentId: string): Promise<{
+    enrollmentId: string
+    allowedTransitions: EnrollmentEventType[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/enrollments/${encodeURIComponent(enrollmentId)}/allowed-transitions`)
+            return await resp.json() as {
+    enrollmentId: string
+    allowedTransitions: EnrollmentEventType[]
+}
+        }
+
+        /**
          * GET /enrollments/scans/:scanId
          * Get OCR scan status
          */
@@ -4593,15 +10711,42 @@ export namespace enrollments {
         }
 
         /**
+         * Link a deliverable to a campaign for E2E testing
+         * Only available in local/development/test environments
+         */
+        public async linkTestDeliverableToCampaign(params: LinkDeliverableToCampaignRequest): Promise<LinkDeliverableToCampaignResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/campaign-deliverables/link`, JSON.stringify(params))
+            return await resp.json() as LinkDeliverableToCampaignResponse
+        }
+
+        /**
          * GET /enrollments
          * List shopper's own enrollments - CURSOR PAGINATION
          * Uses cursor for infinite scroll experience on mobile
+         * Query params:
+         * - q: string - Search by campaign title, product name, order ID
+         * - status: EnrollmentStatus - Filter by enrollment status
+         * - campaignId: string - Filter by specific campaign
+         * - dateFrom: string - Filter enrollments from date
+         * - dateTo: string - Filter enrollments until date
+         * - orderValueMin: number - Filter by minimum order value (paise)
+         * - orderValueMax: number - Filter by maximum order value (paise)
+         * - sortBy: "createdAt" | "orderValue" | "payout" - Sort field
+         * - sortOrder: "asc" | "desc" - Sort direction
          */
         public async listEnrollments(params: {
     cursor?: string
     limit?: number
     status?: shared.EnrollmentStatus
     campaignId?: string
+    q?: string
+    dateFrom?: string
+    dateTo?: string
+    orderValueMin?: number
+    orderValueMax?: number
+    sortBy?: "createdAt" | "orderValue" | "payout"
+    sortOrder?: "asc" | "desc"
 }): Promise<{
     data: Enrollment[]
     nextCursor: string | null
@@ -4609,10 +10754,17 @@ export namespace enrollments {
 }> {
             // Convert our params into the objects we need for the request
             const query = makeRecord<string, string | string[]>({
-                campaignId: params.campaignId,
-                cursor:     params.cursor,
-                limit:      params.limit === undefined ? undefined : String(params.limit),
-                status:     params.status === undefined ? undefined : String(params.status),
+                campaignId:    params.campaignId,
+                cursor:        params.cursor,
+                dateFrom:      params.dateFrom,
+                dateTo:        params.dateTo,
+                limit:         params.limit === undefined ? undefined : String(params.limit),
+                orderValueMax: params.orderValueMax === undefined ? undefined : String(params.orderValueMax),
+                orderValueMin: params.orderValueMin === undefined ? undefined : String(params.orderValueMin),
+                q:             params.q,
+                sortBy:        params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:     params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:        params.status === undefined ? undefined : String(params.status),
             })
 
             // Now make the actual call to the API
@@ -4645,6 +10797,28 @@ export namespace enrollments {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("POST", `/enrollments/scans`, JSON.stringify(params))
             return await resp.json() as ScanOrderResult
+        }
+
+        /**
+         * Seed test data for E2E testing
+         * Creates users, organizations, products, campaigns, etc.
+         * Only available in local/development/test environments
+         */
+        public async seedTestDataEndpoint(): Promise<SeedTestDataResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/seed-data`)
+            return await resp.json() as SeedTestDataResponse
+        }
+
+        /**
+         * Seed permission rules for E2E testing
+         * Creates a system user if needed and seeds all permission rules
+         * Only available in local/development/test environments
+         */
+        public async seedTestPermissionRules(): Promise<SeedPermissionRulesResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/seed-permissions`)
+            return await resp.json() as SeedPermissionRulesResponse
         }
 
         /**
@@ -4706,6 +10880,14 @@ export namespace integrations {
         productMatchScore?: number
 
         productMatchReason?: string
+        /**
+         * AI-driven validation results (when validation options provided)
+         */
+        validationPassed?: boolean
+
+        validationErrors?: string[]
+        amountDeviationPercent?: number
+        orderAgeDays?: number
     }
 
     export class ServiceClient {
@@ -4713,6 +10895,30 @@ export namespace integrations {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.novuBridge = this.novuBridge.bind(this)
+            this.novuHealth = this.novuHealth.bind(this)
+        }
+
+        /**
+         * Novu Bridge endpoint - handles workflow discovery and execution
+         */
+        public async novuBridge(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "HEAD" | "OPTIONS" | "TRACE", path: string[], body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/novu/${path.map(encodeURIComponent).join("/")}`, body, options)
+        }
+
+        /**
+         * Health check for Novu Bridge
+         */
+        public async novuHealth(): Promise<{
+    status: string
+    workflowCount: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/novu-health`)
+            return await resp.json() as {
+    status: string
+    workflowCount: number
+}
         }
     }
 }
@@ -4758,6 +10964,7 @@ export namespace notifications {
             this.getNotificationPreferences = this.getNotificationPreferences.bind(this)
             this.getUnreadCount = this.getUnreadCount.bind(this)
             this.markAllAsRead = this.markAllAsRead.bind(this)
+            this.novuWebhook = this.novuWebhook.bind(this)
             this.updateNotificationPreferences = this.updateNotificationPreferences.bind(this)
         }
 
@@ -4796,6 +11003,16 @@ export namespace notifications {
             return await resp.json() as {
     success: boolean
 }
+        }
+
+        /**
+         * Novu Webhook Endpoint
+         * 
+         * Receives delivery status updates from Novu.
+         * All tracking is in Novu Dashboard - we just log for debugging.
+         */
+        public async novuWebhook(method: "POST", body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/notifications/webhook/novu`, body, options)
         }
 
         /**
@@ -6233,6 +12450,1406 @@ export namespace organizations {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.activateCampaign = this.activateCampaign.bind(this)
+            this.addBankAccount = this.addBankAccount.bind(this)
+            this.addCampaignDeliverable = this.addCampaignDeliverable.bind(this)
+            this.addCampaignDeliverablesBatch = this.addCampaignDeliverablesBatch.bind(this)
+            this.approveEnrollment = this.approveEnrollment.bind(this)
+            this.archiveCampaign = this.archiveCampaign.bind(this)
+            this.batchEnrollments = this.batchEnrollments.bind(this)
+            this.bulkApproveEnrollments = this.bulkApproveEnrollments.bind(this)
+            this.bulkImportProducts = this.bulkImportProducts.bind(this)
+            this.bulkRejectEnrollments = this.bulkRejectEnrollments.bind(this)
+            this.cancelCampaign = this.cancelCampaign.bind(this)
+            this.createCampaign = this.createCampaign.bind(this)
+            this.createOrganizationWithdrawal = this.createOrganizationWithdrawal.bind(this)
+            this.createProduct = this.createProduct.bind(this)
+            this.deleteBankAccount = this.deleteBankAccount.bind(this)
+            this.deleteCampaign = this.deleteCampaign.bind(this)
+            this.deleteProduct = this.deleteProduct.bind(this)
+            this.duplicateCampaign = this.duplicateCampaign.bind(this)
+            this.endCampaign = this.endCampaign.bind(this)
+            this.exportEnrollments = this.exportEnrollments.bind(this)
+            this.extendEnrollmentDeadline = this.extendEnrollmentDeadline.bind(this)
+            this.fastApproveOrganization = this.fastApproveOrganization.bind(this)
+            this.fundOrganizationWallet = this.fundOrganizationWallet.bind(this)
+            this.generateInvoicePDF = this.generateInvoicePDF.bind(this)
+            this.getBankAccount = this.getBankAccount.bind(this)
+            this.getCampaign = this.getCampaign.bind(this)
+            this.getCampaignDeliverable = this.getCampaignDeliverable.bind(this)
+            this.getCampaignPerformance = this.getCampaignPerformance.bind(this)
+            this.getCampaignStats = this.getCampaignStats.bind(this)
+            this.getDashboardOverview = this.getDashboardOverview.bind(this)
+            this.getDeliverableSubmission = this.getDeliverableSubmission.bind(this)
+            this.getDepositAccount = this.getDepositAccount.bind(this)
+            this.getEnrollmentById = this.getEnrollmentById.bind(this)
+            this.getEnrollmentDetailById = this.getEnrollmentDetailById.bind(this)
+            this.getEnrollmentDetailForBrand = this.getEnrollmentDetailForBrand.bind(this)
+            this.getEnrollmentForBrand = this.getEnrollmentForBrand.bind(this)
+            this.getEnrollmentPricingForBrand = this.getEnrollmentPricingForBrand.bind(this)
+            this.getEnrollmentStats = this.getEnrollmentStats.bind(this)
+            this.getGSTDetails = this.getGSTDetails.bind(this)
+            this.getInvoice = this.getInvoice.bind(this)
+            this.getInvoiceLineItems = this.getInvoiceLineItems.bind(this)
+            this.getOrganizationActivity = this.getOrganizationActivity.bind(this)
+            this.getOrganizationCampaignStats = this.getOrganizationCampaignStats.bind(this)
+            this.getOrganizationProduct = this.getOrganizationProduct.bind(this)
+            this.getOrganizationStats = this.getOrganizationStats.bind(this)
+            this.getOrganizationWallet = this.getOrganizationWallet.bind(this)
+            this.getOrganizationWalletTransactions = this.getOrganizationWalletTransactions.bind(this)
+            this.getWalletHolds = this.getWalletHolds.bind(this)
+            this.listBankAccounts = this.listBankAccounts.bind(this)
+            this.listCampaignDeliverables = this.listCampaignDeliverables.bind(this)
+            this.listCampaignEnrollments = this.listCampaignEnrollments.bind(this)
+            this.listCampaigns = this.listCampaigns.bind(this)
+            this.listEnrollmentSubmissions = this.listEnrollmentSubmissions.bind(this)
+            this.listInvoices = this.listInvoices.bind(this)
+            this.listOrganizationEnrollments = this.listOrganizationEnrollments.bind(this)
+            this.listOrganizationProducts = this.listOrganizationProducts.bind(this)
+            this.listOrganizationWithdrawals = this.listOrganizationWithdrawals.bind(this)
+            this.listPendingSubmissions = this.listPendingSubmissions.bind(this)
+            this.listProductCampaigns = this.listProductCampaigns.bind(this)
+            this.markInvoiceViewed = this.markInvoiceViewed.bind(this)
+            this.pauseCampaign = this.pauseCampaign.bind(this)
+            this.rejectEnrollment = this.rejectEnrollment.bind(this)
+            this.removeCampaignDeliverable = this.removeCampaignDeliverable.bind(this)
+            this.requestChanges = this.requestChanges.bind(this)
+            this.requestCreditIncrease = this.requestCreditIncrease.bind(this)
+            this.resubmitOrganizationForApproval = this.resubmitOrganizationForApproval.bind(this)
+            this.resumeCampaign = this.resumeCampaign.bind(this)
+            this.setDefaultBankAccount = this.setDefaultBankAccount.bind(this)
+            this.submitCampaign = this.submitCampaign.bind(this)
+            this.unarchiveCampaign = this.unarchiveCampaign.bind(this)
+            this.updateBankAccount = this.updateBankAccount.bind(this)
+            this.updateCampaign = this.updateCampaign.bind(this)
+            this.updateCampaignDeliverable = this.updateCampaignDeliverable.bind(this)
+            this.updateCampaignPricing = this.updateCampaignPricing.bind(this)
+            this.updateOrganizationLogo = this.updateOrganizationLogo.bind(this)
+            this.updateProduct = this.updateProduct.bind(this)
+            this.validateCampaign = this.validateCampaign.bind(this)
+            this.verifyBankAccount = this.verifyBankAccount.bind(this)
+            this.verifyGSTPreview = this.verifyGSTPreview.bind(this)
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/activate
+         * Activate campaign (approved → active)
+         */
+        public async activateCampaign(organizationId: string, id: string): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/activate`)
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Add bank account
+         * URL-based multi-tenancy: organizationId in URL path
+         */
+        public async addBankAccount(organizationId: string, params: AddBankAccountRequest): Promise<OrganizationBankAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts`, JSON.stringify(params))
+            return await resp.json() as OrganizationBankAccount
+        }
+
+        /**
+         * Add single deliverable to campaign
+         */
+        public async addCampaignDeliverable(organizationId: string, params: {
+    campaignId: string
+    deliverableId: string
+    quantity?: number
+    isRequired?: boolean
+    instructions?: string
+}): Promise<CampaignDeliverableResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaign-deliverables`, JSON.stringify(params))
+            return await resp.json() as CampaignDeliverableResponse
+        }
+
+        /**
+         * Add multiple deliverables to campaign (batch operation for multi-step form)
+         */
+        public async addCampaignDeliverablesBatch(organizationId: string, campaignId: string, params: {
+    deliverables: {
+        deliverableId: string
+        quantity?: number
+        isRequired?: boolean
+        instructions?: string
+    }[]
+}): Promise<{
+    deliverables: CampaignDeliverableResponse[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/deliverables/batch`, JSON.stringify(params))
+            return await resp.json() as {
+    deliverables: CampaignDeliverableResponse[]
+}
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:campaignId/enrollments/:id/approve
+         * Approve enrollment (awaiting_review → approved)
+         */
+        public async approveEnrollment(organizationId: string, campaignId: string, id: string, params: {
+    remarks?: string
+}): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/approve`, JSON.stringify(params))
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/archive
+         * Archive campaign (completed/ended → archived)
+         */
+        public async archiveCampaign(organizationId: string, id: string): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/archive`)
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * POST /organizations/:organizationId/enrollments/batch
+         * Unified batch operations for enrollments
+         * Replaces: bulkApproveEnrollments, bulkRejectEnrollments
+         */
+        public async batchEnrollments(organizationId: string, params: {
+    action: "approve" | "reject"
+    ids: string[]
+    reason?: string
+    remarks?: string
+}): Promise<{
+    processed: number
+    failed: number
+    errors: { [key: string]: string }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/enrollments/batch`, JSON.stringify(params))
+            return await resp.json() as {
+    processed: number
+    failed: number
+    errors: { [key: string]: string }
+}
+        }
+
+        /**
+         * Legacy bulk approve (kept for backward compatibility, redirects to batch)
+         */
+        public async bulkApproveEnrollments(organizationId: string, params: {
+    enrollmentIds: string[]
+    remarks?: string
+}): Promise<{
+    approved: number
+    failed: number
+    errors: { [key: string]: string }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/enrollments/batch/approve`, JSON.stringify(params))
+            return await resp.json() as {
+    approved: number
+    failed: number
+    errors: { [key: string]: string }
+}
+        }
+
+        /**
+         * Bulk import products
+         * FIX BUG-017: Use BulkProductInput instead of CreateProductRequest - no organizationId in each product
+         */
+        public async bulkImportProducts(organizationId: string, params: {
+    products: BulkProductInput[]
+}): Promise<{
+    imported: number
+    failed: number
+    errors: string[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/products/batch/import`, JSON.stringify(params))
+            return await resp.json() as {
+    imported: number
+    failed: number
+    errors: string[]
+}
+        }
+
+        /**
+         * Bulk reject enrollments
+         */
+        public async bulkRejectEnrollments(organizationId: string, params: {
+    enrollmentIds: string[]
+    reason: string
+}): Promise<{
+    rejected: number
+    failed: number
+    errors: { [key: string]: string }
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/enrollments/batch/reject`, JSON.stringify(params))
+            return await resp.json() as {
+    rejected: number
+    failed: number
+    errors: { [key: string]: string }
+}
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/cancel
+         * Cancel campaign (draft/pending_approval → cancelled)
+         */
+        public async cancelCampaign(organizationId: string, id: string, params: {
+    reason?: string
+}): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/cancel`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Create a new campaign (requires organization membership)
+         */
+        public async createCampaign(organizationId: string, params: CreateCampaignRequest): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Create organization withdrawal (brand)
+         * NOTE: Organizations can only have ONE bank account (closed-loop policy).
+         * Withdrawals go to the same bank account they use for deposits.
+         */
+        public async createOrganizationWithdrawal(organizationId: string, params: {
+    amount: number
+    notes?: string
+}): Promise<Withdrawal> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/wallet/withdrawals`, JSON.stringify(params))
+            return await resp.json() as Withdrawal
+        }
+
+        /**
+         * Create a new product
+         */
+        public async createProduct(organizationId: string, params: CreateProductRequest): Promise<Product> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/products`, JSON.stringify(params))
+            return await resp.json() as Product
+        }
+
+        /**
+         * Delete bank account (soft delete)
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async deleteBankAccount(organizationId: string, id: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Delete campaign (soft delete, draft only)
+         */
+        public async deleteCampaign(organizationId: string, id: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Delete product
+         */
+        public async deleteProduct(organizationId: string, id: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/products/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * Duplicate campaign (creates a copy in draft status)
+         */
+        public async duplicateCampaign(organizationId: string, id: string, params: {
+    newTitle?: string
+}): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/duplicate`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/end
+         * End campaign (active/paused → ended)
+         */
+        public async endCampaign(organizationId: string, id: string, params: {
+    reason?: string
+}): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/end`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Export enrollments data
+         */
+        public async exportEnrollments(organizationId: string, campaignId: string, params: {
+    status?: shared.EnrollmentStatus
+}): Promise<ExportResponse> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                status: params.status === undefined ? undefined : String(params.status),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/export`, undefined, {query})
+            return await resp.json() as ExportResponse
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:campaignId/enrollments/:id/extend
+         * Extend enrollment deadline
+         */
+        public async extendEnrollmentDeadline(organizationId: string, campaignId: string, id: string, params: {
+    expiresAt: string
+}): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/extend`, JSON.stringify(params))
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * Fast-approve organization for E2E testing
+         * Bypasses admin approval workflow and GST verification
+         * Only available in local/development/test environments
+         */
+        public async fastApproveOrganization(id: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/test/organizations/${encodeURIComponent(id)}/fast-approve`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * Fund organization wallet (brand)
+         */
+        public async fundOrganizationWallet(organizationId: string, params: {
+    amount: number
+    reason: string
+    /**
+     * Unique reference for this funding transaction.
+     * REQUIRED for idempotency - prevents duplicate funding on retry.
+     * Should be unique per funding operation (e.g., "FUND-ORG-2024-001")
+     */
+    reference: string
+}): Promise<FundWalletResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/wallet/fund`, JSON.stringify(params))
+            return await resp.json() as FundWalletResponse
+        }
+
+        /**
+         * Generate invoice PDF
+         */
+        public async generateInvoicePDF(organizationId: string, id: string): Promise<{
+    pdfUrl: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/invoices/${encodeURIComponent(id)}/pdf`)
+            return await resp.json() as {
+    pdfUrl: string
+}
+        }
+
+        /**
+         * Get bank account by ID
+         * URL-based multi-tenancy: organizationId comes from URL path
+         * showFull query param: if true, includes full account number (owner/admin only)
+         */
+        public async getBankAccount(organizationId: string, id: string, params: {
+    showFull?: boolean
+}): Promise<OrganizationBankAccount> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                showFull: params.showFull === undefined ? undefined : String(params.showFull),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts/${encodeURIComponent(id)}`, undefined, {query})
+            return await resp.json() as OrganizationBankAccount
+        }
+
+        /**
+         * Get campaign by ID - secured endpoint for campaign owners/org members (brand-only, shoppers use getPublicCampaign)
+         */
+        public async getCampaign(organizationId: string, id: string): Promise<CampaignWithStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}`)
+            return await resp.json() as CampaignWithStats
+        }
+
+        /**
+         * Get campaign deliverable by ID
+         */
+        public async getCampaignDeliverable(organizationId: string, id: string): Promise<CampaignDeliverableResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaign-deliverables/${encodeURIComponent(id)}`)
+            return await resp.json() as CampaignDeliverableResponse
+        }
+
+        /**
+         * Get campaign performance over time
+         */
+        public async getCampaignPerformance(organizationId: string, id: string, params: {
+    startDate?: string
+    endDate?: string
+}): Promise<CampaignPerformanceResponse> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                endDate:   params.endDate,
+                startDate: params.startDate,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/performance`, undefined, {query})
+            return await resp.json() as CampaignPerformanceResponse
+        }
+
+        /**
+         * Get campaign statistics
+         */
+        public async getCampaignStats(organizationId: string, id: string): Promise<CampaignStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/stats`)
+            return await resp.json() as CampaignStats
+        }
+
+        /**
+         * Get comprehensive dashboard overview for organization
+         */
+        public async getDashboardOverview(organizationId: string, params: {
+    days?: number
+}): Promise<DashboardOverviewResponse> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                days: params.days === undefined ? undefined : String(params.days),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/dashboard`, undefined, {query})
+            return await resp.json() as DashboardOverviewResponse
+        }
+
+        /**
+         * Get submission by ID
+         */
+        public async getDeliverableSubmission(organizationId: string, id: string): Promise<DeliverableSubmissionResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/deliverable-submissions/${encodeURIComponent(id)}`)
+            return await resp.json() as DeliverableSubmissionResponse
+        }
+
+        /**
+         * Get deposit account for organization (for brands to see their virtual account details)
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async getDepositAccount(organizationId: string): Promise<DepositAccountResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/deposit-account`)
+            return await resp.json() as DepositAccountResponse
+        }
+
+        /**
+         * GET /organizations/:organizationId/enrollments/:enrollmentId
+         * Get enrollment by ID directly - no campaignId required
+         * Validates that enrollment belongs to organization via campaign relationship
+         */
+        public async getEnrollmentById(organizationId: string, enrollmentId: string): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/enrollments/${encodeURIComponent(enrollmentId)}`)
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * GET /organizations/:organizationId/enrollments/:enrollmentId/detail
+         * Get enrollment detail by ID directly - no campaignId required
+         * Returns full enrollment with shopper, campaign, platform, OCR, submissions, history, pricing
+         */
+        public async getEnrollmentDetailById(organizationId: string, enrollmentId: string): Promise<EnrollmentDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/enrollments/${encodeURIComponent(enrollmentId)}/detail`)
+            return await resp.json() as EnrollmentDetail
+        }
+
+        /**
+         * BRAND: Get detailed enrollment with all relations (for UI detail view)
+         */
+        public async getEnrollmentDetailForBrand(organizationId: string, campaignId: string, id: string): Promise<EnrollmentDetail> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/detail`)
+            return await resp.json() as EnrollmentDetail
+        }
+
+        /**
+         * BRAND: Get enrollment basic info (without deliverables)
+         */
+        public async getEnrollmentForBrand(organizationId: string, campaignId: string, id: string): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}`)
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * BRAND: Get enrollment pricing breakdown
+         */
+        public async getEnrollmentPricingForBrand(organizationId: string, campaignId: string, id: string): Promise<EnrollmentPricing> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/pricing`)
+            return await resp.json() as EnrollmentPricing
+        }
+
+        /**
+         * Get enrollment statistics for campaign
+         */
+        public async getEnrollmentStats(organizationId: string, campaignId: string): Promise<{
+    total: number
+    awaitingSubmission: number
+    awaitingReview: number
+    changesRequested: number
+    approved: number
+    rejected: number
+    withdrawn: number
+    expired: number
+    totalOrderValue: number
+    totalPayouts: number
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollment-stats`)
+            return await resp.json() as {
+    total: number
+    awaitingSubmission: number
+    awaitingReview: number
+    changesRequested: number
+    approved: number
+    rejected: number
+    withdrawn: number
+    expired: number
+    totalOrderValue: number
+    totalPayouts: number
+}
+        }
+
+        /**
+         * Get GST details
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async getGSTDetails(organizationId: string): Promise<GSTDetailsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/gst`)
+            return await resp.json() as GSTDetailsResponse
+        }
+
+        /**
+         * Get invoice by ID (with enrollment count)
+         */
+        public async getInvoice(organizationId: string, id: string): Promise<Invoice> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/invoices/${encodeURIComponent(id)}`)
+            return await resp.json() as Invoice
+        }
+
+        /**
+         * Get invoice line items
+         */
+        public async getInvoiceLineItems(organizationId: string, id: string): Promise<InvoiceLineItemsResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/invoices/${encodeURIComponent(id)}/line-items`)
+            return await resp.json() as InvoiceLineItemsResponse
+        }
+
+        /**
+         * Get organization activity timeline - CURSOR PAGINATION
+         * URL-based multi-tenancy: organizationId comes from URL path
+         * Uses cursor for infinite scroll in activity feed
+         */
+        public async getOrganizationActivity(organizationId: string, params: {
+    cursor?: string
+    limit?: number
+}): Promise<{
+    data: ActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                cursor: params.cursor,
+                limit:  params.limit === undefined ? undefined : String(params.limit),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/activity`, undefined, {query})
+            return await resp.json() as {
+    data: ActivityLogEntry[]
+    nextCursor: string | null
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get campaign-level statistics
+         * Get organization campaign stats
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async getOrganizationCampaignStats(organizationId: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: OrganizationCampaignStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaign-stats`, undefined, {query})
+            return await resp.json() as {
+    data: OrganizationCampaignStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get organization product by ID (brand-only)
+         * Organization-scoped endpoint for brands to view their own product details
+         */
+        public async getOrganizationProduct(organizationId: string, id: string): Promise<ProductWithStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/products/${encodeURIComponent(id)}`)
+            return await resp.json() as ProductWithStats
+        }
+
+        /**
+         * Get organization statistics
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async getOrganizationStats(organizationId: string): Promise<OrganizationStats> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/stats`)
+            return await resp.json() as OrganizationStats
+        }
+
+        /**
+         * Get organization wallet
+         */
+        public async getOrganizationWallet(organizationId: string): Promise<OrganizationWalletResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/wallet`)
+            return await resp.json() as OrganizationWalletResponse
+        }
+
+        /**
+         * Get organization wallet transactions (brand)
+         * Uses Blnk's native page/per_page pagination and filter_by for efficient fetching.
+         * Filter syntax: https://docs.blnkfinance.com/search/filtering
+         */
+        public async getOrganizationWalletTransactions(organizationId: string, params: {
+    skip?: number
+    take?: number
+    type?: "credit" | "debit"
+    dateFrom?: string
+    dateTo?: string
+    amountMin?: number
+    amountMax?: number
+    sortBy?: "createdAt" | "amount"
+    sortOrder?: "asc" | "desc"
+}): Promise<{
+    data: WalletTransaction[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                amountMax: params.amountMax === undefined ? undefined : String(params.amountMax),
+                amountMin: params.amountMin === undefined ? undefined : String(params.amountMin),
+                dateFrom:  params.dateFrom,
+                dateTo:    params.dateTo,
+                skip:      params.skip === undefined ? undefined : String(params.skip),
+                sortBy:    params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder: params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:      params.take === undefined ? undefined : String(params.take),
+                type:      params.type === undefined ? undefined : String(params.type),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/wallet/transactions`, undefined, {query})
+            return await resp.json() as {
+    data: WalletTransaction[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Get organization wallet active holds (enrollment holds)
+         */
+        public async getWalletHolds(organizationId: string): Promise<{
+    holds: ActiveHold[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/wallet/holds`)
+            return await resp.json() as {
+    holds: ActiveHold[]
+}
+        }
+
+        /**
+         * List bank accounts (bounded list - max 1 per org by schema)
+         * showFull query param: if true, includes full account number (owner/admin only)
+         */
+        public async listBankAccounts(organizationId: string, params: {
+    showFull?: boolean
+}): Promise<{
+    data: OrganizationBankAccount[]
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                showFull: params.showFull === undefined ? undefined : String(params.showFull),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts`, undefined, {query})
+            return await resp.json() as {
+    data: OrganizationBankAccount[]
+}
+        }
+
+        /**
+         * List campaign deliverables
+         */
+        public async listCampaignDeliverables(organizationId: string, campaignId: string): Promise<{
+    data: CampaignDeliverableResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/deliverables`)
+            return await resp.json() as {
+    data: CampaignDeliverableResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List campaign enrollments (for brand)
+         */
+        public async listCampaignEnrollments(organizationId: string, campaignId: string, params: {
+    skip?: number
+    take?: number
+    status?: shared.EnrollmentStatus
+    shopperId?: string
+    search?: string
+    createdFrom?: string
+    createdTo?: string
+    sortBy?: "createdAt" | "orderValue" | "status"
+    sortOrder?: "asc" | "desc"
+}): Promise<{
+    data: EnrollmentWithRelations[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                createdFrom: params.createdFrom,
+                createdTo:   params.createdTo,
+                search:      params.search,
+                shopperId:   params.shopperId,
+                skip:        params.skip === undefined ? undefined : String(params.skip),
+                sortBy:      params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:   params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:      params.status === undefined ? undefined : String(params.status),
+                take:        params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments`, undefined, {query})
+            return await resp.json() as {
+    data: EnrollmentWithRelations[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List campaigns with pagination and filters (includes stats via SQL subqueries) - brand-only
+         */
+        public async listCampaigns(organizationId: string, params: ListCampaignsParams): Promise<{
+    data: CampaignWithStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                categoryId:    params.categoryId,
+                platformId:    params.platformId,
+                productId:     params.productId,
+                search:        params.search,
+                skip:          params.skip === undefined ? undefined : String(params.skip),
+                sortBy:        params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:     params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                startDateFrom: params.startDateFrom,
+                startDateTo:   params.startDateTo,
+                status:        params.status === undefined ? undefined : String(params.status),
+                take:          params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns`, undefined, {query})
+            return await resp.json() as {
+    data: CampaignWithStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List submissions for an enrollment
+         */
+        public async listEnrollmentSubmissions(organizationId: string, enrollmentId: string): Promise<{
+    data: DeliverableSubmissionResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/enrollments/${encodeURIComponent(enrollmentId)}/submissions`)
+            return await resp.json() as {
+    data: DeliverableSubmissionResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List organization invoices (with enrollment counts)
+         * Pure client-side multi-tenancy: organizationId from URL path
+         */
+        public async listInvoices(organizationId: string, params: ListInvoicesParams): Promise<{
+    data: Invoice[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                amountMax:      params.amountMax === undefined ? undefined : String(params.amountMax),
+                amountMin:      params.amountMin === undefined ? undefined : String(params.amountMin),
+                dueDateFrom:    params.dueDateFrom,
+                dueDateTo:      params.dueDateTo,
+                issuedDateFrom: params.issuedDateFrom,
+                issuedDateTo:   params.issuedDateTo,
+                skip:           params.skip === undefined ? undefined : String(params.skip),
+                sortBy:         params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:      params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:         params.status === undefined ? undefined : String(params.status),
+                take:           params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/invoices`, undefined, {query})
+            return await resp.json() as {
+    data: Invoice[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List organization enrollments (for brand - all enrollments across all campaigns)
+         * Pure client-side multi-tenancy: organizationId from URL path
+         */
+        public async listOrganizationEnrollments(organizationId: string, params: {
+    skip?: number
+    take?: number
+    status?: shared.EnrollmentStatus
+    campaignId?: string
+    shopperId?: string
+    search?: string
+    createdFrom?: string
+    createdTo?: string
+    sortBy?: "createdAt" | "orderValue" | "status"
+    sortOrder?: "asc" | "desc"
+}): Promise<{
+    data: EnrollmentWithRelations[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId:  params.campaignId,
+                createdFrom: params.createdFrom,
+                createdTo:   params.createdTo,
+                search:      params.search,
+                shopperId:   params.shopperId,
+                skip:        params.skip === undefined ? undefined : String(params.skip),
+                sortBy:      params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:   params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:      params.status === undefined ? undefined : String(params.status),
+                take:        params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/enrollments`, undefined, {query})
+            return await resp.json() as {
+    data: EnrollmentWithRelations[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List organization products (with stats)
+         */
+        public async listOrganizationProducts(organizationId: string, params: ListOrganizationProductsParams): Promise<{
+    data: ProductWithStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                categoryId: params.categoryId,
+                platformId: params.platformId,
+                priceMax:   params.priceMax === undefined ? undefined : String(params.priceMax),
+                priceMin:   params.priceMin === undefined ? undefined : String(params.priceMin),
+                search:     params.search,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                sortBy:     params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:  params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/products`, undefined, {query})
+            return await resp.json() as {
+    data: ProductWithStats[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List organization withdrawals (brand)
+         */
+        public async listOrganizationWithdrawals(organizationId: string, params: {
+    skip?: number
+    take?: number
+    status?: shared.WithdrawalStatus
+    requestedFrom?: string
+    requestedTo?: string
+    amountMin?: number
+    amountMax?: number
+    sortBy?: "requestedAt" | "amount" | "status"
+    sortOrder?: "asc" | "desc"
+}): Promise<{
+    data: Withdrawal[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                amountMax:     params.amountMax === undefined ? undefined : String(params.amountMax),
+                amountMin:     params.amountMin === undefined ? undefined : String(params.amountMin),
+                requestedFrom: params.requestedFrom,
+                requestedTo:   params.requestedTo,
+                skip:          params.skip === undefined ? undefined : String(params.skip),
+                sortBy:        params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:     params.sortOrder === undefined ? undefined : String(params.sortOrder),
+                status:        params.status === undefined ? undefined : String(params.status),
+                take:          params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/wallet/withdrawals`, undefined, {query})
+            return await resp.json() as {
+    data: Withdrawal[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List pending submissions for review (organization)
+         */
+        public async listPendingSubmissions(organizationId: string, params: {
+    skip?: number
+    take?: number
+    campaignId?: string
+}): Promise<{
+    data: DeliverableSubmissionResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                campaignId: params.campaignId,
+                skip:       params.skip === undefined ? undefined : String(params.skip),
+                take:       params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/submissions/pending`, undefined, {query})
+            return await resp.json() as {
+    data: DeliverableSubmissionResponse[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * List campaigns for a product
+         */
+        public async listProductCampaigns(organizationId: string, id: string, params: {
+    skip?: number
+    take?: number
+}): Promise<{
+    data: {
+        id: string
+        title: string
+        status: string
+        startDate: string
+        endDate: string
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                skip: params.skip === undefined ? undefined : String(params.skip),
+                take: params.take === undefined ? undefined : String(params.take),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/products/${encodeURIComponent(id)}/campaigns`, undefined, {query})
+            return await resp.json() as {
+    data: {
+        id: string
+        title: string
+        status: string
+        startDate: string
+        endDate: string
+    }[]
+    total: number
+    skip: number
+    take: number
+    hasMore: boolean
+}
+        }
+
+        /**
+         * Mark invoice as viewed
+         */
+        public async markInvoiceViewed(organizationId: string, id: string): Promise<Invoice> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/invoices/${encodeURIComponent(id)}/mark-viewed`)
+            return await resp.json() as Invoice
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/pause
+         * Pause campaign (active → paused)
+         */
+        public async pauseCampaign(organizationId: string, id: string, params: {
+    reason?: string
+}): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/pause`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:campaignId/enrollments/:id/reject
+         * Permanently reject enrollment (awaiting_review → permanently_rejected)
+         */
+        public async rejectEnrollment(organizationId: string, campaignId: string, id: string, params: {
+    reason: string
+    feedback?: { [key: string]: string }
+}): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/reject`, JSON.stringify(params))
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * Remove deliverable from campaign
+         */
+        public async removeCampaignDeliverable(organizationId: string, id: string): Promise<{
+    success: boolean
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("DELETE", `/organizations/${encodeURIComponent(organizationId)}/campaign-deliverables/${encodeURIComponent(id)}`)
+            return await resp.json() as {
+    success: boolean
+}
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:campaignId/enrollments/:id/request-changes
+         * Request changes from shopper (awaiting_review → changes_requested)
+         */
+        public async requestChanges(organizationId: string, campaignId: string, id: string, params: {
+    reason: string
+    feedback?: { [key: string]: string }
+}): Promise<Enrollment> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(campaignId)}/enrollments/${encodeURIComponent(id)}/request-changes`, JSON.stringify(params))
+            return await resp.json() as Enrollment
+        }
+
+        /**
+         * Request credit limit increase
+         */
+        public async requestCreditIncrease(organizationId: string, params: {
+    requestedAmount: number
+    reason?: string
+}): Promise<{
+    success: boolean
+    requestId: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/request-credit-increase`, JSON.stringify(params))
+            return await resp.json() as {
+    success: boolean
+    requestId: string
+}
+        }
+
+        /**
+         * Resubmit organization for approval (after rejection)
+         */
+        public async resubmitOrganizationForApproval(organizationId: string): Promise<{
+    success: boolean
+    message: string
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/resubmit-for-approval`)
+            return await resp.json() as {
+    success: boolean
+    message: string
+}
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/resume
+         * Resume campaign (paused → active)
+         */
+        public async resumeCampaign(organizationId: string, id: string): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/resume`)
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Set default bank account
+         * NOTE: Organizations only have 1 bank account (closed-loop policy), so this is a no-op
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async setDefaultBankAccount(organizationId: string, id: string): Promise<OrganizationBankAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts/${encodeURIComponent(id)}/set-default`)
+            return await resp.json() as OrganizationBankAccount
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/submit
+         * Submit campaign for approval (draft → pending_approval)
+         */
+        public async submitCampaign(organizationId: string, id: string): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/submit`)
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * POST /organizations/:organizationId/campaigns/:id/unarchive
+         * Unarchive campaign (archived → ended)
+         */
+        public async unarchiveCampaign(organizationId: string, id: string): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/unarchive`)
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Update bank account
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async updateBankAccount(organizationId: string, id: string, params: UpdateBankAccountRequest): Promise<OrganizationBankAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as OrganizationBankAccount
+        }
+
+        /**
+         * PATCH /organizations/:organizationId/campaigns/:id
+         * Update campaign fields (draft only)
+         */
+        public async updateCampaign(organizationId: string, id: string, params: {
+    title?: string
+    description?: string
+    startDate?: string
+    endDate?: string
+    maxEnrollments?: number
+    isPublic?: boolean
+    termsAndConditions?: string
+}): Promise<Campaign> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as Campaign
+        }
+
+        /**
+         * Update campaign deliverable
+         */
+        public async updateCampaignDeliverable(organizationId: string, id: string, params: {
+    quantity?: number
+    isRequired?: boolean
+    instructions?: string
+}): Promise<CampaignDeliverableResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/campaign-deliverables/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as CampaignDeliverableResponse
+        }
+
+        /**
+         * Update campaign pricing (admin only, before activation)
+         */
+        public async updateCampaignPricing(organizationId: string, id: string, params: {
+    rebatePercentage?: number
+    billRate?: number
+    platformFee?: number
+    bonusAmount?: number
+}): Promise<CampaignPricing> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/pricing`, JSON.stringify(params))
+            return await resp.json() as CampaignPricing
+        }
+
+        /**
+         * Update organization logo
+         */
+        public async updateOrganizationLogo(organizationId: string, params: {
+    logoUrl: string
+}): Promise<Organization> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/logo`, JSON.stringify(params))
+            return await resp.json() as Organization
+        }
+
+        /**
+         * Update product
+         */
+        public async updateProduct(organizationId: string, id: string, params: UpdateProductRequest): Promise<Product> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("PATCH", `/organizations/${encodeURIComponent(organizationId)}/products/${encodeURIComponent(id)}`, JSON.stringify(params))
+            return await resp.json() as Product
+        }
+
+        /**
+         * Validate campaign readiness (for review step in multi-step form)
+         */
+        public async validateCampaign(organizationId: string, id: string): Promise<{
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/organizations/${encodeURIComponent(organizationId)}/campaigns/${encodeURIComponent(id)}/validate`)
+            return await resp.json() as {
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+}
+        }
+
+        /**
+         * Verify bank account (penny drop)
+         * URL-based multi-tenancy: organizationId comes from URL path
+         */
+        public async verifyBankAccount(organizationId: string, id: string): Promise<OrganizationBankAccount> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/organizations/${encodeURIComponent(organizationId)}/bank-accounts/${encodeURIComponent(id)}/verify`)
+            return await resp.json() as OrganizationBankAccount
+        }
+
+        public async verifyGSTPreview(params: {
+    gstNumber: string
+}): Promise<GSTPreviewResult> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("POST", `/gst/verify-preview`, JSON.stringify(params))
+            return await resp.json() as GSTPreviewResult
         }
     }
 }
@@ -6644,6 +14261,37 @@ export namespace shared {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.health = this.health.bind(this)
+            this.healthDetails = this.healthDetails.bind(this)
+            this.live = this.live.bind(this)
+            this.ready = this.ready.bind(this)
+        }
+
+        public async health(): Promise<HealthResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/health`)
+            return await resp.json() as HealthResponse
+        }
+
+        public async healthDetails(): Promise<DetailedHealthResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/health/details`)
+            return await resp.json() as DetailedHealthResponse
+        }
+
+        /**
+         * Alias for k8s compatibility
+         */
+        public async live(): Promise<HealthResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/live`)
+            return await resp.json() as HealthResponse
+        }
+
+        public async ready(): Promise<ReadinessResponse> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/ready`)
+            return await resp.json() as ReadinessResponse
         }
     }
 }
@@ -6655,6 +14303,123 @@ export namespace shoppers {
 
     export type KYCStatus = "not_started" | "pending" | "verified" | "rejected"
 
+    export interface SearchCampaignInfo {
+        id: string
+        title: string
+    }
+
+    export interface SearchFacets {
+        campaigns: number
+        enrollments: number
+        withdrawals: number
+    }
+
+    export interface SearchOrganizationInfo {
+        id: string
+        name: string
+        logo?: string
+    }
+
+    export interface SearchPlatformInfo {
+        id: string
+        name: string
+        icon?: string
+    }
+
+    export interface SearchProductInfo {
+        id: string
+        name: string
+        priceDecimal?: string
+        primaryImage?: string
+    }
+
+    export interface SearchResult {
+        /**
+         * Result type: campaign, enrollment, or withdrawal
+         */
+        resultType: "campaign" | "enrollment" | "withdrawal"
+
+        /**
+         * Resource ID
+         */
+        id: string
+
+        /**
+         * Display title (campaign title, order ID, or withdrawal amount)
+         */
+        title: string
+
+        /**
+         * Optional description
+         */
+        description?: string
+
+        /**
+         * Status string
+         */
+        status: string
+
+        /**
+         * Created/requested timestamp
+         */
+        createdAt: string
+
+        /**
+         * Amount in decimal format (bonus, order value, or withdrawal amount)
+         */
+        amountDecimal?: string
+
+        /**
+         * Secondary amount (e.g., product price for campaigns, bonus for enrollments)
+         */
+        secondaryAmountDecimal?: string
+
+        /**
+         * For campaigns: current enrollments
+         */
+        currentCount?: number
+
+        /**
+         * For campaigns: max enrollments
+         */
+        maxCount?: number
+
+        /**
+         * Processed/approved timestamp
+         */
+        processedAt?: string
+
+        /**
+         * Expiry timestamp
+         */
+        expiresAt?: string
+
+        /**
+         * Product info (for campaigns and enrollments)
+         */
+        product?: SearchProductInfo
+
+        /**
+         * Organization info (for campaigns)
+         */
+        organization?: SearchOrganizationInfo
+
+        /**
+         * Platform info (for campaigns)
+         */
+        platform?: SearchPlatformInfo
+
+        /**
+         * Campaign info (for enrollments)
+         */
+        campaign?: SearchCampaignInfo
+
+        /**
+         * Fields that matched the search query
+         */
+        matchedFields: string[]
+    }
+
     export interface Shopper {
         id: string
         userId: string
@@ -6663,11 +14428,6 @@ export namespace shoppers {
         displayName?: string
         bio?: string
         avatarUrl?: string
-        phoneNumber?: string
-        address?: string
-        city?: string
-        state?: string
-        postalCode?: string
         kycStatus: KYCStatus
         panNumber?: string
         panVerified: boolean
@@ -6676,6 +14436,11 @@ export namespace shoppers {
         totalEarnings: number
         lifetimeEnrollments: number
         approvedEnrollments: number
+        phoneNumber?: string
+        address?: string
+        city?: string
+        state?: string
+        postalCode?: string
         createdAt: string
         updatedAt: string
     }
@@ -6788,6 +14553,31 @@ export namespace shoppers {
         panNumber: string
     }
 
+    export interface UnifiedSearchParams {
+        /**
+         * Search query - searches across all resource types
+         */
+        q: string
+
+        /**
+         * Pagination cursor (base64 encoded)
+         */
+        cursor?: string
+
+        /**
+         * Page size (1-30)
+         */
+        limit?: number
+    }
+
+    export interface UnifiedSearchResponse {
+        data: SearchResult[]
+        nextCursor: string | null
+        hasMore: boolean
+        facets: SearchFacets
+        query: string
+    }
+
     export interface UpdateShopperProfileRequest {
         displayName?: string
         bio?: string
@@ -6819,10 +14609,12 @@ export namespace shoppers {
             this.getEarningsHistory = this.getEarningsHistory.bind(this)
             this.getKYCStatus = this.getKYCStatus.bind(this)
             this.getMyShopperProfile = this.getMyShopperProfile.bind(this)
+            this.getPublicShopperProfile = this.getPublicShopperProfile.bind(this)
             this.getShopperStats = this.getShopperStats.bind(this)
             this.initiateAadhaarVerification = this.initiateAadhaarVerification.bind(this)
             this.registerAsShopper = this.registerAsShopper.bind(this)
             this.submitPAN = this.submitPAN.bind(this)
+            this.unifiedSearch = this.unifiedSearch.bind(this)
             this.updateShopperProfile = this.updateShopperProfile.bind(this)
             this.verifyPAN = this.verifyPAN.bind(this)
         }
@@ -6892,6 +14684,49 @@ export namespace shoppers {
         }
 
         /**
+         * Get public shopper profile (for brands)
+         */
+        public async getPublicShopperProfile(shopperId: string): Promise<{
+    id: string
+    displayName?: string
+    bio?: string
+    avatarUrl?: string
+    isVerified: boolean
+    approvedEnrollments: number
+    phoneNumber?: string
+    address?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    platformAccounts: {
+        platform: string
+        username: string
+        followers?: number
+    }[]
+}> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/shoppers/${encodeURIComponent(shopperId)}`)
+            return await resp.json() as {
+    id: string
+    displayName?: string
+    bio?: string
+    avatarUrl?: string
+    isVerified: boolean
+    approvedEnrollments: number
+    phoneNumber?: string
+    address?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    platformAccounts: {
+        platform: string
+        username: string
+        followers?: number
+    }[]
+}
+        }
+
+        /**
          * Get shopper statistics
          */
         public async getShopperStats(): Promise<ShopperStats> {
@@ -6944,6 +14779,30 @@ export namespace shoppers {
     name?: string
     error?: string
 }
+        }
+
+        /**
+         * GET /search
+         * 
+         * Unified search across campaigns, enrollments, and withdrawals.
+         * - Campaigns: Search by title, description, product name, organization name
+         * - Enrollments: Search by order ID, campaign title, product name (own only)
+         * - Withdrawals: Search by UTR, reference, notes (own only)
+         * 
+         * Results are interleaved in round-robin fashion for balanced display.
+         * Returns facet counts for each resource type.
+         */
+        public async unifiedSearch(params: UnifiedSearchParams): Promise<UnifiedSearchResponse> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                cursor: params.cursor,
+                limit:  params.limit === undefined ? undefined : String(params.limit),
+                q:      params.q,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI("GET", `/search`, undefined, {query})
+            return await resp.json() as UnifiedSearchResponse
         }
 
         /**
@@ -7158,7 +15017,7 @@ export namespace wallets {
 
     export interface RetryWithdrawalResponse {
         withdrawalId: string
-        payoutId: string
+        gatewayTransactionId: string
         blnkTransactionId: string
         status: shared.WithdrawalStatus
         retryCount: number
@@ -7428,14 +15287,31 @@ export namespace wallets {
         }
 
         /**
-         * List my withdrawals
+         * GET /withdrawals/me
+         * List shopper's own withdrawals
+         * Query params:
+         * - q: string - Search by UTR, reference number, notes
+         * - status: WithdrawalStatus - Filter by withdrawal status
+         * - amountMin: number - Filter by minimum amount (paise)
+         * - amountMax: number - Filter by maximum amount (paise)
+         * - methodType: "bank" | "upi" - Filter by withdrawal method type
+         * - requestedFrom: string - Filter withdrawals from date
+         * - requestedTo: string - Filter withdrawals until date
+         * - sortBy: "requestedAt" | "amount" - Sort field
+         * - sortOrder: "asc" | "desc" - Sort direction
          */
         public async listMyWithdrawals(params: {
     skip?: number
     take?: number
     status?: shared.WithdrawalStatus
+    q?: string
+    amountMin?: number
+    amountMax?: number
+    methodType?: "bank" | "upi"
     requestedFrom?: string
     requestedTo?: string
+    sortBy?: "requestedAt" | "amount"
+    sortOrder?: "asc" | "desc"
 }): Promise<{
     data: Withdrawal[]
     total: number
@@ -7445,9 +15321,15 @@ export namespace wallets {
 }> {
             // Convert our params into the objects we need for the request
             const query = makeRecord<string, string | string[]>({
+                amountMax:     params.amountMax === undefined ? undefined : String(params.amountMax),
+                amountMin:     params.amountMin === undefined ? undefined : String(params.amountMin),
+                methodType:    params.methodType === undefined ? undefined : String(params.methodType),
+                q:             params.q,
                 requestedFrom: params.requestedFrom,
                 requestedTo:   params.requestedTo,
                 skip:          params.skip === undefined ? undefined : String(params.skip),
+                sortBy:        params.sortBy === undefined ? undefined : String(params.sortBy),
+                sortOrder:     params.sortOrder === undefined ? undefined : String(params.sortOrder),
                 status:        params.status === undefined ? undefined : String(params.status),
                 take:          params.take === undefined ? undefined : String(params.take),
             })
@@ -7510,6 +15392,32 @@ export namespace webhooks {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.blnkWebhook = this.blnkWebhook.bind(this)
+            this.novuWebhook = this.novuWebhook.bind(this)
+            this.razorpayWebhook = this.razorpayWebhook.bind(this)
+            this.razorpayxWebhook = this.razorpayxWebhook.bind(this)
+        }
+
+        public async blnkWebhook(method: "POST", body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/webhooks/blnk`, body, options)
+        }
+
+        public async novuWebhook(method: "POST", body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/webhooks/novu`, body, options)
+        }
+
+        /**
+         * Main Razorpay webhook endpoint
+         */
+        public async razorpayWebhook(method: "POST", body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/webhooks/razorpay`, body, options)
+        }
+
+        /**
+         * Main RazorpayX webhook endpoint
+         */
+        public async razorpayxWebhook(method: "POST", body?: RequestInit["body"], options?: CallParameters): Promise<globalThis.Response> {
+            return this.baseClient.callAPI(method, `/webhooks/razorpayx`, body, options)
         }
     }
 }

@@ -15,7 +15,7 @@ export function RefundOrder({
 	return (
 		<>
 			<Button type="button" onClick={() => setIsOpen(true)} {...props} />
-			<Dialog open={isOpen} onClose={setIsOpen}>
+			<Dialog open={isOpen} onClose={() => setIsOpen(false)}>
 				<DialogTitle>Refund payment</DialogTitle>
 				<DialogDescription>
 					The refund will be reflected in the customer's bank account 2 to 3 business days after

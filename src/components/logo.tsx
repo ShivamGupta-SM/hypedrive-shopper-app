@@ -2,9 +2,10 @@ import clsx from 'clsx'
 
 interface LogoProps extends React.ComponentPropsWithoutRef<'svg'> {
   variant?: 'full' | 'icon'
+  theme?: 'auto' | 'light' | 'dark'
 }
 
-export function Logo({ className, variant = 'full', ...props }: LogoProps) {
+export function Logo({ className, variant = 'full', theme = 'auto', ...props }: LogoProps) {
   if (variant === 'icon') {
     return (
       <svg
@@ -24,12 +25,19 @@ export function Logo({ className, variant = 'full', ...props }: LogoProps) {
     )
   }
 
+  // Theme classes for text color
+  const themeClasses = {
+    auto: 'text-zinc-950 dark:text-white',
+    light: 'text-white',
+    dark: 'text-zinc-950',
+  }
+
   return (
     <svg
       viewBox="0 0 741 176"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={clsx('text-zinc-950 dark:text-white', className)}
+      className={clsx(themeClasses[theme], className)}
       aria-labelledby="hypedrive-logo-title"
       {...props}
     >

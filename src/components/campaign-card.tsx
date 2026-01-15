@@ -1,6 +1,15 @@
 import { Link } from "@/components/link";
 import { ClockIcon, SparklesIcon } from "@heroicons/react/16/solid";
 
+// Helper to check if string is a valid URL (not a color hex code)
+function isValidImageUrl(url?: string): boolean {
+  if (!url) return false;
+  // Check if it's a hex color (6 chars without #, or starts with #)
+  if (/^#?[0-9A-Fa-f]{6}$/.test(url)) return false;
+  // Check if it looks like a URL
+  return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:');
+}
+
 interface CampaignCardProps {
   campaign: {
     id: string;
@@ -101,11 +110,11 @@ export function CampaignCard({
         )}
 
         {/* Platform badge */}
-        {campaign.platform?.icon && (
+        {isValidImageUrl(campaign.platform?.icon) && (
           <div className="absolute bottom-2 right-2 flex size-7 items-center justify-center rounded-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90">
             <img
-              src={campaign.platform.icon}
-              alt={campaign.platform.name || ""}
+              src={campaign.platform!.icon}
+              alt={campaign.platform?.name || ""}
               className="size-5 object-contain"
             />
           </div>

@@ -46,54 +46,54 @@ export function Login() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel - Branding (Desktop only) */}
-      <div className="hidden w-1/2 flex-col justify-between bg-emerald-950 p-10 lg:flex xl:p-12">
-        <Logo className="h-6 text-white" />
+      <div className="hidden w-1/2 flex-col justify-between bg-zinc-900 p-10 lg:flex xl:p-12">
+        <Logo className="h-6" theme="light" />
 
         <div className="space-y-8">
           <div>
-            <h1 className="font-serif text-4xl font-semibold text-white xl:text-5xl">
+            <h1 className="text-4xl font-semibold text-white xl:text-5xl">
               Welcome back to Hypedrive
             </h1>
-            <p className="mt-3 text-base text-emerald-200/80">
+            <p className="mt-3 text-base text-zinc-400">
               Sign in to track your earnings and manage your campaigns
             </p>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-800/50 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
-                  <BanknotesIcon className="size-5 text-emerald-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-zinc-700/60">
+                  <BanknotesIcon className="size-5 text-zinc-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif font-semibold text-white">Earn Real Cashback</p>
-                  <p className="mt-0.5 text-sm text-emerald-300/70">
+                  <p className="font-semibold text-white">Earn Real Cashback</p>
+                  <p className="mt-0.5 text-sm text-zinc-400">
                     Get rewarded on every purchase you make
                   </p>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-800/50 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
-                  <RocketLaunchIcon className="size-5 text-emerald-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-zinc-700/60">
+                  <RocketLaunchIcon className="size-5 text-zinc-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif font-semibold text-white">Exclusive Campaigns</p>
-                  <p className="mt-0.5 text-sm text-emerald-300/70">
+                  <p className="font-semibold text-white">Exclusive Campaigns</p>
+                  <p className="mt-0.5 text-sm text-zinc-400">
                     Access special offers from top brands
                   </p>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-emerald-800/50 bg-emerald-900/40 p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-800/50 p-5">
               <div className="flex items-center gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-800/60">
-                  <ShieldCheckIcon className="size-5 text-emerald-300" />
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-zinc-700/60">
+                  <ShieldCheckIcon className="size-5 text-zinc-300" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif font-semibold text-white">Fast & Secure Payouts</p>
-                  <p className="mt-0.5 text-sm text-emerald-300/70">
+                  <p className="font-semibold text-white">Fast & Secure Payouts</p>
+                  <p className="mt-0.5 text-sm text-zinc-400">
                     Quick withdrawals directly to your bank
                   </p>
                 </div>
@@ -102,13 +102,13 @@ export function Login() {
           </div>
         </div>
 
-        <p className="text-sm text-emerald-400/60">
+        <p className="text-sm text-zinc-500">
           &copy; {new Date().getFullYear()} Hypedrive. All rights reserved.
         </p>
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex w-full items-center justify-center bg-white p-6 dark:bg-zinc-950 sm:p-10 lg:w-1/2">
+      <div className="flex w-full items-center justify-center bg-stone-100 p-6 dark:bg-zinc-950 sm:p-10 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="lg:hidden">
             <Logo className="h-6" />

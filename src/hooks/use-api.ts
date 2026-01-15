@@ -29,32 +29,73 @@ interface InfiniteState<T> {
   refetch: () => void;
 }
 
+// Simple in-memory cache for API responses
+const apiCache = new Map<string, { data: unknown; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds cache
+
+function getCacheKey(fnName: string, deps: unknown[]): string {
+  return `${fnName}:${JSON.stringify(deps)}`;
+}
+
 function useAsync<T>(
   asyncFn: () => Promise<T>,
-  deps: unknown[] = []
+  deps: unknown[] = [],
+  options?: { cacheKey?: string; cacheTTL?: number }
 ): AsyncState<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const cacheKey = options?.cacheKey || getCacheKey(asyncFn.toString().slice(0, 50), deps);
+  const cacheTTL = options?.cacheTTL ?? CACHE_TTL;
 
-  const execute = useCallback(async () => {
+  // Try to get cached data for initial state
+  const cached = apiCache.get(cacheKey);
+  const isCacheValid = cached && (Date.now() - cached.timestamp) < cacheTTL;
+
+  const [data, setData] = useState<T | null>(isCacheValid ? (cached.data as T) : null);
+  const [loading, setLoading] = useState(!isCacheValid);
+  const [error, setError] = useState<Error | null>(null);
+  const hasFetchedRef = useRef(isCacheValid);
+  const depsRef = useRef(deps);
+
+  const execute = useCallback(async (skipCache = false) => {
+    // Check cache first (unless skipCache)
+    if (!skipCache) {
+      const cachedData = apiCache.get(cacheKey);
+      if (cachedData && (Date.now() - cachedData.timestamp) < cacheTTL) {
+        setData(cachedData.data as T);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     try {
       const result = await asyncFn();
       setData(result);
+      // Store in cache
+      apiCache.set(cacheKey, { data: result, timestamp: Date.now() });
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => {
-    execute();
-  }, [execute]);
+    // Check if deps actually changed
+    const depsChanged = JSON.stringify(deps) !== JSON.stringify(depsRef.current);
 
-  return { data, loading, error, refetch: execute };
+    if (!hasFetchedRef.current || depsChanged) {
+      hasFetchedRef.current = true;
+      depsRef.current = deps;
+      execute();
+    }
+  }, [execute, deps]);
+
+  // Refetch bypasses cache
+  const refetch = useCallback(() => execute(true), [execute]);
+
+  return { data, loading, error, refetch };
 }
 
 // Shopper Profile
@@ -247,6 +288,7 @@ export function useAvailableCoupons(campaignId: string) {
 }
 
 // Enrollments List with campaign enrichment
+// Campaign data is now embedded in the API response (no extra API calls needed)
 export function useEnrollments(params?: {
   cursor?: string;
   limit?: number;
@@ -257,41 +299,29 @@ export function useEnrollments(params?: {
     const client = getAuthenticatedClient();
     const result = await client.enrollments.listEnrollments(params || {});
 
-    // Fetch campaign data for all enrollments
-    const uniqueCampaignIds = [...new Set(result.data.map(e => e.campaignId))];
-    const campaignMap = new Map<string, campaigns.ShopperCampaign>();
-
-    await Promise.all(
-      uniqueCampaignIds.map(async (id) => {
-        try {
-          const campaign = await client.campaigns.getCampaign(id);
-          campaignMap.set(id, campaign);
-        } catch {
-          // Campaign fetch failed, continue without it
-        }
-      })
-    );
-
-    // Enrich enrollments with campaign data
+    // Campaign data is now embedded in the enrollment response from backend
+    // No need for N+1 API calls to fetch campaign details
+    // Note: Cast to any since API client types may not be regenerated yet
     const enrichedData: EnrichedEnrollment[] = result.data.map(enrollment => {
-      const campaign = campaignMap.get(enrollment.campaignId);
-
-      // Get primary image directly from ShopperCampaign.product
-      const primaryImage = campaign?.product?.primaryImage
-        || campaign?.product?.productImages?.find(img => img.isPrimary)?.imageUrl
-        || campaign?.product?.productImages?.[0]?.imageUrl;
-
+      const e = enrollment as enrollments.Enrollment & {
+        campaign?: {
+          title: string;
+          product?: { name: string; primaryImage?: string };
+          platform?: { name: string; icon?: string };
+        };
+      };
       return {
         ...enrollment,
-        campaign: campaign ? {
-          title: campaign.title,
-          product: campaign.product ? {
-            name: campaign.product.name,
-            primaryImage,
+        // Campaign data comes directly from API response
+        campaign: e.campaign ? {
+          title: e.campaign.title,
+          product: e.campaign.product ? {
+            name: e.campaign.product.name,
+            primaryImage: e.campaign.product.primaryImage,
           } : undefined,
-          platform: campaign.platform ? {
-            name: campaign.platform.name,
-            icon: campaign.platform.icon || campaign.platform.logo,
+          platform: e.campaign.platform ? {
+            name: e.campaign.platform.name,
+            icon: e.campaign.platform.icon,
           } : undefined,
         } : undefined,
       };
@@ -306,6 +336,7 @@ export function useEnrollments(params?: {
 }
 
 // Enriched enrollment type with campaign data
+// Note: deliverables come from the base enrollments.Enrollment type
 export interface EnrichedEnrollment extends enrollments.Enrollment {
   campaign?: {
     title: string;
@@ -318,23 +349,10 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
       icon?: string;
     };
   };
-  submissions?: Array<{
-    id: string;
-    deliverableName: string;
-    isRequired: boolean;
-    requireLink: boolean;
-    requireScreenshot: boolean;
-    proofLink?: string;
-    proofScreenshot?: string;
-  }>;
 }
 
-// Cache types for campaign data (ShopperCampaign includes product and platform)
-interface CampaignCache {
-  campaign: campaigns.ShopperCampaign;
-}
-
-// Infinite Enrollments List with campaign enrichment
+// Infinite Enrollments List - campaign data now embedded in API response
+// No more N+1 API calls - single request returns all data
 export function useInfiniteEnrollments(params?: {
   limit?: number;
   status?: shared.EnrollmentStatus;
@@ -347,7 +365,6 @@ export function useInfiniteEnrollments(params?: {
   const [hasMore, setHasMore] = useState(true);
   const cursorRef = useRef<string | null>(null);
   const paramsRef = useRef(params);
-  const campaignCacheRef = useRef<Map<string, CampaignCache>>(new Map());
 
   // Reset when params change
   useEffect(() => {
@@ -378,51 +395,20 @@ export function useInfiniteEnrollments(params?: {
 
       const enrollmentData = result.data || [];
 
-      // Get unique campaign IDs that aren't cached
-      const uniqueCampaignIds = [...new Set(enrollmentData.map(e => e.campaignId))]
-        .filter(id => !campaignCacheRef.current.has(id));
-
-      // Fetch campaign data for uncached campaigns
-      // ShopperCampaign already includes product and platform info, no extra fetches needed
-      if (uniqueCampaignIds.length > 0) {
-        const campaignPromises = uniqueCampaignIds.map(async (id) => {
-          try {
-            const campaign = await client.campaigns.getCampaign(id);
-            return { id, campaign };
-          } catch {
-            return { id, campaign: null };
-          }
-        });
-
-        const campaignResults = await Promise.all(campaignPromises);
-        campaignResults.forEach(({ id, campaign }) => {
-          if (campaign) {
-            campaignCacheRef.current.set(id, { campaign });
-          }
-        });
-      }
-
-      // Enrich enrollments with campaign data
+      // Campaign data is now embedded in the API response - no extra fetches needed!
       const enrichedEnrollments: EnrichedEnrollment[] = enrollmentData.map(enrollment => {
-        const cached = campaignCacheRef.current.get(enrollment.campaignId);
-        const campaign = cached?.campaign;
-
-        // Get primary image directly from ShopperCampaign.product
-        const primaryImage = campaign?.product?.primaryImage
-          || campaign?.product?.productImages?.find(img => img.isPrimary)?.imageUrl
-          || campaign?.product?.productImages?.[0]?.imageUrl;
-
         return {
           ...enrollment,
-          campaign: campaign ? {
-            title: campaign.title,
-            product: campaign.product ? {
-              name: campaign.product.name,
-              primaryImage,
+          // Campaign data comes directly from API response
+          campaign: enrollment.campaign ? {
+            title: enrollment.campaign.title,
+            product: enrollment.campaign.product ? {
+              name: enrollment.campaign.product.name,
+              primaryImage: enrollment.campaign.product.primaryImage,
             } : undefined,
-            platform: campaign.platform ? {
-              name: campaign.platform.name,
-              icon: campaign.platform.icon || campaign.platform.logo,
+            platform: enrollment.campaign.platform ? {
+              name: enrollment.campaign.platform.name,
+              icon: enrollment.campaign.platform.icon,
             } : undefined,
           } : undefined,
           // Map deliverables to submissions format expected by EnrollmentCard
@@ -674,17 +660,8 @@ export function useUnifiedSearch(params: shoppers.UnifiedSearchParams | null) {
     return client.shoppers.unifiedSearch(params);
   }, [
     params?.q,
-    params?.resourceType,
     params?.cursor,
     params?.limit,
-    params?.platformId,
-    params?.organizationId,
-    params?.bonusMin,
-    params?.bonusMax,
-    params?.enrollmentStatus,
-    params?.withdrawalStatus,
-    params?.amountMin,
-    params?.amountMax,
   ]);
 }
 
@@ -701,7 +678,6 @@ export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchPar
 
   // Extract primitive values from params
   const q = params?.q;
-  const resourceType = params?.resourceType;
   const limit = params?.limit;
 
   const fetchData = useCallback(async (isLoadMore = false) => {
@@ -732,7 +708,6 @@ export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchPar
       const client = getAuthenticatedClient();
       const result = await client.shoppers.unifiedSearch({
         q: q,
-        resourceType: resourceType,
         limit: limit,
         cursor: isLoadMore ? cursorRef.current || undefined : undefined,
       });
@@ -756,7 +731,7 @@ export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchPar
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [q, resourceType, limit]);
+  }, [q, limit]);
 
   // Fetch when params change
   useEffect(() => {
@@ -774,68 +749,6 @@ export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchPar
   }, [fetchData]);
 
   return { data, loading, loadingMore, error, hasMore, loadMore, refetch, facets };
-}
-
-// Search Campaigns Only
-export function useSearchCampaigns(params: {
-  q: string;
-  cursor?: string;
-  limit?: number;
-  platformId?: string;
-  organizationId?: string;
-  bonusMin?: number;
-  bonusMax?: number;
-} | null) {
-  return useAsync(async () => {
-    if (!params || !params.q?.trim()) return null;
-    const client = getAuthenticatedClient();
-    return client.shoppers.searchCampaignsEndpoint(params);
-  }, [
-    params?.q,
-    params?.cursor,
-    params?.limit,
-    params?.platformId,
-    params?.organizationId,
-    params?.bonusMin,
-    params?.bonusMax,
-  ]);
-}
-
-// Search Enrollments Only
-export function useSearchEnrollments(params: {
-  q: string;
-  cursor?: string;
-  limit?: number;
-  status?: shared.EnrollmentStatus;
-} | null) {
-  return useAsync(async () => {
-    if (!params || !params.q?.trim()) return null;
-    const client = getAuthenticatedClient();
-    return client.shoppers.searchEnrollmentsEndpoint(params);
-  }, [params?.q, params?.cursor, params?.limit, params?.status]);
-}
-
-// Search Withdrawals Only
-export function useSearchWithdrawals(params: {
-  q: string;
-  cursor?: string;
-  limit?: number;
-  status?: shared.WithdrawalStatus;
-  amountMin?: number;
-  amountMax?: number;
-} | null) {
-  return useAsync(async () => {
-    if (!params || !params.q?.trim()) return null;
-    const client = getAuthenticatedClient();
-    return client.shoppers.searchWithdrawalsEndpoint(params);
-  }, [
-    params?.q,
-    params?.cursor,
-    params?.limit,
-    params?.status,
-    params?.amountMin,
-    params?.amountMax,
-  ]);
 }
 
 // Export types for components

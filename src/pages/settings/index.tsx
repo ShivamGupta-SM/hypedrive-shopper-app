@@ -117,8 +117,16 @@ function EditProfileSheet({
 
   return (
     <Dialog open={open} onClose={() => { resetForm(); onCancel(); }} size="md">
-      <DialogTitle>Edit Profile</DialogTitle>
-      <DialogDescription>Update your profile information.</DialogDescription>
+      {/* Header with icon */}
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40">
+          <UserIcon className="size-6 text-sky-600 dark:text-sky-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Edit Profile</DialogTitle>
+          <DialogDescription className="mt-1">Update your profile information.</DialogDescription>
+        </div>
+      </div>
 
       <DialogBody>
         <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-4">
@@ -290,8 +298,16 @@ function AddBankAccountDialog({
 
   return (
     <Dialog open={open} onClose={onCancel} size="md">
-      <DialogTitle>Add Payout Method</DialogTitle>
-      <DialogDescription>Add a bank account or UPI for withdrawals.</DialogDescription>
+      {/* Header with icon */}
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/40">
+          <BuildingLibraryIcon className="size-6 text-sky-600 dark:text-sky-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Add Payout Method</DialogTitle>
+          <DialogDescription className="mt-1">Add a bank account or UPI for withdrawals.</DialogDescription>
+        </div>
+      </div>
 
       <DialogBody>
         <form id="add-bank-form" onSubmit={handleSubmit} className="space-y-5">
@@ -525,8 +541,16 @@ function EditAddressDialog({
 
   return (
     <Dialog open={open} onClose={() => { resetForm(); onCancel(); }} size="md">
-      <DialogTitle>Edit Address</DialogTitle>
-      <DialogDescription>Update your address for deliveries and verification.</DialogDescription>
+      {/* Header with icon */}
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+          <MapPinIcon className="size-6 text-red-600 dark:text-red-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Edit Address</DialogTitle>
+          <DialogDescription className="mt-1">Update your address for deliveries and verification.</DialogDescription>
+        </div>
+      </div>
 
       <DialogBody>
         <form id="edit-address-form" onSubmit={handleSubmit} className="space-y-4">
@@ -679,8 +703,16 @@ function ChangeEmailDialog({
 
   return (
     <Dialog open={open} onClose={() => { resetForm(); onCancel(); }} size="md">
-      <DialogTitle>Change Email</DialogTitle>
-      <DialogDescription>A verification link will be sent to your new email address.</DialogDescription>
+      {/* Header with icon */}
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/40">
+          <AtSymbolIcon className="size-6 text-orange-600 dark:text-orange-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Change Email</DialogTitle>
+          <DialogDescription className="mt-1">A verification link will be sent to your new email address.</DialogDescription>
+        </div>
+      </div>
 
       <DialogBody>
         <form id="change-email-form" onSubmit={handleSubmit} className="space-y-4">
@@ -874,16 +906,24 @@ function KYCVerificationDialog({
 
   return (
     <Dialog open={open} onClose={() => { resetForm(); onCancel(); }} size="md">
-      <DialogTitle>
-        {step === "pan" && "Verify PAN"}
-        {step === "aadhaar" && "Verify Aadhaar"}
-        {step === "aadhaar_otp" && "Enter OTP"}
-      </DialogTitle>
-      <DialogDescription>
-        {step === "pan" && "Enter your PAN card number for identity verification."}
-        {step === "aadhaar" && "Enter your Aadhaar number. An OTP will be sent to your linked mobile."}
-        {step === "aadhaar_otp" && "Enter the 6-digit OTP sent to your Aadhaar-linked mobile number."}
-      </DialogDescription>
+      {/* Header with icon */}
+      <div className="flex items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+          <IdentificationIcon className="size-6 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">
+            {step === "pan" && "Verify PAN"}
+            {step === "aadhaar" && "Verify Aadhaar"}
+            {step === "aadhaar_otp" && "Enter OTP"}
+          </DialogTitle>
+          <DialogDescription className="mt-1">
+            {step === "pan" && "Enter your PAN card number for identity verification."}
+            {step === "aadhaar" && "Enter your Aadhaar number. An OTP will be sent to your linked mobile."}
+            {step === "aadhaar_otp" && "Enter the 6-digit OTP sent to your Aadhaar-linked mobile number."}
+          </DialogDescription>
+        </div>
+      </div>
 
       <DialogBody>
         <div className="space-y-4">

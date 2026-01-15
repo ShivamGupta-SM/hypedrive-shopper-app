@@ -67,10 +67,11 @@ export function MenuSectionFooter({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * MenuSeparator - Indented divider between menu rows
+ * MenuSeparator - iOS-style indented divider (starts after icon)
+ * Calculation: px-4 (16px) + size-9 (36px) + gap-3 (12px) = 64px
  */
 export function MenuSeparator() {
-  return <div className="ml-13 h-px bg-zinc-200 dark:bg-zinc-700" />;
+  return <div className="ml-16 h-px bg-zinc-200 dark:bg-zinc-700" />;
 }
 
 /**
@@ -164,24 +165,24 @@ export function MenuRow({
         <Icon className={iconClasses} />
       </div>
       <span
-        className={`flex-1 text-[15px] ${
+        className={`shrink-0 text-[15px] ${
           destructive ? "text-red-500" : "text-zinc-900 dark:text-white"
         }`}
       >
         {label}
       </span>
       {value && (
-        <span className="text-[15px] text-zinc-400 dark:text-zinc-500">
+        <span className="min-w-0 flex-1 truncate text-right text-[15px] text-zinc-400 dark:text-zinc-500">
           {value}
         </span>
       )}
       {badge && (
-        <Badge color={badgeColor || "zinc"} className="text-[11px]">
+        <Badge color={badgeColor || "zinc"} className="shrink-0 text-[11px]">
           {badge}
         </Badge>
       )}
       {onClick && !destructive && (
-        <ChevronRightIcon className="size-4 text-zinc-300 dark:text-zinc-600" />
+        <ChevronRightIcon className="size-4 shrink-0 text-zinc-300 dark:text-zinc-600" />
       )}
     </Component>
   );
