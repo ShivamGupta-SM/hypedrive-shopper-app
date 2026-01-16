@@ -530,13 +530,20 @@ function ScanningProgress({ stage }: { stage: ScanStage }) {
             <div className="h-2 w-3/4 rounded bg-zinc-200 dark:bg-zinc-700" />
           </div>
 
-          {/* Scanning line */}
+          {/* Scanning line - animated up and down */}
           <div
             className="absolute inset-x-0 h-0.5 bg-emerald-500 shadow-[0_0_8px_2px_rgba(16,185,129,0.6)]"
             style={{
-              animation: "scanLine 2s ease-in-out infinite",
+              top: "10%",
+              animation: "scan-line 2s ease-in-out infinite",
             }}
           />
+          <style>{`
+            @keyframes scan-line {
+              0%, 100% { top: 10%; }
+              50% { top: 85%; }
+            }
+          `}</style>
         </div>
 
         {/* Corner brackets */}
@@ -567,49 +574,62 @@ function ScanningProgress({ stage }: { stage: ScanStage }) {
   );
 }
 
-function StepIndicator({ currentStep }: { currentStep: EnrollmentStep }) {
+function StepIndicator({ currentStep, hasError }: { currentStep: EnrollmentStep; hasError?: boolean }) {
   const steps = [
-    { num: 1, label: "Purchase" },
-    { num: 2, label: "Upload" },
-    { num: 3, label: "Verify" },
+    { num: 1, label: "Purchase", icon: ShoppingCartIcon },
+    { num: 2, label: "Upload", icon: CameraIcon },
+    { num: 3, label: "Confirm", icon: CheckCircleIcon },
   ] as const;
 
-  return (
-    <div className="px-4 py-4 sm:px-8">
-      {/* Container with fixed positions for circles */}
-      <div className="relative flex justify-between">
-        {/* Background connector line - spans between first and last circle centers */}
-        <div className="absolute top-4 left-4 right-4 h-0.5 bg-zinc-200 sm:top-4.5 sm:left-4.5 sm:right-4.5 dark:bg-zinc-700" />
+  // Calculate progress percentage for the line
+  const progressPercent = currentStep === 1 ? 0 : currentStep === 2 ? 50 : 100;
 
-        {/* Progress line - fills based on completed steps */}
+  return (
+    <div className="px-6 py-5 sm:px-10">
+      <div className="relative flex justify-between">
+        {/* Single line with gradient - no separate background line */}
         <div
-          className="absolute top-4 left-4 h-0.5 bg-emerald-500 transition-all duration-300 sm:top-4.5 sm:left-4.5"
-          style={{
-            width: currentStep === 1 ? '0%' : currentStep === 2 ? 'calc(50% - 16px)' : 'calc(100% - 32px)'
-          }}
-        />
+          className="absolute top-5 left-[16.67%] right-[16.67%] h-0.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700"
+        >
+          {/* Progress fill inside the line container */}
+          <div
+            className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
 
         {steps.map((step) => {
           const isActive = step.num === currentStep;
           const isCompleted = step.num < currentStep;
+          const Icon = step.icon;
 
           return (
-            <div key={step.num} className="relative z-10 flex flex-col items-center">
-              <div className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold sm:size-9 ${
+            <div key={step.num} className="relative z-10 flex flex-col items-center" style={{ width: '33.33%' }}>
+              <div className={`flex size-10 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
                 isCompleted
-                  ? "bg-emerald-500 text-white"
+                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
                   : isActive
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400"
+                    ? hasError
+                      ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
+                      : "bg-zinc-900 text-white shadow-lg shadow-zinc-900/30 ring-4 ring-zinc-900/10 dark:bg-white dark:text-zinc-900 dark:shadow-white/20 dark:ring-white/20"
+                    : "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"
               }`}>
-                {isCompleted ? <CheckCircleIcon className="size-5" /> : step.num}
+                {isCompleted ? (
+                  <CheckCircleIcon className="size-5" />
+                ) : hasError && isActive ? (
+                  <ExclamationTriangleIcon className="size-5" />
+                ) : (
+                  <Icon className="size-4" />
+                )}
               </div>
-              <span className={`mt-1.5 text-[11px] font-medium sm:text-xs ${
+              <span className={`mt-2 text-xs font-medium transition-colors ${
                 isActive
-                  ? "text-zinc-900 dark:text-white"
+                  ? hasError
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-zinc-900 dark:text-white"
                   : isCompleted
                     ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-zinc-400"
+                    : "text-zinc-400 dark:text-zinc-500"
               }`}>
                 {step.label}
               </span>
@@ -619,6 +639,35 @@ function StepIndicator({ currentStep }: { currentStep: EnrollmentStep }) {
       </div>
     </div>
   );
+}
+
+// Helper to convert long technical errors to short user-friendly messages
+function getShortErrorMessage(errorMessage?: string, validationErrors?: string[]): string {
+  const allErrors = [errorMessage, ...(validationErrors || [])].filter(Boolean).join(" ");
+  const lower = allErrors.toLowerCase();
+
+  // Check for common error patterns and return short messages
+  if (lower.includes("not an order confirmation") || lower.includes("doesn't appear to be")) {
+    return "This doesn't look like an order confirmation. Please upload a screenshot of your order confirmation page.";
+  }
+  if (lower.includes("product") && (lower.includes("mismatch") || lower.includes("doesn't match"))) {
+    return "Product doesn't match this campaign. Make sure you purchased the correct product.";
+  }
+  if (lower.includes("order date") && lower.includes("old")) {
+    return "Order is too old. Please upload a recent purchase.";
+  }
+  if (lower.includes("could not extract") || lower.includes("could not read")) {
+    return "Couldn't read the receipt details. Please upload a clearer screenshot.";
+  }
+  if (lower.includes("low") && lower.includes("confidence")) {
+    return "Image quality too low. Please upload a clearer screenshot.";
+  }
+  if (lower.includes("scan limit") || lower.includes("attempts")) {
+    return "Scan limit reached for this campaign.";
+  }
+
+  // Default short message
+  return "Couldn't verify your receipt. Please try with a clearer screenshot.";
 }
 
 function EnrollmentDialog({
@@ -721,7 +770,7 @@ function EnrollmentDialog({
   };
 
   const handleScan = async () => {
-    if (uploadedFiles.length === 0) { setError("Please upload a screenshot"); return; }
+    if (uploadedFiles.length === 0) { setError("Please upload a screenshot"); setProcessingState("error"); return; }
     setProcessingState("scanning");
     setScanStage("uploading");
     setError(null);
@@ -752,6 +801,7 @@ function EnrollmentDialog({
       const result = await client.enrollments.scanOrder({ campaignId, screenshotUrl: fileUrl });
 
       if (result.status === "completed") {
+        // Only proceed to Step 3 if validation passed
         setScanStage("validating");
         await new Promise(r => setTimeout(r, 500)); // Brief pause to show validation
         setScanResult(result);
@@ -760,9 +810,13 @@ function EnrollmentDialog({
         return;
       }
       if (result.status === "failed") {
-        setError(result.errorMessage || result.validation?.errors?.join(", ") || "Failed to scan receipt.");
+        // Stay on Step 2 with error - don't proceed to Step 3
+        setScanResult(result);
+        // Show a short, user-friendly error message instead of technical details
+        const errorMsg = getShortErrorMessage(result.errorMessage, result.validation?.errors);
+        setError(errorMsg);
         setProcessingState("error");
-        return;
+        return; // Stay on Step 2
       }
 
       // Stage 3 & 4: Extracting & Validating while polling
@@ -771,17 +825,31 @@ function EnrollmentDialog({
         const finalResult = await pollScanStatus(result.scanId, setScanStage);
         if (finalResult) {
           setScanResult(finalResult);
-          if (finalResult.status === "completed") { setProcessingState("idle"); setStep(3); }
-          else if (finalResult.status === "failed") { setError(finalResult.errorMessage || "Failed to scan receipt."); setProcessingState("error"); }
-        } else { setScanResult(result); setProcessingState("idle"); setStep(3); }
+          if (finalResult.status === "completed") {
+            setProcessingState("idle");
+            setStep(3);
+          } else if (finalResult.status === "failed") {
+            // Stay on Step 2 with error - don't proceed
+            const errorMsg = getShortErrorMessage(finalResult.errorMessage, finalResult.validation?.errors);
+            setError(errorMsg);
+            setProcessingState("error");
+            // Don't call setStep(3) - stay on Step 2
+          }
+        } else {
+          // Timeout or no result - show error, stay on Step 2
+          setError("Scan timed out. Please try again.");
+          setProcessingState("error");
+        }
         return;
       }
-      setScanResult(result); setProcessingState("idle"); setStep(3);
+      // Unexpected status - show error
+      setError("Unexpected scan status. Please try again.");
+      setProcessingState("error");
     } catch (err) { setError(err instanceof Error ? err.message : "Failed to scan receipt"); setProcessingState("error"); }
   };
 
   const handleEnroll = async () => {
-    if (!scanResult?.scanId) { setError("No scan result available"); return; }
+    if (!scanResult?.scanId) { setError("No scan result available"); setProcessingState("error"); return; }
     setProcessingState("enrolling");
     setError(null);
     try {
@@ -798,25 +866,29 @@ function EnrollmentDialog({
     <Dialog open={open} onClose={handleClose} size="xl">
       {processingState !== "success" && (
         <div className="-mx-4 -mt-4 border-b border-zinc-100 bg-zinc-50 sm:-mx-6 sm:-mt-6 dark:border-zinc-800 dark:bg-zinc-900/50">
-          <StepIndicator currentStep={step} />
+          <StepIndicator currentStep={step} hasError={processingState === "error"} />
         </div>
       )}
 
       <div className={processingState !== "success" ? "pt-5" : ""}>
         <DialogTitle className="text-lg sm:text-xl">
           {step === 1 && "Purchase the Product"}
-          {step === 2 && processingState !== "scanning" && "Upload Order Screenshot"}
+          {step === 2 && processingState === "idle" && "Upload Order Screenshot"}
           {step === 2 && processingState === "scanning" && "Scanning Receipt..."}
-          {step === 3 && processingState !== "enrolling" && "Review & Confirm"}
+          {step === 2 && processingState === "error" && "Scan Failed"}
+          {step === 3 && processingState !== "enrolling" && processingState !== "error" && "Review & Confirm"}
           {step === 3 && processingState === "enrolling" && "Creating Enrollment..."}
+          {step === 3 && processingState === "error" && "Enrollment Failed"}
           {processingState === "success" && "🎉 You're Enrolled!"}
         </DialogTitle>
         <DialogDescription>
           {step === 1 && "Buy the product first, then upload your order confirmation"}
-          {step === 2 && processingState !== "scanning" && "Drop your order screenshot below"}
+          {step === 2 && processingState === "idle" && "Drop your order screenshot below"}
           {step === 2 && processingState === "scanning" && "Our AI is extracting order details..."}
-          {step === 3 && processingState !== "enrolling" && "Verify details and apply coupon if you have one"}
+          {step === 2 && processingState === "error" && "Please try again with a clearer screenshot"}
+          {step === 3 && processingState !== "enrolling" && processingState !== "error" && "Verify details and apply coupon if you have one"}
           {step === 3 && processingState === "enrolling" && "Setting up your enrollment..."}
+          {step === 3 && processingState === "error" && "Something went wrong, please try again"}
           {processingState === "success" && "Complete your deliverables to earn cashback"}
         </DialogDescription>
       </div>
@@ -930,13 +1002,38 @@ function EnrollmentDialog({
               </ul>
             </div>
 
-            {/* Error State */}
+            {/* Error State - Enhanced with actionable guidance */}
             {error && processingState === "error" && (
-              <div className="flex items-start gap-3 rounded-2xl bg-red-50 p-4 dark:bg-red-950/30">
-                <ExclamationTriangleIcon className="size-5 shrink-0 text-red-600 dark:text-red-400" />
-                <div>
-                  <p className="font-medium text-red-800 dark:text-red-300">Scan failed</p>
-                  <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
+              <div className="space-y-4">
+                <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                      <ExclamationTriangleIcon className="size-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-red-800 dark:text-red-300">Receipt Scan Failed</p>
+                      <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Retry guidance */}
+                <div className="rounded-2xl bg-amber-50 p-4 dark:bg-amber-950/30">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">What you can do:</p>
+                  <ul className="mt-2 space-y-1.5">
+                    <li className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                      <CheckCircleIcon className="size-4 shrink-0 text-amber-500" />
+                      Upload a clearer screenshot
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                      <CheckCircleIcon className="size-4 shrink-0 text-amber-500" />
+                      Make sure Order ID is visible
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                      <CheckCircleIcon className="size-4 shrink-0 text-amber-500" />
+                      Include full order total
+                    </li>
+                  </ul>
                 </div>
               </div>
             )}
@@ -1112,13 +1209,20 @@ function EnrollmentDialog({
         )}
         {step === 2 && !isProcessing && (
           <>
-            <Button plain onClick={() => { setStep(1); setError(null); setProcessingState("idle"); }}>
+            <Button plain onClick={() => { setStep(1); setError(null); setProcessingState("idle"); setUploadedFiles([]); }}>
               Back
             </Button>
-            <Button onClick={handleScan} disabled={uploadedFiles.length === 0} color="dark/zinc">
-              Scan Receipt
-              <ChevronRightIcon className="size-4" />
-            </Button>
+            {processingState === "error" ? (
+              <Button onClick={() => { setError(null); setProcessingState("idle"); setUploadedFiles([]); }} color="dark/zinc">
+                <CameraIcon className="size-4" />
+                Upload New Screenshot
+              </Button>
+            ) : (
+              <Button onClick={handleScan} disabled={uploadedFiles.length === 0} color="dark/zinc">
+                Scan Receipt
+                <ChevronRightIcon className="size-4" />
+              </Button>
+            )}
           </>
         )}
         {processingState === "scanning" && <Button plain disabled>Scanning...</Button>}
