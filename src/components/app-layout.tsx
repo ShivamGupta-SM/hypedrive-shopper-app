@@ -39,7 +39,6 @@ import {
 	WalletIcon,
 	UserCircleIcon as UserCircleSolidIcon,
 	QuestionMarkCircleIcon,
-	SparklesIcon,
 } from "@heroicons/react/20/solid";
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
@@ -98,9 +97,9 @@ const tabItems = [
 
 function TabBar({ pathname }: { pathname: string }) {
 	return (
-		<nav className="fixed inset-x-0 bottom-0 z-50 touch-none bg-stone-100 dark:bg-zinc-950 lg:hidden">
+		<nav className="fixed inset-x-0 bottom-0 z-50 touch-none bg-stone-100 pb-safe dark:bg-zinc-950 lg:hidden">
 			{/* Tab buttons container - fixed 56px height */}
-			<div className="flex h-14 items-stretch justify-around px-2">
+			<div className="flex h-14 items-center justify-around px-2">
 				{tabItems.map((item) => {
 					const isActive = item.href === "/"
 						? pathname === "/"
@@ -111,10 +110,10 @@ function TabBar({ pathname }: { pathname: string }) {
 						<Link
 							key={item.href}
 							to={item.href}
-							className="flex min-w-16 flex-1 flex-col items-center justify-center gap-0.5 py-1"
+							className="flex min-w-16 flex-1 flex-col items-center justify-center gap-0.5"
 						>
-							{/* Icon container with 44px touch target */}
-							<span className="flex h-7 w-11 items-center justify-center">
+							{/* Icon container */}
+							<span className="flex size-7 items-center justify-center">
 								<Icon
 									className={clsx(
 										"size-6",
@@ -138,8 +137,6 @@ function TabBar({ pathname }: { pathname: string }) {
 					);
 				})}
 			</div>
-			{/* Safe area spacer - separate from button area */}
-			<div className="pb-safe" />
 		</nav>
 	);
 }
@@ -347,10 +344,6 @@ export function AppLayout() {
 							<SidebarItem href="#">
 								<QuestionMarkCircleIcon />
 								<SidebarLabel>Support</SidebarLabel>
-							</SidebarItem>
-							<SidebarItem href="#">
-								<SparklesIcon />
-								<SidebarLabel>Changelog</SidebarLabel>
 							</SidebarItem>
 						</SidebarSection>
 					</SidebarBody>

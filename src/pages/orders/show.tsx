@@ -6,7 +6,7 @@ import { Divider } from "@/components/divider";
 import { Heading, Subheading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { getOrder } from "@/data";
-import { BanknotesIcon, CalendarIcon, ChevronLeftIcon, CreditCardIcon } from "@heroicons/react/16/solid";
+import { BanknotesIcon, CalendarIcon, CreditCardIcon } from "@heroicons/react/16/solid";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { RefundOrder } from "./refund";
@@ -36,13 +36,7 @@ export function OrderShow() {
 
 	return (
 		<>
-			<div className="max-lg:hidden">
-				<Link href="/orders" className="inline-flex items-center gap-2 text-sm/6 text-zinc-500 dark:text-zinc-400">
-					<ChevronLeftIcon className="size-4 fill-zinc-400 dark:fill-zinc-500" />
-					Orders
-				</Link>
-			</div>
-			<div className="mt-4 lg:mt-8">
+			<div>
 				<div className="flex items-center gap-4">
 					<Heading>Order #{order.id}</Heading>
 					<Badge color="lime">Successful</Badge>

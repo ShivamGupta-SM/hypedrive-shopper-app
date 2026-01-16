@@ -639,5 +639,168 @@ export function EnrollmentsListSkeleton() {
   );
 }
 
+// =============================================================================
+// SETTINGS PAGE SKELETON
+// =============================================================================
+
+export function SettingsSkeleton() {
+  return (
+    <SkeletonWrapper>
+      <div className="space-y-5">
+        {/* Header */}
+        <div>
+          <Skeleton width={80} height={28} borderRadius={4} />
+          <div className="mt-1">
+            <Skeleton width={220} height={14} borderRadius={4} />
+          </div>
+        </div>
+
+        {/* Profile Card */}
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+          <div className="p-5 sm:p-6">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              {/* Avatar */}
+              <Skeleton width={80} height={80} borderRadius={12} className="sm:w-16 sm:h-16" />
+              {/* Info */}
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <Skeleton width={120} height={18} borderRadius={4} />
+                <div className="mt-1">
+                  <Skeleton width={180} height={14} borderRadius={4} />
+                </div>
+                <div className="mt-1">
+                  <Skeleton width={100} height={12} borderRadius={4} />
+                </div>
+              </div>
+              {/* Edit button */}
+              <Skeleton width={100} height={36} borderRadius={8} />
+            </div>
+          </div>
+        </div>
+
+        {/* KYC Card */}
+        <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+          <Skeleton width={36} height={36} borderRadius={12} />
+          <div className="min-w-0 flex-1">
+            <Skeleton width={100} height={14} borderRadius={4} />
+            <div className="mt-1">
+              <Skeleton width={200} height={12} borderRadius={4} />
+            </div>
+          </div>
+          <Skeleton width={70} height={32} borderRadius={8} />
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* Account Info */}
+          <div>
+            <div className="mb-2 flex items-center gap-2 px-1">
+              <Skeleton width={16} height={16} borderRadius={4} />
+              <Skeleton width={90} height={12} borderRadius={4} />
+            </div>
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i}>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <Skeleton width={36} height={36} borderRadius={12} />
+                    <div className="min-w-0 flex-1">
+                      <Skeleton width={80} height={14} borderRadius={4} />
+                    </div>
+                    <Skeleton width={100} height={14} borderRadius={4} />
+                  </div>
+                  {i < 4 && <div className="ml-16 h-px bg-zinc-200 dark:bg-zinc-700" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payout Methods */}
+          <div>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Skeleton width={16} height={16} borderRadius={4} />
+                <Skeleton width={110} height={12} borderRadius={4} />
+              </div>
+              <Skeleton width={60} height={12} borderRadius={4} />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+                  <div className="flex items-center gap-3">
+                    <Skeleton width={36} height={36} borderRadius={12} />
+                    <div className="min-w-0 flex-1">
+                      <Skeleton width={100} height={14} borderRadius={4} />
+                      <div className="mt-1">
+                        <Skeleton width={150} height={12} borderRadius={4} />
+                      </div>
+                    </div>
+                    <Skeleton width={20} height={20} borderRadius={10} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div>
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <Skeleton width={16} height={16} borderRadius={4} />
+            <Skeleton width={90} height={12} borderRadius={4} />
+          </div>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i}>
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <Skeleton width={36} height={36} borderRadius={12} />
+                  <div className="min-w-0 flex-1">
+                    <Skeleton width={140} height={14} borderRadius={4} />
+                    <div className="mt-1">
+                      <Skeleton width={180} height={12} borderRadius={4} />
+                    </div>
+                  </div>
+                  <Skeleton width={44} height={24} borderRadius={12} />
+                </div>
+                {i < 1 && <div className="ml-16 h-px bg-zinc-200 dark:bg-zinc-700" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Support */}
+        <div>
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <Skeleton width={16} height={16} borderRadius={4} />
+            <Skeleton width={60} height={12} borderRadius={4} />
+          </div>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i}>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <Skeleton width={36} height={36} borderRadius={12} />
+                  <Skeleton width={110} height={14} borderRadius={4} />
+                </div>
+                {i < 2 && <div className="ml-16 h-px bg-zinc-200 dark:bg-zinc-700" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sign Out */}
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+          <div className="flex items-center justify-center gap-2 py-3">
+            <Skeleton width={16} height={16} borderRadius={4} />
+            <Skeleton width={60} height={14} borderRadius={4} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-center">
+          <Skeleton width={140} height={12} borderRadius={4} />
+        </div>
+      </div>
+    </SkeletonWrapper>
+  );
+}
+
 // Re-export Skeleton for custom usage
 export { Skeleton, SkeletonTheme };

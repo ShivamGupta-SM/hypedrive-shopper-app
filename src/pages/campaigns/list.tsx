@@ -782,7 +782,7 @@ export function CampaignsList() {
           </div>
           <p className="mt-4 font-semibold text-zinc-900 dark:text-white">Something went wrong</p>
           <p className="mt-1 text-sm text-zinc-500">Unable to load campaigns</p>
-          <Button onClick={refetch} outline className="mt-5">
+          <Button onClick={() => refetch()} outline className="mt-5">
             Try again
           </Button>
         </div>

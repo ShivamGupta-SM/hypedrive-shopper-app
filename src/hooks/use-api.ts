@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { getAuthenticatedClient } from "@/lib/client";
 import type {
   campaigns,
@@ -10,141 +10,169 @@ import type {
   shared,
 } from "@/lib/api-client";
 
-// Generic async state hook
-interface AsyncState<T> {
-  data: T | null;
-  loading: boolean;
-  error: Error | null;
-  refetch: () => void;
+// =============================================================================
+// QUERY KEYS - Centralized for easy cache invalidation
+// =============================================================================
+
+export const queryKeys = {
+  // Shopper
+  shopperProfile: ["shopper", "profile"] as const,
+  shopperStats: ["shopper", "stats"] as const,
+  earningsHistory: (period: string) => ["shopper", "earnings", period] as const,
+  kycStatus: ["shopper", "kyc"] as const,
+
+  // Campaigns
+  campaigns: (params?: Record<string, unknown>) => ["campaigns", params] as const,
+  campaign: (id: string) => ["campaigns", id] as const,
+  campaignPricing: (id: string) => ["campaigns", id, "pricing"] as const,
+  campaignDeliverables: (params?: Record<string, unknown>) => ["campaigns", "deliverables", params] as const,
+  activeCampaigns: (limit: number) => ["campaigns", "active", limit] as const,
+
+  // Enrollments
+  enrollments: (params?: Record<string, unknown>) => ["enrollments", params] as const,
+  enrollment: (id: string) => ["enrollments", id] as const,
+  enrollmentDetail: (id: string) => ["enrollments", id, "detail"] as const,
+  enrollmentPricing: (id: string) => ["enrollments", id, "pricing"] as const,
+
+  // Products
+  products: (params?: Record<string, unknown>) => ["products", params] as const,
+  product: (slug: string) => ["products", slug] as const,
+  productCategories: ["products", "categories"] as const,
+
+  // Platforms
+  platforms: ["platforms"] as const,
+  platform: (id: string) => ["platforms", id] as const,
+
+  // Wallet
+  wallet: ["wallet"] as const,
+  walletTransactions: (params?: Record<string, unknown>) => ["wallet", "transactions", params] as const,
+  withdrawals: (params?: Record<string, unknown>) => ["wallet", "withdrawals", params] as const,
+  withdrawal: (id: string) => ["wallet", "withdrawals", id] as const,
+  withdrawalMethods: ["wallet", "withdrawal-methods"] as const,
+  withdrawalMethod: (id: string) => ["wallet", "withdrawal-methods", id] as const,
+  withdrawalStats: (params?: Record<string, unknown>) => ["wallet", "withdrawal-stats", params] as const,
+
+  // Notifications
+  notificationPreferences: ["notifications", "preferences"] as const,
+  unreadNotificationCount: ["notifications", "unread-count"] as const,
+
+  // Coupons
+  availableCoupons: (campaignId: string) => ["coupons", campaignId] as const,
+
+  // Search
+  unifiedSearch: (params?: Record<string, unknown>) => ["search", params] as const,
+};
+
+// =============================================================================
+// HELPER TO INVALIDATE QUERIES
+// =============================================================================
+
+export function useInvalidateQueries() {
+  const queryClient = useQueryClient();
+
+  return {
+    invalidateShopperProfile: () => queryClient.invalidateQueries({ queryKey: queryKeys.shopperProfile }),
+    invalidateShopperStats: () => queryClient.invalidateQueries({ queryKey: queryKeys.shopperStats }),
+    invalidateWallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet }),
+    invalidateEnrollments: () => queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
+    invalidateCampaigns: () => queryClient.invalidateQueries({ queryKey: ["campaigns"] }),
+    invalidateAll: () => queryClient.invalidateQueries(),
+  };
 }
 
-// Infinite scroll state
-interface InfiniteState<T> {
-  data: T[];
-  loading: boolean;
-  loadingMore: boolean;
-  error: Error | null;
-  hasMore: boolean;
-  loadMore: () => void;
-  refetch: () => void;
-}
-
-// Simple in-memory cache for API responses
-const apiCache = new Map<string, { data: unknown; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds cache
-
-function getCacheKey(fnName: string, deps: unknown[]): string {
-  return `${fnName}:${JSON.stringify(deps)}`;
-}
-
-function useAsync<T>(
-  asyncFn: () => Promise<T>,
-  deps: unknown[] = [],
-  options?: { cacheKey?: string; cacheTTL?: number }
-): AsyncState<T> {
-  const cacheKey = options?.cacheKey || getCacheKey(asyncFn.toString().slice(0, 50), deps);
-  const cacheTTL = options?.cacheTTL ?? CACHE_TTL;
-
-  // Try to get cached data for initial state
-  const cached = apiCache.get(cacheKey);
-  const isCacheValid = cached && (Date.now() - cached.timestamp) < cacheTTL;
-
-  const [data, setData] = useState<T | null>(isCacheValid ? (cached.data as T) : null);
-  const [loading, setLoading] = useState(!isCacheValid);
-  const [error, setError] = useState<Error | null>(null);
-  const hasFetchedRef = useRef(isCacheValid);
-  const depsRef = useRef(deps);
-
-  const execute = useCallback(async (skipCache = false) => {
-    // Check cache first (unless skipCache)
-    if (!skipCache) {
-      const cachedData = apiCache.get(cacheKey);
-      if (cachedData && (Date.now() - cachedData.timestamp) < cacheTTL) {
-        setData(cachedData.data as T);
-        setLoading(false);
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await asyncFn();
-      setData(result);
-      // Store in cache
-      apiCache.set(cacheKey, { data: result, timestamp: Date.now() });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-
-  useEffect(() => {
-    // Check if deps actually changed
-    const depsChanged = JSON.stringify(deps) !== JSON.stringify(depsRef.current);
-
-    if (!hasFetchedRef.current || depsChanged) {
-      hasFetchedRef.current = true;
-      depsRef.current = deps;
-      execute();
-    }
-  }, [execute, deps]);
-
-  // Refetch bypasses cache
-  const refetch = useCallback(() => execute(true), [execute]);
-
-  return { data, loading, error, refetch };
-}
+// =============================================================================
+// SHOPPER HOOKS
+// =============================================================================
 
 // Shopper Profile
 export function useShopperProfile() {
-  const result = useAsync(async () => {
-    const client = getAuthenticatedClient();
-    const profile = await client.shoppers.getMyShopperProfile();
+  const query = useQuery({
+    queryKey: queryKeys.shopperProfile,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      const profile = await client.shoppers.getMyShopperProfile();
 
-    // Sync shopper data to localStorage for identity
-    if (profile?.shopper) {
-      const shopperData = {
-        id: profile.shopper.id,
-        firstName: profile.shopper.firstName || "",
-        lastName: profile.shopper.lastName || "",
-        kycStatus: profile.shopper.kycStatus || "pending",
-        avatarUrl: profile.shopper.avatarUrl,
-      };
-      localStorage.setItem("auth_shopper", JSON.stringify(shopperData));
-    }
+      // Sync shopper data to localStorage for identity
+      if (profile?.shopper) {
+        const shopperData = {
+          id: profile.shopper.id,
+          firstName: profile.shopper.firstName || "",
+          lastName: profile.shopper.lastName || "",
+          kycStatus: profile.shopper.kycStatus || "pending",
+          avatarUrl: profile.shopper.avatarUrl,
+        };
+        localStorage.setItem("auth_shopper", JSON.stringify(shopperData));
+      }
 
-    return profile;
-  }, []);
+      return profile;
+    },
+  });
 
-  return result;
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Shopper Stats
 export function useShopperStats() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.shoppers.getShopperStats();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.shopperStats,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.shoppers.getShopperStats();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Shopper Earnings History
 export function useEarningsHistory(period?: "daily" | "weekly" | "monthly") {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.shoppers.getEarningsHistory({ period: period || "monthly" });
-  }, [period]);
+  const query = useQuery({
+    queryKey: queryKeys.earningsHistory(period || "monthly"),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.shoppers.getEarningsHistory({ period: period || "monthly" });
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // KYC Status
 export function useKYCStatus() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.shoppers.getKYCStatus();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.kycStatus,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.shoppers.getKYCStatus();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
+
+// =============================================================================
+// CAMPAIGN HOOKS
+// =============================================================================
 
 // Campaigns List
 export function useCampaigns(params?: {
@@ -156,10 +184,20 @@ export function useCampaigns(params?: {
   featured?: boolean;
   sort?: "trending" | "recent";
 }) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.campaigns.listCampaigns(params || {});
-  }, [params?.cursor, params?.limit, params?.platformId, params?.categoryId, params?.q, params?.featured, params?.sort]);
+  const query = useQuery({
+    queryKey: queryKeys.campaigns(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.campaigns.listCampaigns(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Infinite Campaigns List
@@ -170,91 +208,70 @@ export function useInfiniteCampaigns(params?: {
   q?: string;
   featured?: boolean;
   sort?: "trending" | "recent";
-}): InfiniteState<campaigns.ShopperCampaign> {
-  const [data, setData] = useState<campaigns.ShopperCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const cursorRef = useRef<string | null>(null);
-  const paramsRef = useRef(params);
-
-  // Reset when params change
-  useEffect(() => {
-    const paramsChanged = JSON.stringify(params) !== JSON.stringify(paramsRef.current);
-    if (paramsChanged) {
-      paramsRef.current = params;
-      cursorRef.current = null;
-      setData([]);
-      setHasMore(true);
-      setLoading(true);
-    }
-  }, [params]);
-
-  const fetchData = useCallback(async (isLoadMore = false) => {
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
+}) {
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.campaigns(params),
+    queryFn: async ({ pageParam }) => {
       const client = getAuthenticatedClient();
-      const result = await client.campaigns.listCampaigns({
+      return client.campaigns.listCampaigns({
         ...params,
-        cursor: isLoadMore ? cursorRef.current || undefined : undefined,
+        cursor: pageParam as string | undefined,
       });
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
+  });
 
-      if (isLoadMore) {
-        setData(prev => [...prev, ...(result.data || [])]);
-      } else {
-        setData(result.data || []);
-      }
-      cursorRef.current = result.nextCursor;
-      setHasMore(result.hasMore);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [params]);
+  // Flatten pages into single array
+  const data = query.data?.pages.flatMap(page => page.data || []) ?? [];
 
-  useEffect(() => {
-    fetchData(false);
-  }, [fetchData]);
-
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && cursorRef.current) {
-      fetchData(true);
-    }
-  }, [loadingMore, hasMore, fetchData]);
-
-  const refetch = useCallback(() => {
-    cursorRef.current = null;
-    setData([]);
-    setHasMore(true);
-    fetchData(false);
-  }, [fetchData]);
-
-  return { data, loading, loadingMore, error, hasMore, loadMore, refetch };
+  return {
+    data,
+    loading: query.isLoading,
+    loadingMore: query.isFetchingNextPage,
+    error: query.error,
+    hasMore: query.hasNextPage ?? false,
+    loadMore: () => query.fetchNextPage(),
+    refetch: query.refetch,
+  };
 }
 
 // Single Campaign
 export function useCampaign(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.campaigns.getCampaign(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.campaign(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.campaigns.getCampaign(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Campaign Pricing
 export function useCampaignPricing(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.campaigns.getCampaignPricing(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.campaignPricing(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.campaigns.getCampaignPricing(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Campaign Deliverables
@@ -264,79 +281,87 @@ export function useCampaignDeliverables(params?: {
   platformId?: string;
   category?: string;
 }) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.campaigns.listDeliverables(params || {});
-  }, [params?.skip, params?.take, params?.platformId, params?.category]);
+  const query = useQuery({
+    queryKey: queryKeys.campaignDeliverables(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.campaigns.listDeliverables(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Calculate Payout Estimate
 export function usePayoutEstimate(campaignId: string, orderValue: number) {
-  return useAsync(async () => {
-    if (!orderValue || orderValue <= 0) return null;
-    const client = getAuthenticatedClient();
-    return client.campaigns.calculatePayoutEstimate(campaignId, { orderValue });
-  }, [campaignId, orderValue]);
+  const query = useQuery({
+    queryKey: ["payout-estimate", campaignId, orderValue],
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.campaigns.calculatePayoutEstimate(campaignId, { orderValue });
+    },
+    enabled: !!campaignId && orderValue > 0,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Available Coupons for Campaign
 export function useAvailableCoupons(campaignId: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.coupons.listAvailableCoupons(campaignId);
-  }, [campaignId]);
+  const query = useQuery({
+    queryKey: queryKeys.availableCoupons(campaignId),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.coupons.listAvailableCoupons(campaignId);
+    },
+    enabled: !!campaignId,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
-// Enrollments List with campaign enrichment
-// Campaign data is now embedded in the API response (no extra API calls needed)
-export function useEnrollments(params?: {
-  cursor?: string;
-  limit?: number;
-  status?: shared.EnrollmentStatus;
-  campaignId?: string;
-}): AsyncState<{ data: EnrichedEnrollment[]; nextCursor: string | null; hasMore: boolean }> {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    const result = await client.enrollments.listEnrollments(params || {});
+// Active Campaigns (featured/trending for dashboard)
+export function useActiveCampaigns(limit = 4) {
+  const query = useQuery({
+    queryKey: queryKeys.activeCampaigns(limit),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      const result = await client.campaigns.listCampaigns({
+        limit,
+        featured: true,
+      });
+      return result.data || [];
+    },
+  });
 
-    // Campaign data is now embedded in the enrollment response from backend
-    // No need for N+1 API calls to fetch campaign details
-    // Note: Cast to any since API client types may not be regenerated yet
-    const enrichedData: EnrichedEnrollment[] = result.data.map(enrollment => {
-      const e = enrollment as enrollments.Enrollment & {
-        campaign?: {
-          title: string;
-          product?: { name: string; primaryImage?: string };
-          platform?: { name: string; icon?: string };
-        };
-      };
-      return {
-        ...enrollment,
-        // Campaign data comes directly from API response
-        campaign: e.campaign ? {
-          title: e.campaign.title,
-          product: e.campaign.product ? {
-            name: e.campaign.product.name,
-            primaryImage: e.campaign.product.primaryImage,
-          } : undefined,
-          platform: e.campaign.platform ? {
-            name: e.campaign.platform.name,
-            icon: e.campaign.platform.icon,
-          } : undefined,
-        } : undefined,
-      };
-    });
-
-    return {
-      data: enrichedData,
-      nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
-    };
-  }, [params?.cursor, params?.limit, params?.status, params?.campaignId]);
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
+
+// =============================================================================
+// ENROLLMENT HOOKS
+// =============================================================================
 
 // Enriched enrollment type with campaign data
-// Note: deliverables come from the base enrollments.Enrollment type
 export interface EnrichedEnrollment extends enrollments.Enrollment {
   campaign?: {
     title: string;
@@ -349,70 +374,114 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
       icon?: string;
     };
   };
+  submissions?: {
+    id: string;
+    deliverableName: string;
+    isRequired: boolean;
+    requireLink: boolean;
+    requireScreenshot: boolean;
+    proofLink?: string;
+    proofScreenshot?: string;
+  }[];
 }
 
-// Infinite Enrollments List - campaign data now embedded in API response
-// No more N+1 API calls - single request returns all data
+// Enrollments List with campaign enrichment
+export function useEnrollments(params?: {
+  cursor?: string;
+  limit?: number;
+  status?: shared.EnrollmentStatus;
+  campaignId?: string;
+}) {
+  const query = useQuery({
+    queryKey: queryKeys.enrollments(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      const result = await client.enrollments.listEnrollments(params || {});
+
+      // Campaign data is now embedded in the enrollment response from backend
+      const enrichedData: EnrichedEnrollment[] = result.data.map((enrollment) => {
+        const e = enrollment as enrollments.Enrollment & {
+          campaign?: {
+            title: string;
+            product?: { name: string; primaryImage?: string };
+            platform?: { name: string; icon?: string };
+          };
+        };
+        return {
+          ...enrollment,
+          campaign: e.campaign
+            ? {
+                title: e.campaign.title,
+                product: e.campaign.product
+                  ? {
+                      name: e.campaign.product.name,
+                      primaryImage: e.campaign.product.primaryImage,
+                    }
+                  : undefined,
+                platform: e.campaign.platform
+                  ? {
+                      name: e.campaign.platform.name,
+                      icon: e.campaign.platform.icon,
+                    }
+                  : undefined,
+              }
+            : undefined,
+        };
+      });
+
+      return {
+        data: enrichedData,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore,
+      };
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}
+
+// Infinite Enrollments List
 export function useInfiniteEnrollments(params?: {
   limit?: number;
   status?: shared.EnrollmentStatus;
   campaignId?: string;
-}): InfiniteState<EnrichedEnrollment> {
-  const [data, setData] = useState<EnrichedEnrollment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const cursorRef = useRef<string | null>(null);
-  const paramsRef = useRef(params);
-
-  // Reset when params change
-  useEffect(() => {
-    const paramsChanged = JSON.stringify(params) !== JSON.stringify(paramsRef.current);
-    if (paramsChanged) {
-      paramsRef.current = params;
-      cursorRef.current = null;
-      setData([]);
-      setHasMore(true);
-      setLoading(true);
-    }
-  }, [params]);
-
-  const fetchData = useCallback(async (isLoadMore = false) => {
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
+}) {
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.enrollments(params),
+    queryFn: async ({ pageParam }) => {
       const client = getAuthenticatedClient();
       const result = await client.enrollments.listEnrollments({
         ...params,
-        cursor: isLoadMore ? cursorRef.current || undefined : undefined,
+        cursor: pageParam as string | undefined,
       });
 
-      const enrollmentData = result.data || [];
-
-      // Campaign data is now embedded in the API response - no extra fetches needed!
-      const enrichedEnrollments: EnrichedEnrollment[] = enrollmentData.map(enrollment => {
+      // Campaign data is now embedded in the API response
+      const enrichedEnrollments: EnrichedEnrollment[] = result.data.map((enrollment) => {
         return {
           ...enrollment,
-          // Campaign data comes directly from API response
-          campaign: enrollment.campaign ? {
-            title: enrollment.campaign.title,
-            product: enrollment.campaign.product ? {
-              name: enrollment.campaign.product.name,
-              primaryImage: enrollment.campaign.product.primaryImage,
-            } : undefined,
-            platform: enrollment.campaign.platform ? {
-              name: enrollment.campaign.platform.name,
-              icon: enrollment.campaign.platform.icon,
-            } : undefined,
-          } : undefined,
-          // Map deliverables to submissions format expected by EnrollmentCard
-          submissions: enrollment.deliverables?.map(d => ({
+          campaign: enrollment.campaign
+            ? {
+                title: enrollment.campaign.title,
+                product: enrollment.campaign.product
+                  ? {
+                      name: enrollment.campaign.product.name,
+                      primaryImage: enrollment.campaign.product.primaryImage,
+                    }
+                  : undefined,
+                platform: enrollment.campaign.platform
+                  ? {
+                      name: enrollment.campaign.platform.name,
+                      icon: enrollment.campaign.platform.icon,
+                    }
+                  : undefined,
+              }
+            : undefined,
+          submissions: enrollment.deliverables?.map((d) => ({
             id: d.campaignDeliverableId,
             deliverableName: d.name,
             isRequired: d.isRequired,
@@ -424,134 +493,223 @@ export function useInfiniteEnrollments(params?: {
         };
       });
 
-      if (isLoadMore) {
-        setData(prev => [...prev, ...enrichedEnrollments]);
-      } else {
-        setData(enrichedEnrollments);
-      }
-      cursorRef.current = result.nextCursor;
-      setHasMore(result.hasMore);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [params]);
+      return {
+        data: enrichedEnrollments,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore,
+      };
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextCursor : undefined),
+  });
 
-  useEffect(() => {
-    fetchData(false);
-  }, [fetchData]);
+  // Flatten pages into single array
+  const data = query.data?.pages.flatMap((page) => page.data || []) ?? [];
 
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && cursorRef.current) {
-      fetchData(true);
-    }
-  }, [loadingMore, hasMore, fetchData]);
-
-  const refetch = useCallback(() => {
-    cursorRef.current = null;
-    setData([]);
-    setHasMore(true);
-    fetchData(false);
-  }, [fetchData]);
-
-  return { data, loading, loadingMore, error, hasMore, loadMore, refetch };
+  return {
+    data,
+    loading: query.isLoading,
+    loadingMore: query.isFetchingNextPage,
+    error: query.error,
+    hasMore: query.hasNextPage ?? false,
+    loadMore: () => query.fetchNextPage(),
+    refetch: query.refetch,
+  };
 }
 
 // Single Enrollment
 export function useEnrollment(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.enrollments.getEnrollment(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.enrollment(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.enrollments.getEnrollment(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Enrollment Detail
 export function useEnrollmentDetail(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.enrollments.getEnrollmentDetail(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.enrollmentDetail(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.enrollments.getEnrollmentDetail(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Enrollment Pricing
 export function useEnrollmentPricing(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.enrollments.getEnrollmentPricing(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.enrollmentPricing(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.enrollments.getEnrollmentPricing(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
+
+// =============================================================================
+// PRODUCT HOOKS
+// =============================================================================
 
 // Products List
 export function useProducts(params?: products.ListProductsParams) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.products.listProducts(params || {});
-  }, [params?.skip, params?.take, params?.categoryId, params?.platformId, params?.search, params?.priceMin, params?.priceMax, params?.sortBy, params?.sortOrder]);
+  const query = useQuery({
+    queryKey: queryKeys.products(params as Record<string, unknown>),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.products.listProducts(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Single Product
 export function useProduct(slug: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.products.getProduct(slug);
-  }, [slug]);
+  const query = useQuery({
+    queryKey: queryKeys.product(slug),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.products.getProduct(slug);
+    },
+    enabled: !!slug,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Product Categories
 export function useProductCategories() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.products.listAllCategories();
-  }, []);
-}
+  const query = useQuery({
+    queryKey: queryKeys.productCategories,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.products.listAllCategories();
+    },
+  });
 
-// Platforms List
-export function usePlatforms() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.platforms.listActivePlatforms();
-  }, []);
-}
-
-// Single Platform by ID
-export function usePlatform(id: string | undefined) {
-  return useAsync(async () => {
-    if (!id) return null;
-    const client = getAuthenticatedClient();
-    return client.platforms.getPlatform(id);
-  }, [id]);
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Product by ID (for campaign product lookup)
 export function useProductById(id: string | undefined) {
-  return useAsync(async () => {
-    if (!id) return null;
-    const client = getAuthenticatedClient();
-    return client.products.getProduct(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.product(id || ""),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.products.getProduct(id!);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Product Category by ID
 export function useProductCategory(id: string | undefined) {
-  return useAsync(async () => {
-    if (!id) return null;
-    const client = getAuthenticatedClient();
-    return client.products.getCategory(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: ["product-category", id],
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.products.getCategory(id!);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
-// Active Campaigns (featured/trending for dashboard)
-export function useActiveCampaigns(limit = 4) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    const result = await client.campaigns.listCampaigns({
-      limit,
-      featured: true
-    });
-    return result.data || [];
-  }, [limit]);
+// =============================================================================
+// PLATFORM HOOKS
+// =============================================================================
+
+// Platforms List
+export function usePlatforms() {
+  const query = useQuery({
+    queryKey: queryKeys.platforms,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.platforms.listActivePlatforms();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}
+
+// Single Platform by ID
+export function usePlatform(id: string | undefined) {
+  const query = useQuery({
+    queryKey: queryKeys.platform(id || ""),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.platforms.getPlatform(id!);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // =============================================================================
@@ -560,10 +718,20 @@ export function useActiveCampaigns(limit = 4) {
 
 // Wallet Details
 export function useWallet() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.getMyWallet();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.wallet,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.getMyWallet();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Wallet Transactions
@@ -572,10 +740,20 @@ export function useWalletTransactions(params?: {
   take?: number;
   type?: "credit" | "debit";
 }) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.getWalletTransactions(params || {});
-  }, [params?.skip, params?.take, params?.type]);
+  const query = useQuery({
+    queryKey: queryKeys.walletTransactions(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.getWalletTransactions(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || query.isFetching,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Withdrawals List
@@ -584,35 +762,76 @@ export function useWithdrawals(params?: {
   take?: number;
   status?: shared.WithdrawalStatus;
 }) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.listMyWithdrawals(params || {});
-  }, [params?.skip, params?.take, params?.status]);
+  const query = useQuery({
+    queryKey: queryKeys.withdrawals(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.listMyWithdrawals(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Single Withdrawal
 export function useWithdrawal(id: string) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.getWithdrawal(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.withdrawal(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.getWithdrawal(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Withdrawal Methods
 export function useWithdrawalMethods() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.listWithdrawalMethods();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.withdrawalMethods,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.listWithdrawalMethods();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || query.isFetching,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Single Withdrawal Method
 export function useWithdrawalMethod(id: string) {
-  return useAsync(async () => {
-    if (!id) return null;
-    const client = getAuthenticatedClient();
-    return client.wallets.getWithdrawalMethod(id);
-  }, [id]);
+  const query = useQuery({
+    queryKey: queryKeys.withdrawalMethod(id),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.getWithdrawalMethod(id);
+    },
+    enabled: !!id,
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Withdrawal Stats
@@ -622,10 +841,20 @@ export function useWithdrawalStats(params?: {
   holderType?: "organization" | "shopper";
   holderId?: string;
 }) {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.wallets.getWithdrawalStats(params || {});
-  }, [params?.organizationId, params?.shopperId, params?.holderType, params?.holderId]);
+  const query = useQuery({
+    queryKey: queryKeys.withdrawalStats(params),
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.wallets.getWithdrawalStats(params || {});
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // =============================================================================
@@ -634,18 +863,38 @@ export function useWithdrawalStats(params?: {
 
 // Notification Preferences
 export function useNotificationPreferences() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.notifications.getNotificationPreferences();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.notificationPreferences,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.notifications.getNotificationPreferences();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Unread Notification Count
 export function useUnreadNotificationCount() {
-  return useAsync(async () => {
-    const client = getAuthenticatedClient();
-    return client.notifications.getUnreadCount();
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.unreadNotificationCount,
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      return client.notifications.getUnreadCount();
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // =============================================================================
@@ -654,101 +903,55 @@ export function useUnreadNotificationCount() {
 
 // Unified Search - searches across campaigns, enrollments, and withdrawals
 export function useUnifiedSearch(params: shoppers.UnifiedSearchParams | null) {
-  return useAsync(async () => {
-    if (!params || !params.q?.trim()) return null;
-    const client = getAuthenticatedClient();
-    return client.shoppers.unifiedSearch(params);
-  }, [
-    params?.q,
-    params?.cursor,
-    params?.limit,
-  ]);
+  const query = useQuery({
+    queryKey: ["search", "unified", params?.q, params?.cursor, params?.limit],
+    queryFn: async () => {
+      const client = getAuthenticatedClient();
+      if (!params) throw new Error("Params required");
+      return client.shoppers.unifiedSearch(params);
+    },
+    enabled: !!params?.q?.trim(),
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 // Infinite Unified Search
-export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchParams, 'cursor'>): InfiniteState<shoppers.SearchResult> & { facets: shoppers.SearchFacets | null } {
-  const [data, setData] = useState<shoppers.SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [facets, setFacets] = useState<shoppers.SearchFacets | null>(null);
-  const cursorRef = useRef<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Extract primitive values from params
-  const q = params?.q;
-  const limit = params?.limit;
-
-  const fetchData = useCallback(async (isLoadMore = false) => {
-    if (!q?.trim()) {
-      setData([]);
-      setLoading(false);
-      setHasMore(false);
-      setFacets(null);
-      return;
-    }
-
-    // Cancel any in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-      setData([]); // Clear data immediately for non-load-more fetches
-      cursorRef.current = null;
-    }
-    setError(null);
-
-    try {
+export function useInfiniteUnifiedSearch(params?: Omit<shoppers.UnifiedSearchParams, "cursor">) {
+  const query = useInfiniteQuery({
+    queryKey: ["search", "unified", "infinite", params?.q, params?.limit],
+    queryFn: async ({ pageParam }) => {
       const client = getAuthenticatedClient();
-      const result = await client.shoppers.unifiedSearch({
-        q: q,
-        limit: limit,
-        cursor: isLoadMore ? cursorRef.current || undefined : undefined,
+      return client.shoppers.unifiedSearch({
+        ...params,
+        q: params?.q || "",
+        cursor: pageParam as string | undefined,
       });
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextCursor : undefined),
+    enabled: !!params?.q?.trim(),
+  });
 
-      // Check if this request was aborted
-      if (abortControllerRef.current?.signal.aborted) return;
+  // Flatten pages into single array
+  const data = query.data?.pages.flatMap((page) => page.data || []) ?? [];
+  const facets = query.data?.pages[0]?.facets ?? null;
 
-      if (isLoadMore) {
-        setData(prev => [...prev, ...(result.data || [])]);
-      } else {
-        setData(result.data || []);
-      }
-      cursorRef.current = result.nextCursor;
-      setHasMore(result.hasMore);
-      setFacets(result.facets);
-    } catch (err) {
-      // Ignore abort errors
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [q, limit]);
-
-  // Fetch when params change
-  useEffect(() => {
-    fetchData(false);
-  }, [fetchData]);
-
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && cursorRef.current && q?.trim()) {
-      fetchData(true);
-    }
-  }, [loadingMore, hasMore, fetchData, q]);
-
-  const refetch = useCallback(() => {
-    fetchData(false);
-  }, [fetchData]);
-
-  return { data, loading, loadingMore, error, hasMore, loadMore, refetch, facets };
+  return {
+    data,
+    loading: query.isLoading,
+    loadingMore: query.isFetchingNextPage,
+    error: query.error,
+    hasMore: query.hasNextPage ?? false,
+    loadMore: () => query.fetchNextPage(),
+    refetch: query.refetch,
+    facets,
+  };
 }
 
 // Export types for components

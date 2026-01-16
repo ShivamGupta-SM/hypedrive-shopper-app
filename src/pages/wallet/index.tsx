@@ -1,14 +1,8 @@
 import { Button } from "@/components/button";
-import {
-  Dialog,
-  DialogActions,
-  DialogBody,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/dialog";
 import { Heading, Subheading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
+import { WithdrawDialog } from "@/components/withdraw-dialog";
 import {
   useShopperProfile,
   useShopperStats,
@@ -16,7 +10,6 @@ import {
   useWalletTransactions,
   useWithdrawalMethods,
 } from "@/hooks/use-api";
-import { getAuthenticatedClient } from "@/lib/client";
 import type { wallets } from "@/lib/api-client";
 import { WalletSkeleton } from "@/lib/skeleton";
 import {
@@ -25,13 +18,11 @@ import {
   ArrowUpTrayIcon,
   BanknotesIcon,
   BuildingLibraryIcon,
-  CheckCircleIcon,
   ChevronRightIcon,
   ClockIcon,
   CurrencyRupeeIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
-  XCircleIcon,
 } from "@heroicons/react/16/solid";
 import { useState } from "react";
 
@@ -146,6 +137,7 @@ function StatCard({
 
 function TransactionRow({ tx }: { tx: wallets.WalletTransaction }) {
   const isCredit = tx.type === "credit";
+  const isPending = tx.status === "pending";
 
   return (
     <Link
@@ -166,18 +158,27 @@ function TransactionRow({ tx }: { tx: wallets.WalletTransaction }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
-          {tx.description || (isCredit ? "Credit" : "Debit")}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+            {tx.description || (isCredit ? "Credit" : "Debit")}
+          </p>
+          {isPending && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+              Pending
+            </span>
+          )}
+        </div>
         <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
-          {tx.reference || formatDateTime(tx.createdAt)}
+          {formatDateTime(tx.createdAt)}
         </p>
       </div>
       <div className="shrink-0 text-right">
         <p className={`text-sm font-semibold ${
-          isCredit
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-zinc-900 dark:text-zinc-100"
+          isPending
+            ? "text-zinc-400 dark:text-zinc-500"
+            : isCredit
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-zinc-900 dark:text-zinc-100"
         }`}>
           {isCredit ? "+" : "-"}₹{tx.amountDecimal}
         </p>
@@ -237,198 +238,29 @@ function EmptyTransactions() {
   );
 }
 
-function WithdrawDialog({
-  open,
-  onClose,
-  balance,
-  withdrawalMethods,
-  onSuccess,
-}: {
-  open: boolean;
-  onClose: () => void;
-  balance: string;
-  withdrawalMethods: wallets.WithdrawalMethod[];
-  onSuccess: () => void;
-}) {
-  const [amount, setAmount] = useState("");
-  const [selectedMethodId, setSelectedMethodId] = useState(
-    withdrawalMethods.find((m) => m.isDefault)?.id || withdrawalMethods[0]?.id || ""
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleWithdraw = async () => {
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      setError("Please enter a valid amount");
-      return;
-    }
-    if (numAmount > parseFloat(balance)) {
-      setError("Amount exceeds available balance");
-      return;
-    }
-    if (!selectedMethodId) {
-      setError("Please select a withdrawal method");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const client = getAuthenticatedClient();
-      await client.wallets.createWithdrawal({
-        amount: Math.round(numAmount * 100),
-        withdrawalMethodId: selectedMethodId,
-      });
-      onSuccess();
-      onClose();
-      setAmount("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create withdrawal");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifiedMethods = withdrawalMethods.filter((m) => m.isVerified !== false);
-
-  return (
-    <Dialog open={open} onClose={onClose} size="md">
-      <div className="flex items-start gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-          <ArrowUpTrayIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <DialogTitle className="text-lg">Withdraw Funds</DialogTitle>
-          <DialogDescription className="mt-1">
-            Transfer your earnings to your bank account.
-          </DialogDescription>
-        </div>
-      </div>
-
-      <DialogBody>
-        <div className="space-y-5">
-          <div className="rounded-xl bg-zinc-900 p-4 dark:bg-zinc-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                  Available Balance
-                </p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-white">
-                  ₹{balance}
-                </p>
-              </div>
-              <BanknotesIcon className="size-8 text-emerald-500/30" />
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
-            <div className="px-4 py-3">
-              <p className="text-[13px] text-zinc-500 dark:text-zinc-400">Amount to withdraw</p>
-              <div className="mt-1 flex items-center gap-1">
-                <span className="text-xl font-semibold text-zinc-400">₹</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min={1}
-                  max={parseFloat(balance)}
-                  className="w-full bg-transparent text-2xl font-semibold text-zinc-900 placeholder:text-zinc-300 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
-                />
-              </div>
-            </div>
-          </div>
-
-          {verifiedMethods.length > 0 ? (
-            <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
-              <p className="px-4 pt-3 text-[13px] text-zinc-500 dark:text-zinc-400">Withdraw to</p>
-              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
-                {verifiedMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => setSelectedMethodId(method.id)}
-                    className={`flex w-full items-center gap-3 px-4 py-3 text-left ${
-                      selectedMethodId === method.id ? "bg-white dark:bg-zinc-800" : ""
-                    }`}
-                  >
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500">
-                      <BuildingLibraryIcon className="size-4 text-white" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base text-zinc-900 dark:text-white">
-                        {method.bankName || "Bank Account"}
-                      </p>
-                      <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
-                        •••• {method.accountNumber?.slice(-4) || "****"}
-                        {method.isDefault ? " · Default" : ""}
-                      </p>
-                    </div>
-                    {selectedMethodId === method.id && (
-                      <CheckCircleIcon className="size-5 text-emerald-500" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center rounded-xl bg-zinc-50 p-6 text-center ring-1 ring-zinc-950/5 dark:bg-zinc-800/50 dark:ring-white/10">
-              <div className="flex size-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
-                <ExclamationTriangleIcon className="size-6 text-amber-600 dark:text-amber-400" />
-              </div>
-              <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-white">
-                No bank account linked
-              </p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Add a bank account in Settings to withdraw.
-              </p>
-              <Button href="/settings" className="mt-4" color="dark/zinc">
-                Add Bank Account
-              </Button>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
-              <XCircleIcon className="size-4 shrink-0" />
-              {error}
-            </div>
-          )}
-        </div>
-      </DialogBody>
-      <DialogActions>
-        <Button plain onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleWithdraw}
-          disabled={loading || !amount || verifiedMethods.length === 0}
-          color="emerald"
-        >
-          {loading ? "Processing..." : "Withdraw"}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
 export function Wallet() {
   const { data: profile, loading: profileLoading } = useShopperProfile();
   const { data: stats, loading: statsLoading } = useShopperStats();
   const { data: wallet, loading: walletLoading } = useWallet();
-  const { data: transactions, loading: txLoading, refetch: refetchTx } = useWalletTransactions({ take: 20 });
-  const { data: methodsData, loading: methodsLoading } = useWithdrawalMethods();
+  const { data: transactions, loading: txLoading, error: txError, refetch: refetchTx } = useWalletTransactions({ take: 20 });
+  const { data: methodsData, loading: methodsLoading, error: methodsError } = useWithdrawalMethods();
+
+  // Debug logging for API errors
+  if (txError) console.error("[Wallet] Transactions error:", txError);
+  if (methodsError) console.error("[Wallet] Methods error:", methodsError);
 
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
 
-  if (profileLoading || statsLoading || walletLoading) {
+  // Wait for all essential data before rendering
+  const isLoading = profileLoading || statsLoading || walletLoading || methodsLoading || txLoading;
+
+  if (isLoading) {
     return <LoadingSkeleton />;
   }
 
   const kycVerified = profile?.shopper?.kycStatus === "verified";
-  const availableBalance = wallet?.balanceDecimal || profile?.walletBalanceDecimal || "0.00";
+  // Use availableBalanceDecimal which accounts for pending holds/withdrawals
+  const availableBalance = wallet?.availableBalanceDecimal || wallet?.balanceDecimal || profile?.walletBalanceDecimal || "0.00";
   const availableAmount = parseFloat(availableBalance);
   const KYC_THRESHOLD = 30000;
   const needsKycForWithdrawal = availableAmount > KYC_THRESHOLD && !kycVerified;
@@ -455,7 +287,7 @@ export function Wallet() {
       {/* Balance Card */}
       <BalanceCard
         balance={availableBalance}
-        pendingBalance={wallet?.pendingBalanceDecimal || profile?.pendingPayoutsDecimal || "0.00"}
+        pendingBalance={wallet?.pendingBalanceDecimal || "0.00"}
         canWithdraw={canWithdraw}
         onWithdraw={() => setShowWithdrawDialog(true)}
         kycVerified={kycVerified}

@@ -7,6 +7,7 @@ import routerProvider, {
 	UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import dataProvider from "@refinedev/simple-rest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import "./App.css";
@@ -23,11 +24,24 @@ import { WithdrawalShow } from "./pages/wallet/withdrawals/show";
 import { ForgotPassword, Login, Register, ResetPassword, VerifyEmail } from "./pages/auth";
 import { AuthLayout } from "./pages/auth/layout";
 
+// Create a React Query client with sensible defaults
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			staleTime: 30 * 1000, // 30 seconds
+			gcTime: 5 * 60 * 1000, // 5 minutes (garbage collection time, formerly cacheTime)
+			retry: 1,
+			refetchOnWindowFocus: false,
+		},
+	},
+});
+
 function App() {
 	return (
-		<BrowserRouter>
-			<RefineKbarProvider>
-				<Refine
+		<QueryClientProvider client={queryClient}>
+			<BrowserRouter>
+				<RefineKbarProvider>
+					<Refine
 						dataProvider={dataProvider("https://api.fake-rest.refine.dev")}
 						routerProvider={routerProvider}
 						authProvider={authProvider}
@@ -109,20 +123,21 @@ function App() {
 						<UnsavedChangesNotifier />
 						<DocumentTitleHandler />
 					</Refine>
-			</RefineKbarProvider>
-			<Toaster
-				position="top-center"
-				toastOptions={{
-					style: {
-						background: "var(--color-surface-elevated, #fff)",
-						border: "1px solid var(--color-border-light, rgba(0,0,0,0.1))",
-						color: "var(--color-text-primary, #09090b)",
-					},
-				}}
-				richColors
-				closeButton
-			/>
-		</BrowserRouter>
+				</RefineKbarProvider>
+				<Toaster
+					position="top-center"
+					toastOptions={{
+						style: {
+							background: "var(--color-surface-elevated, #fff)",
+							border: "1px solid var(--color-border-light, rgba(0,0,0,0.1))",
+							color: "var(--color-text-primary, #09090b)",
+						},
+					}}
+					richColors
+					closeButton
+				/>
+			</BrowserRouter>
+		</QueryClientProvider>
 	);
 }
 

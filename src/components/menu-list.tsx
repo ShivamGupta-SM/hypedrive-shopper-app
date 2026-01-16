@@ -143,9 +143,10 @@ export function MenuRow({
   const Component = onClick ? "button" : "div";
 
   // Use duotone colors if iconColor is provided, otherwise fall back to legacy iconBg
+  // All icon containers use rounded-xl (squircle) for consistency
   const useDuotone = iconColor && duotoneColors[iconColor];
   const containerClasses = useDuotone
-    ? `flex size-9 shrink-0 items-center justify-center rounded-full ${duotoneColors[iconColor].bg}`
+    ? `flex size-9 shrink-0 items-center justify-center rounded-xl ${duotoneColors[iconColor].bg}`
     : `flex size-9 shrink-0 items-center justify-center rounded-xl ${iconBg}`;
   const iconClasses = useDuotone
     ? `size-4 ${duotoneColors[iconColor].icon}`

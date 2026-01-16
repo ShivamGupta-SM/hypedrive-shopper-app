@@ -1,12 +1,9 @@
-import { Button } from "@/components/button";
 import { Heading } from "@/components/heading";
-import { Link } from "@/components/link";
 import { Text } from "@/components/text";
 import { useWalletTransactions } from "@/hooks/use-api";
 import type { wallets } from "@/lib/api-client";
 import {
   ArrowDownTrayIcon,
-  ArrowLeftIcon,
   ArrowUpTrayIcon,
   BanknotesIcon,
   CalendarIcon,
@@ -72,34 +69,29 @@ export function TransactionShow() {
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           This transaction may have been removed or doesn't exist.
         </p>
-        <Button href="/wallet" className="mt-6">
-          <ArrowLeftIcon className="size-4" />
-          Back to Wallet
-        </Button>
       </div>
     );
   }
 
   const isCredit = tx.type === "credit";
+  const isPending = tx.status === "pending";
 
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/wallet"
-          className="flex size-9 items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
-        >
-          <ArrowLeftIcon className="size-4 text-zinc-600 dark:text-zinc-400" />
-        </Link>
-        <div>
-          <Heading>Transaction Details</Heading>
-          <Text className="mt-0.5 text-sm">View transaction information</Text>
-        </div>
+      <div>
+        <Heading>Transaction Details</Heading>
+        <Text className="mt-1 text-sm">View transaction information</Text>
       </div>
 
       {/* Amount Card */}
-      <div className={`overflow-hidden rounded-2xl ${isCredit ? "bg-emerald-600 dark:bg-emerald-700" : "bg-sky-600 dark:bg-sky-700"}`}>
+      <div className={`overflow-hidden rounded-2xl ${
+        isPending
+          ? "bg-amber-500 dark:bg-amber-600"
+          : isCredit
+            ? "bg-emerald-600 dark:bg-emerald-700"
+            : "bg-sky-600 dark:bg-sky-700"
+      }`}>
         <div className="p-6 text-center">
           <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-white/20">
             {isCredit ? (
@@ -114,22 +106,35 @@ export function TransactionShow() {
           <p className="mt-2 text-sm text-white/80">
             {tx.description || (isCredit ? "Credit" : "Debit")}
           </p>
+          {isPending && (
+            <span className="mt-3 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white">
+              Pending
+            </span>
+          )}
         </div>
       </div>
 
       {/* Type Badge */}
       <div className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 ${
-        isCredit ? "bg-emerald-50 dark:bg-emerald-950/50" : "bg-sky-50 dark:bg-sky-950/50"
+        isPending
+          ? "bg-amber-50 dark:bg-amber-950/50"
+          : isCredit
+            ? "bg-emerald-50 dark:bg-emerald-950/50"
+            : "bg-sky-50 dark:bg-sky-950/50"
       }`}>
         {isCredit ? (
-          <ArrowDownTrayIcon className="size-5 text-emerald-600 dark:text-emerald-400" />
+          <ArrowDownTrayIcon className={`size-5 ${isPending ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
         ) : (
-          <ArrowUpTrayIcon className="size-5 text-sky-600 dark:text-sky-400" />
+          <ArrowUpTrayIcon className={`size-5 ${isPending ? "text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400"}`} />
         )}
         <span className={`text-sm font-medium ${
-          isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-sky-600 dark:text-sky-400"
+          isPending
+            ? "text-amber-600 dark:text-amber-400"
+            : isCredit
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-sky-600 dark:text-sky-400"
         }`}>
-          {isCredit ? "Money Received" : "Money Sent"}
+          {isPending ? "Pending" : isCredit ? "Money Received" : "Money Sent"}
         </span>
       </div>
 
@@ -159,17 +164,22 @@ export function TransactionShow() {
             icon={BanknotesIcon}
           />
           <DetailRow
+            label="Status"
+            value={
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
+                isPending
+                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+              }`}>
+                {isPending ? "Pending" : "Completed"}
+              </span>
+            }
+          />
+          <DetailRow
             label="Date"
             value={formatDateTime(tx.createdAt)}
             icon={CalendarIcon}
           />
-          {tx.reference && (
-            <DetailRow
-              label="Reference"
-              value={<span className="font-mono text-xs">{tx.reference}</span>}
-              icon={HashtagIcon}
-            />
-          )}
           <DetailRow
             label="Currency"
             value={tx.currency || "INR"}
@@ -177,11 +187,6 @@ export function TransactionShow() {
         </div>
       </div>
 
-      {/* Actions */}
-      <Button href="/wallet" color="dark/zinc" className="w-full">
-        <ArrowLeftIcon className="size-4" />
-        Back to Wallet
-      </Button>
     </div>
   );
 }

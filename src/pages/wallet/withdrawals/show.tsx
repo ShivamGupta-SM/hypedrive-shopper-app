@@ -7,12 +7,10 @@ import {
   DialogTitle,
 } from "@/components/dialog";
 import { Heading } from "@/components/heading";
-import { Link } from "@/components/link";
 import { Text } from "@/components/text";
 import { useWithdrawal, useWithdrawalMethod } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
 import {
-  ArrowLeftIcon,
   ArrowPathIcon,
   ArrowUpTrayIcon,
   BuildingLibraryIcon,
@@ -102,10 +100,6 @@ export function WithdrawalShow() {
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           This withdrawal may have been removed or doesn't exist.
         </p>
-        <Button href="/wallet/withdrawals" className="mt-6">
-          <ArrowLeftIcon className="size-4" />
-          Back to Withdrawals
-        </Button>
       </div>
     );
   }
@@ -125,17 +119,9 @@ export function WithdrawalShow() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/wallet/withdrawals"
-          className="flex size-9 items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
-        >
-          <ArrowLeftIcon className="size-4 text-zinc-600 dark:text-zinc-400" />
-        </Link>
-        <div>
-          <Heading>Withdrawal Details</Heading>
-          <Text className="mt-0.5 text-sm">View withdrawal request information</Text>
-        </div>
+      <div>
+        <Heading>Withdrawal Details</Heading>
+        <Text className="mt-1 text-sm">View withdrawal request information</Text>
       </div>
 
       {/* Amount Card */}
@@ -242,18 +228,12 @@ export function WithdrawalShow() {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <Button href="/wallet/withdrawals" color="dark/zinc" className="flex-1">
-          <ArrowLeftIcon className="size-4" />
-          Back
+      {canCancel && (
+        <Button color="red" className="w-full" onClick={() => setShowCancelDialog(true)}>
+          <XCircleIcon className="size-4" />
+          Cancel Request
         </Button>
-        {canCancel && (
-          <Button color="red" className="flex-1" onClick={() => setShowCancelDialog(true)}>
-            <XCircleIcon className="size-4" />
-            Cancel Request
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Cancel Dialog */}
       <Dialog

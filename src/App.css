@@ -1,11 +1,11 @@
 @import "tailwindcss";
 @import "@fontsource-variable/geist";
-@import "@fontsource-variable/playfair-display";
+@import "@fontsource/instrument-serif";
 
 @theme {
 	--font-sans: "Geist Variable", sans-serif;
 	--font-sans--font-feature-settings: "cv11";
-	--font-serif: "Playfair Display Variable", Georgia, serif;
+	--font-serif: "Instrument Serif", Georgia, serif;
 
 	/* ==========================================================================
 	   HYPEDRIVE SHOPPER COLOR PALETTE

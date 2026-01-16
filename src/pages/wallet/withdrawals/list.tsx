@@ -13,7 +13,6 @@ import { useWithdrawals } from "@/hooks/use-api";
 import { getAuthenticatedClient } from "@/lib/client";
 import type { wallets } from "@/lib/api-client";
 import {
-  ArrowLeftIcon,
   ArrowPathIcon,
   ArrowUpTrayIcon,
   CheckCircleIcon,
@@ -167,17 +166,9 @@ export function WithdrawalsList() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/wallet"
-          className="flex size-9 items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
-        >
-          <ArrowLeftIcon className="size-4 text-zinc-600 dark:text-zinc-400" />
-        </Link>
-        <div>
-          <Heading>Withdrawals</Heading>
-          <Text className="mt-0.5 text-sm">View all your withdrawal requests</Text>
-        </div>
+      <div>
+        <Heading>Withdrawals</Heading>
+        <Text className="mt-1 text-sm">View all your withdrawal requests</Text>
       </div>
 
       {withdrawalList.length === 0 ? (

@@ -176,10 +176,11 @@ function ProductImageGallery({
     }
   }, [selectedIndex, validImages.length]);
 
+  // Empty state
   if (validImages.length === 0) {
     return (
-      <div className="flex aspect-4/3 items-center justify-center bg-zinc-100 lg:aspect-square dark:bg-zinc-800">
-        <CubeIcon className="size-12 text-zinc-300 lg:size-20 dark:text-zinc-600" />
+      <div className="flex aspect-square w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+        <CubeIcon className="size-16 text-zinc-300 dark:text-zinc-600" />
       </div>
     );
   }
@@ -188,47 +189,51 @@ function ProductImageGallery({
   const hasMultiple = validImages.length > 1;
 
   return (
-    <div className="flex flex-col">
-      {/* Main Image - Compact on mobile, square on desktop */}
-      <div className="relative bg-white dark:bg-zinc-900">
+    <div className="w-full">
+      {/* Main Image - Edge to edge */}
+      <div className="relative">
         <img
           src={currentImage?.imageUrl}
           alt={currentImage?.altText || "Product image"}
-          className="aspect-4/3 w-full object-contain lg:aspect-square"
+          className="aspect-square w-full object-cover"
           onError={() => {
             if (currentImage) setImageError(prev => ({ ...prev, [currentImage.id]: true }));
           }}
         />
-        {/* Image Counter Badge - only on mobile when multiple images */}
+        {/* Image Counter Badge */}
         {hasMultiple && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-zinc-900/70 px-2 py-0.5 text-[10px] font-medium text-white lg:bottom-3 lg:right-3 lg:gap-1.5 lg:px-2.5 lg:py-1 lg:text-xs">
-            <PhotoIcon className="size-2.5 lg:size-3" />
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-zinc-900/70 px-2.5 py-1 text-xs font-medium text-white">
+            <PhotoIcon className="size-3" />
             {selectedIndex + 1}/{validImages.length}
           </div>
         )}
       </div>
-      {/* Thumbnails - Compact horizontal strip */}
+
+      {/* Thumbnails Strip */}
       {hasMultiple && (
-        <div className="flex gap-1.5 overflow-x-auto bg-zinc-50 p-2 lg:gap-2 lg:p-3 dark:bg-zinc-800/50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {validImages.map((img, idx) => (
-            <button
-              key={img.id}
-              type="button"
-              onClick={() => setSelectedIndex(idx)}
-              className={`relative shrink-0 overflow-hidden rounded ${
-                selectedIndex === idx
-                  ? "ring-2 ring-zinc-900 dark:ring-white"
-                  : "opacity-50"
-              }`}
-            >
-              <img
-                src={img.imageUrl}
-                alt=""
-                className="size-10 object-cover lg:size-14"
-                onError={() => setImageError(prev => ({ ...prev, [img.id]: true }))}
-              />
-            </button>
-          ))}
+        <div className="border-t border-zinc-200 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {validImages.map((img, idx) => (
+              <button
+                key={img.id}
+                type="button"
+                onClick={() => setSelectedIndex(idx)}
+                className="relative shrink-0 overflow-hidden rounded-lg"
+              >
+                <img
+                  src={img.imageUrl}
+                  alt=""
+                  className={`size-11 object-cover lg:size-12 ${
+                    selectedIndex !== idx ? "opacity-50" : ""
+                  }`}
+                  onError={() => setImageError(prev => ({ ...prev, [img.id]: true }))}
+                />
+                {selectedIndex === idx && (
+                  <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-zinc-900 dark:border-white" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1183,19 +1188,17 @@ export function CampaignShow() {
       {/* ================================================================== */}
       {/* SECTION 1: PRODUCT + EARNINGS (Side by Side) */}
       {/* ================================================================== */}
-      <div className="grid items-stretch gap-5 lg:grid-cols-5">
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Product Gallery - Left Side */}
-        <div className="lg:col-span-2">
-          <div className="h-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-            <ProductImageGallery
-              images={product?.productImages}
-              primaryImage={product?.primaryImage}
-            />
-          </div>
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+          <ProductImageGallery
+            images={product?.productImages}
+            primaryImage={product?.primaryImage}
+          />
         </div>
 
         {/* Product Info + Earnings - Right Side */}
-        <div className="flex flex-col gap-4 lg:col-span-3">
+        <div className="flex flex-col gap-4">
           {/* Badges Row */}
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge status={campaign.status} />

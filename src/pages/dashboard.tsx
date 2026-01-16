@@ -2,11 +2,14 @@ import { Button } from "@/components/button";
 import { Heading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
+import { WithdrawDialog } from "@/components/withdraw-dialog";
 import {
   useActiveCampaigns,
   useEnrollments,
   useShopperProfile,
   useShopperStats,
+  useWallet,
+  useWithdrawalMethods,
 } from "@/hooks/use-api";
 import { DashboardSkeleton } from "@/lib/skeleton";
 import { getStatusColors } from "@/lib/theme";
@@ -20,6 +23,7 @@ import {
   ExclamationTriangleIcon,
   SparklesIcon,
 } from "@heroicons/react/16/solid";
+import { useState } from "react";
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -53,11 +57,13 @@ function BalanceCard({
   pending,
   lifetime,
   canWithdraw,
+  onWithdraw,
 }: {
   available: string;
   pending: string;
   lifetime: string;
   canWithdraw: boolean;
+  onWithdraw: () => void;
 }) {
   const hasBalance = parseFloat(available) > 0;
   const hasPending = parseFloat(pending) > 0;
@@ -76,7 +82,7 @@ function BalanceCard({
           </p>
         </div>
         {hasBalance && canWithdraw && (
-          <Button href="/wallet" color="emerald">
+          <Button onClick={onWithdraw} color="emerald">
             Withdraw
           </Button>
         )}
@@ -615,15 +621,20 @@ function EmptyState() {
 // =============================================================================
 
 export function Dashboard() {
-  const { data: profile, loading: profileLoading } = useShopperProfile();
+  const { data: profile, loading: profileLoading, refetch: refetchProfile } = useShopperProfile();
   const { data: stats, loading: statsLoading } = useShopperStats();
+  const { data: wallet, loading: walletLoading, refetch: refetchWallet } = useWallet();
   const { data: enrollmentsData, loading: enrollmentsLoading } = useEnrollments({
     limit: 10,
   });
   const { data: campaigns, loading: campaignsLoading } = useActiveCampaigns(10);
+  const { data: methodsData } = useWithdrawalMethods();
+
+  // Modal state
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
 
   // Loading state
-  if (profileLoading || statsLoading || enrollmentsLoading || campaignsLoading) {
+  if (profileLoading || statsLoading || walletLoading || enrollmentsLoading || campaignsLoading) {
     return <LoadingSkeleton />;
   }
 
@@ -636,16 +647,17 @@ export function Dashboard() {
   const enrollments = enrollmentsData?.data || [];
   const isNewUser = (stats?.totalEnrollments || 0) === 0;
 
-  // Balance data
-  const available = profile?.walletBalanceDecimal || "0.00";
-  const pending = profile?.pendingPayoutsDecimal || "0.00";
+  // Balance data - use wallet API for accurate available balance (accounts for pending withdrawals)
+  const available = wallet?.availableBalanceDecimal || wallet?.balanceDecimal || "0.00";
+  const pending = wallet?.pendingBalanceDecimal || "0.00";
   const lifetime = stats?.totalEarningsDecimal || "0.00";
   const kycVerified = profile?.shopper?.kycStatus === "verified";
   const availableAmount = parseFloat(available);
   // KYC required only for withdrawals above ₹30,000
   const KYC_THRESHOLD = 30000;
   const needsKycForWithdrawal = availableAmount > KYC_THRESHOLD && !kycVerified;
-  const canWithdraw = availableAmount > 0 && !needsKycForWithdrawal;
+  const hasPaymentMethod = (methodsData?.methods?.length || 0) > 0;
+  const canWithdraw = availableAmount > 0 && hasPaymentMethod && !needsKycForWithdrawal;
 
   // Stats data
   const inProgress = (stats?.awaitingSubmission || 0) + (stats?.awaitingReview || 0);
@@ -717,6 +729,7 @@ export function Dashboard() {
             pending={pending}
             lifetime={lifetime}
             canWithdraw={canWithdraw}
+            onWithdraw={() => setShowWithdrawDialog(true)}
           />
 
           {/* Action alerts - Urgency */}
@@ -736,6 +749,18 @@ export function Dashboard() {
           <EnrollmentsSection enrollments={enrollments} />
         </>
       )}
+
+      {/* Withdraw Dialog */}
+      <WithdrawDialog
+        open={showWithdrawDialog}
+        onClose={() => setShowWithdrawDialog(false)}
+        balance={available}
+        withdrawalMethods={methodsData?.methods || []}
+        onSuccess={() => {
+          refetchWallet();
+          refetchProfile();
+        }}
+      />
     </div>
   );
 }
