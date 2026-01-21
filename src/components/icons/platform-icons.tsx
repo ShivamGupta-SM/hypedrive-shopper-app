@@ -4,7 +4,7 @@
  * License: CC0 1.0 Universal
  */
 
-import type { SVGProps } from "react";
+import type { JSX, SVGProps } from "react";
 
 // Instagram - Brand color: #E4405F
 export function InstagramIcon(props: SVGProps<SVGSVGElement>) {
@@ -531,6 +531,106 @@ export const WIDE_PLATFORM_ICONS = new Set([
 // Helper to check if a platform name has a wide icon
 export function isWidePlatformIcon(platformName: string): boolean {
   return WIDE_PLATFORM_ICONS.has(platformName.toLowerCase());
+}
+
+// Platform name to icon component mapping
+const PLATFORM_ICON_MAP: Record<string, (props: SVGProps<SVGSVGElement>) => JSX.Element> = {
+  // Social Media
+  instagram: InstagramIcon,
+  youtube: YouTubeIcon,
+  twitter: TwitterIcon,
+  x: TwitterIcon, // X is Twitter
+  facebook: FacebookIcon,
+  linkedin: LinkedInIcon,
+  tiktok: TikTokIcon,
+  pinterest: PinterestIcon,
+  snapchat: SnapchatIcon,
+  whatsapp: WhatsAppIcon,
+  telegram: TelegramIcon,
+  threads: ThreadsIcon,
+  // Search & Tech
+  google: GoogleIcon,
+  // Indian E-commerce
+  amazon: AmazonIcon,
+  flipkart: FlipkartIcon,
+  myntra: MyntraIcon,
+  meesho: MeeshoIcon,
+  nykaa: NykaaIcon,
+  ajio: AjioIcon,
+  bigbasket: BigBasketIcon,
+  blinkit: BlinkitIcon,
+  zepto: ZeptoIcon,
+  dunzo: DunzoIcon,
+  jiomart: JioMartIcon,
+  // Food Delivery
+  swiggy: SwiggyIcon,
+  zomato: ZomatoIcon,
+  // Payments
+  paytm: PaytmIcon,
+  phonepe: PhonePeIcon,
+  // International E-commerce
+  shopify: ShopifyIcon,
+  ebay: EbayIcon,
+  aliexpress: AliExpressIcon,
+  walmart: WalmartIcon,
+  target: TargetIcon,
+  etsy: EtsyIcon,
+};
+
+/**
+ * Get platform icon component by name
+ * @param platformName - The platform name (case-insensitive)
+ * @returns The icon component or null if not found
+ */
+export function getPlatformIcon(platformName: string): ((props: SVGProps<SVGSVGElement>) => JSX.Element) | null {
+  const normalizedName = platformName.toLowerCase().replace(/\s+/g, '');
+  return PLATFORM_ICON_MAP[normalizedName] || null;
+}
+
+/**
+ * Get platform brand color
+ * @param platformName - The platform name (case-insensitive)
+ * @returns Tailwind color class for the platform
+ */
+export function getPlatformColor(platformName: string): string {
+  const colors: Record<string, string> = {
+    instagram: "text-pink-500",
+    youtube: "text-red-500",
+    twitter: "text-zinc-900 dark:text-white",
+    x: "text-zinc-900 dark:text-white",
+    facebook: "text-blue-600",
+    linkedin: "text-blue-700",
+    tiktok: "text-zinc-900 dark:text-white",
+    pinterest: "text-red-600",
+    snapchat: "text-yellow-400",
+    whatsapp: "text-green-500",
+    telegram: "text-sky-500",
+    threads: "text-zinc-900 dark:text-white",
+    google: "text-blue-500",
+    amazon: "text-orange-500",
+    flipkart: "text-yellow-500",
+    myntra: "text-pink-500",
+    meesho: "text-pink-500",
+    nykaa: "text-pink-600",
+    ajio: "text-zinc-900 dark:text-white",
+    bigbasket: "text-green-600",
+    blinkit: "text-yellow-400",
+    zepto: "text-purple-600",
+    dunzo: "text-green-500",
+    jiomart: "text-blue-600",
+    swiggy: "text-orange-500",
+    zomato: "text-red-500",
+    paytm: "text-blue-600",
+    phonepe: "text-purple-600",
+    shopify: "text-green-600",
+    ebay: "text-blue-600",
+    aliexpress: "text-orange-600",
+    walmart: "text-blue-600",
+    target: "text-red-600",
+    etsy: "text-orange-500",
+  };
+  const normalizedName = platformName.toLowerCase().replace(/\s+/g, '');
+  return colors[normalizedName] || "text-zinc-500";
 }
 
 export default {

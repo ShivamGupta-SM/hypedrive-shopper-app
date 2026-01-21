@@ -15,6 +15,7 @@ import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { Heading } from "@/components/heading";
+import { getPlatformColor, getPlatformIcon } from "@/components/icons/platform-icons";
 import { Input, InputGroup } from "@/components/input";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
@@ -25,6 +26,46 @@ import { formatCurrency } from "@/lib/money-utils";
 import { EnrollmentCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
+
+// Platform detection keywords for task names
+const PLATFORM_KEYWORDS: Record<string, string[]> = {
+  instagram: ["instagram", "insta", "ig", "reel", "reels", "story", "stories"],
+  youtube: ["youtube", "yt", "video", "subscribe", "channel"],
+  twitter: ["twitter", "x.com", "tweet", "x post"],
+  facebook: ["facebook", "fb", "meta"],
+  tiktok: ["tiktok", "tik tok", "tt"],
+  amazon: ["amazon", "amz"],
+  flipkart: ["flipkart", "fk"],
+  myntra: ["myntra"],
+  meesho: ["meesho"],
+  nykaa: ["nykaa"],
+  ajio: ["ajio"],
+  swiggy: ["swiggy"],
+  zomato: ["zomato"],
+  google: ["google", "review", "gmb", "maps review"],
+  linkedin: ["linkedin", "li"],
+  pinterest: ["pinterest", "pin"],
+  snapchat: ["snapchat", "snap"],
+  whatsapp: ["whatsapp", "wa"],
+  telegram: ["telegram", "tg"],
+  threads: ["threads"],
+  shopify: ["shopify"],
+  paytm: ["paytm"],
+  phonepe: ["phonepe", "phone pe"],
+};
+
+/**
+ * Detect platform from task name
+ */
+function detectPlatformFromTaskName(taskName: string): string | null {
+  const lowerName = taskName.toLowerCase();
+  for (const [platform, keywords] of Object.entries(PLATFORM_KEYWORDS)) {
+    if (keywords.some(keyword => lowerName.includes(keyword))) {
+      return platform;
+    }
+  }
+  return null;
+}
 
 function getStatusConfig(status: EnrollmentStatus): {
   label: string;
@@ -261,15 +302,28 @@ function EnrollmentCard({
                 </div>
               )}
             </div>
-            {platformIcon && (
-              <img
-                src={platformIcon}
-                alt={platformName}
-                loading="lazy"
-                decoding="async"
-                className="absolute -bottom-1 -right-1 size-5 rounded-md border-2 border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
-              />
-            )}
+            {platformName && (() => {
+              const PlatformIconComponent = getPlatformIcon(platformName);
+              if (PlatformIconComponent) {
+                return (
+                  <div className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-md border-2 border-white bg-white dark:border-zinc-900 dark:bg-zinc-900">
+                    <PlatformIconComponent className={`size-3.5 ${getPlatformColor(platformName)}`} />
+                  </div>
+                );
+              }
+              if (platformIcon) {
+                return (
+                  <img
+                    src={platformIcon}
+                    alt={platformName}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute -bottom-1 -right-1 size-5 rounded-md border-2 border-white bg-white object-contain dark:border-zinc-900 dark:bg-zinc-900"
+                  />
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Product Info */}
@@ -314,6 +368,10 @@ function EnrollmentCard({
               <div className="flex gap-1.5 pb-1" style={{ minWidth: 'max-content' }}>
                 {tasks.map((task) => {
                   const isComplete = task.proofLink || task.proofScreenshot;
+                  const detectedPlatform = detectPlatformFromTaskName(task.name);
+                  const TaskPlatformIcon = detectedPlatform ? getPlatformIcon(detectedPlatform) : null;
+                  const platformColor = detectedPlatform ? getPlatformColor(detectedPlatform) : "";
+
                   return (
                     <span
                       key={task.enrollmentTaskId}
@@ -323,7 +381,11 @@ function EnrollmentCard({
                           : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                       }`}
                     >
-                      <QueueListIcon className={`size-3 ${isComplete ? 'text-emerald-500' : 'text-zinc-400'}`} />
+                      {TaskPlatformIcon ? (
+                        <TaskPlatformIcon className={`size-3 ${isComplete ? 'text-emerald-500' : platformColor}`} />
+                      ) : (
+                        <QueueListIcon className={`size-3 ${isComplete ? 'text-emerald-500' : 'text-zinc-400'}`} />
+                      )}
                       {task.name}
                       {isComplete && <CheckCircleIcon className="size-3 text-emerald-500" />}
                     </span>

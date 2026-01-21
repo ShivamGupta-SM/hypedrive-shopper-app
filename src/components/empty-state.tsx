@@ -34,9 +34,9 @@ const cardPresets = {
   },
   wallet: {
     cards: [
-      { icon: WalletIcon, iconColor: "text-emerald-500" },
-      { icon: CurrencyRupeeIcon, iconColor: "text-emerald-600" },
-      { icon: BanknotesIcon, iconColor: "text-teal-500" },
+      { icon: WalletIcon, iconColor: "text-sky-500" },
+      { icon: CurrencyRupeeIcon, iconColor: "text-emerald-500" },
+      { icon: BanknotesIcon, iconColor: "text-amber-500" },
     ],
   },
   generic: {

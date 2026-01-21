@@ -1,3 +1,4 @@
+import { getPlatformColor, getPlatformIcon } from "@/components/icons/platform-icons";
 import { Link } from "@/components/link";
 import { getAssetUrl } from "@/hooks/use-api";
 import {
@@ -108,17 +109,30 @@ export function CampaignCard({ campaign, searchQuery = "" }: CampaignCardProps) 
         </span>
 
         {/* Platform badge */}
-        {campaign.platform?.icon && (
-          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
-            <img
-              src={getAssetUrl(campaign.platform.icon)}
-              alt={campaign.platform.name || ""}
-              loading="lazy"
-              decoding="async"
-              className="size-4 object-contain"
-            />
-          </div>
-        )}
+        {campaign.platform?.name && (() => {
+          const PlatformIconComponent = getPlatformIcon(campaign.platform.name);
+          if (PlatformIconComponent) {
+            return (
+              <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
+                <PlatformIconComponent className={`size-4 ${getPlatformColor(campaign.platform.name)}`} />
+              </div>
+            );
+          }
+          if (campaign.platform.icon) {
+            return (
+              <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
+                <img
+                  src={getAssetUrl(campaign.platform.icon)}
+                  alt={campaign.platform.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="size-4 object-contain"
+                />
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Urgency badge */}
         {isEndingSoon && (

@@ -55,8 +55,8 @@ function WithdrawalRow({ withdrawal, onCancel }: { withdrawal: wallets.Withdrawa
         href={`/wallet/withdrawals/${withdrawal.id}`}
         className="flex items-center gap-3 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700">
-          <ArrowUpIcon className="size-5 text-white/95" />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50">
+          <ArrowUpIcon className="size-5 text-sky-600 dark:text-sky-400" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
