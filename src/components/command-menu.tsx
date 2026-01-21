@@ -21,28 +21,8 @@ import {
 } from "@heroicons/react/20/solid";
 import { useInfiniteUnifiedSearch, type SearchResult } from "@/hooks/use-api";
 import { getStatusColors } from "@/lib/theme";
+import { HighlightText } from "@/lib/highlight-text";
 import clsx from "clsx";
-
-// Highlight matching text in search results
-function HighlightText({ text, query }: { text: string; query: string }) {
-  if (!query.trim() || query.length < 2) return <>{text}</>;
-
-  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-amber-200 text-amber-900 dark:bg-amber-500/30 dark:text-amber-200 rounded px-0.5">
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      )}
-    </>
-  );
-}
 
 // =============================================================================
 // TYPES
@@ -714,12 +694,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                                   </div>
                                   {subtitle && (
                                     <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                                      {subtitle}
+                                      <HighlightText text={subtitle} query={debouncedQuery} />
                                     </p>
                                   )}
                                   {secondaryInfo && (
                                     <p className="truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                                      {secondaryInfo}
+                                      <HighlightText text={secondaryInfo} query={debouncedQuery} />
                                     </p>
                                   )}
                                 </div>
@@ -794,12 +774,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                                   </div>
                                   {subtitle && (
                                     <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                                      {subtitle}
+                                      <HighlightText text={subtitle} query={debouncedQuery} />
                                     </p>
                                   )}
                                   {secondaryInfo && (
                                     <p className="truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                                      {secondaryInfo}
+                                      <HighlightText text={secondaryInfo} query={debouncedQuery} />
                                     </p>
                                   )}
                                 </div>
@@ -872,12 +852,12 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                                   </div>
                                   {result.campaign?.title && (
                                     <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                                      {result.campaign.title}
+                                      <HighlightText text={result.campaign.title} query={debouncedQuery} />
                                     </p>
                                   )}
                                   {result.description && result.description !== result.title && (
                                     <p className="truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                                      {result.description}
+                                      <HighlightText text={result.description} query={debouncedQuery} />
                                     </p>
                                   )}
                                 </div>
@@ -913,7 +893,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           </Command.List>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 text-[10px] text-zinc-400 dark:border-zinc-700">
+          <div className="flex items-center justify-between border-t border-zinc-200 px-3 py-2 text-[10px] text-zinc-400 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <kbd className="rounded bg-zinc-100 px-1 py-0.5 font-mono dark:bg-zinc-800">

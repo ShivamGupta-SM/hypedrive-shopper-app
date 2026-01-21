@@ -1,16 +1,16 @@
 import {
-  ArrowTrendingUpIcon,
   BanknotesIcon,
-  ClockIcon,
+  BuildingStorefrontIcon,
+  ChartBarIcon,
+  CheckBadgeIcon,
+  CreditCardIcon,
   CurrencyRupeeIcon,
-  DocumentTextIcon,
-  FireIcon,
-  FolderIcon,
   GiftIcon,
+  InboxIcon,
+  MegaphoneIcon,
   ReceiptPercentIcon,
-  ShoppingBagIcon,
-  SparklesIcon,
-  TagIcon,
+  ShoppingCartIcon,
+  WalletIcon,
 } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
@@ -78,7 +78,7 @@ function CollageCards({ preset = "generic" }: { preset?: PresetType }) {
       <div
         className={clsx(
           "relative left-3 top-2 grid size-12 place-items-center rounded-xl",
-          "bg-white shadow-sm ring-1 ring-zinc-100",
+          "bg-white shadow-sm ring-1 ring-zinc-200",
           "-rotate-12 transition-all duration-500 ease-out",
           "group-hover:-translate-x-5 group-hover:-translate-y-1 group-hover:-rotate-[20deg]",
           "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
@@ -91,7 +91,7 @@ function CollageCards({ preset = "generic" }: { preset?: PresetType }) {
       <div
         className={clsx(
           "relative z-10 grid size-14 place-items-center rounded-xl",
-          "bg-white shadow-md ring-1 ring-zinc-100",
+          "bg-white shadow-md ring-1 ring-zinc-200",
           "transition-all duration-500 ease-out",
           "group-hover:-translate-y-3 group-hover:scale-105 group-hover:shadow-lg",
           "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
@@ -104,7 +104,7 @@ function CollageCards({ preset = "generic" }: { preset?: PresetType }) {
       <div
         className={clsx(
           "relative right-3 top-2 grid size-12 place-items-center rounded-xl",
-          "bg-white shadow-sm ring-1 ring-zinc-100",
+          "bg-white shadow-sm ring-1 ring-zinc-200",
           "rotate-12 transition-all duration-500 ease-out",
           "group-hover:translate-x-5 group-hover:-translate-y-1 group-hover:rotate-[20deg]",
           "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
@@ -175,7 +175,7 @@ export function InlineEmptyState({
   return (
     <div className={clsx("flex flex-col items-center justify-center py-8 text-center", className)}>
       {/* Single icon card */}
-      <div className="grid size-12 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-800/80 dark:ring-zinc-700/50">
+      <div className="grid size-12 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-800/80 dark:ring-zinc-700">
         <CenterIcon className={clsx("size-5", cards[1].iconColor)} />
       </div>
 

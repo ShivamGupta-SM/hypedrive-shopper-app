@@ -1041,7 +1041,7 @@ export function CampaignShowSkeleton() {
               </div>
               <Skeleton width={50} height={12} borderRadius={4} />
             </div>
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={`deliv-${i}`} className="flex items-center gap-3 px-4 py-2.5">
                   <Skeleton width={32} height={32} borderRadius={8} />
@@ -1061,7 +1061,7 @@ export function CampaignShowSkeleton() {
             <Skeleton width={16} height={16} borderRadius={4} />
             <Skeleton width={70} height={14} borderRadius={4} />
           </div>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={`info-${i}`} className="flex items-start gap-3 px-4 py-2.5">
                 <Skeleton width={16} height={16} borderRadius={4} className="mt-0.5 shrink-0" />
@@ -1083,7 +1083,7 @@ export function CampaignShowSkeleton() {
             <Skeleton width={16} height={16} borderRadius={4} />
             <Skeleton width={40} height={14} borderRadius={4} />
           </div>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={`faq-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">
                 <Skeleton width="70%" height={14} borderRadius={4} />

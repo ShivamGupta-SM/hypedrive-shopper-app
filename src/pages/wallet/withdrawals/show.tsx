@@ -96,36 +96,36 @@ export function WithdrawalShow() {
       icon: ClockIcon,
       label: "Pending",
       text: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-amber-500 dark:via-amber-600 dark:to-amber-700",
-      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
+      bgColor: "bg-gradient-to-b from-amber-400 to-amber-600 ring-1 ring-amber-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-amber-500 dark:to-amber-700",
+      iconColor: "text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]",
     },
     processing: {
       icon: ArrowPathIcon,
       label: "Processing",
       text: "text-sky-600 dark:text-sky-400",
-      bgColor: "bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700",
-      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
+      bgColor: "bg-gradient-to-b from-sky-400 to-sky-600 ring-1 ring-sky-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-sky-500 dark:to-sky-700",
+      iconColor: "text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]",
     },
     completed: {
       icon: CheckCircleIcon,
       label: "Completed",
       text: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700",
-      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
+      bgColor: "bg-gradient-to-b from-emerald-400 to-emerald-600 ring-1 ring-emerald-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-emerald-500 dark:to-emerald-700",
+      iconColor: "text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]",
     },
     failed: {
       icon: XCircleIcon,
       label: "Failed",
       text: "text-red-600 dark:text-red-400",
-      bgColor: "bg-gradient-to-b from-red-400 via-red-500 to-red-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-red-500 dark:via-red-600 dark:to-red-700",
-      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
+      bgColor: "bg-gradient-to-b from-red-400 to-red-600 ring-1 ring-red-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-red-500 dark:to-red-700",
+      iconColor: "text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]",
     },
     cancelled: {
       icon: XCircleIcon,
       label: "Cancelled",
       text: "text-zinc-500 dark:text-zinc-400",
-      bgColor: "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700",
-      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
+      bgColor: "bg-gradient-to-b from-zinc-500 to-zinc-700 ring-1 ring-zinc-700/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-zinc-600 dark:to-zinc-800",
+      iconColor: "text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]",
     },
   };
 
@@ -172,7 +172,7 @@ export function WithdrawalShow() {
 
         {/* PROGRESS STEPS - Only show if not failed/cancelled */}
         {!isFailed && (
-          <div className="border-t border-zinc-100 px-4 py-3 lg:px-5 dark:border-zinc-800">
+          <div className="border-t border-zinc-200 px-4 py-3 lg:px-5 dark:border-zinc-700">
             <div className="flex items-center justify-between">
               {progressSteps.map((step, index) => (
                 <div key={step.key} className="flex items-center">

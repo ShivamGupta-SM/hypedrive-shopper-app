@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { Heading } from "@/components/heading";
@@ -19,39 +20,33 @@ import { Link } from "@/components/link";
 import { Text } from "@/components/text";
 import type { shared } from "@/hooks/use-api";
 import { useInfiniteEnrollments } from "@/hooks/use-api";
+import { HighlightText } from "@/lib/highlight-text";
 import { formatCurrency } from "@/lib/money-utils";
 import { EnrollmentCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
-import { getStatusColors } from "@/lib/theme";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
 
 function getStatusConfig(status: EnrollmentStatus): {
   label: string;
   icon: typeof CheckCircleIcon;
-  bgClass: string;
-  iconClass: string;
+  color: "emerald" | "amber" | "red" | "zinc" | "sky";
 } {
-  // Get colors from centralized theme
-  const colors = getStatusColors(status);
-
-  // Status-specific labels and icons
-  const statusInfo: Record<EnrollmentStatus, { label: string; icon: typeof CheckCircleIcon }> = {
-    awaiting_submission: { label: "Pending", icon: DocumentTextIcon },
-    awaiting_review: { label: "In Review", icon: ClockIcon },
-    changes_requested: { label: "Changes Needed", icon: ExclamationTriangleIcon },
-    approved: { label: "Approved", icon: CheckCircleIcon },
-    permanently_rejected: { label: "Rejected", icon: XCircleIcon },
-    withdrawn: { label: "Withdrawn", icon: XMarkIcon },
-    expired: { label: "Expired", icon: ClockIcon },
+  const statusInfo: Record<EnrollmentStatus, { label: string; icon: typeof CheckCircleIcon; color: "emerald" | "amber" | "red" | "zinc" | "sky" }> = {
+    awaiting_submission: { label: "Pending", icon: DocumentTextIcon, color: "amber" },
+    awaiting_review: { label: "In Review", icon: ClockIcon, color: "sky" },
+    changes_requested: { label: "Changes Needed", icon: ExclamationTriangleIcon, color: "amber" },
+    approved: { label: "Approved", icon: CheckCircleIcon, color: "emerald" },
+    permanently_rejected: { label: "Rejected", icon: XCircleIcon, color: "red" },
+    withdrawn: { label: "Withdrawn", icon: XMarkIcon, color: "zinc" },
+    expired: { label: "Expired", icon: ClockIcon, color: "zinc" },
   };
 
-  const info = statusInfo[status] || { label: status, icon: ClockIcon };
+  const info = statusInfo[status] || { label: status, icon: ClockIcon, color: "zinc" as const };
 
   return {
     label: info.label,
     icon: info.icon,
-    bgClass: colors.bg,
-    iconClass: colors.icon,
+    color: info.color,
   };
 }
 
@@ -225,6 +220,7 @@ function DeliverableIcon({ type, className }: { type: string; className?: string
 
 function EnrollmentCard({
   enrollment,
+  searchQuery = "",
 }: {
   enrollment: {
     id: string;
@@ -260,6 +256,7 @@ function EnrollmentCard({
       proofScreenshot?: string;
     }>;
   };
+  searchQuery?: string;
 }) {
   const statusConfig = getStatusConfig(enrollment.status);
   const StatusIcon = statusConfig.icon;
@@ -364,12 +361,12 @@ function EnrollmentCard({
             {/* Title + Status Row */}
             <div className="flex items-start justify-between gap-2">
               <h3 className="line-clamp-1 text-base font-semibold text-zinc-900 dark:text-white">
-                {productName || "Campaign Enrollment"}
+                <HighlightText text={productName || "Campaign Enrollment"} query={searchQuery} />
               </h3>
-              <div className={`flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-medium ${statusConfig.bgClass}`}>
-                <StatusIcon className={`size-3 ${statusConfig.iconClass}`} />
-                <span className="text-zinc-700 dark:text-zinc-200">{statusConfig.label}</span>
-              </div>
+              <Badge color={statusConfig.color} className="inline-flex shrink-0 items-center gap-1 text-xs!">
+                <StatusIcon className="size-3" />
+                {statusConfig.label}
+              </Badge>
             </div>
 
             {/* Order & Date Info */}
@@ -379,7 +376,9 @@ function EnrollmentCard({
                   <path d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0114.25 14H1.75A1.75 1.75 0 010 12.25v-8.5C0 2.784.784 2 1.75 2zm0 1.5a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25H1.75z"/>
                   <path d="M3.5 5.5h3v3h-3v-3zm0 4.5h3v2h-3v-2zm4.5-4.5h4v1h-4v-1zm0 2h4v1h-4v-1zm0 2h4v1h-4v-1zm0 2h2v1h-2v-1z"/>
                 </svg>
-                <span className="font-medium">{enrollment.orderId}</span>
+                <span className="font-medium">
+                  <HighlightText text={enrollment.orderId} query={searchQuery} />
+                </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                 <svg className="size-3 shrink-0" viewBox="0 0 16 16" fill="currentColor">
@@ -535,12 +534,24 @@ const tabLabels: Record<TabType, string> = {
 export function EnrollmentsList() {
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasInitialData, setHasInitialData] = useState(false);
+
+  // Debounced search for API calls
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const params = useMemo(
     () => ({
       limit: 20,
+      q: debouncedSearch || undefined,
     }),
-    []
+    [debouncedSearch]
   );
 
   const {
@@ -553,29 +564,18 @@ export function EnrollmentsList() {
     refetch,
   } = useInfiniteEnrollments(params);
 
-  // Filter enrollments based on active tab and search query
+  // Filter enrollments based on active tab (search is handled by backend)
   const filteredEnrollments = useMemo(() => {
     let filtered = enrollments;
 
-    // Filter by tab status
+    // Filter by tab status (client-side since we fetch all and filter by tab)
     const tabStatuses = tabStatusMap[activeTab];
     if (tabStatuses) {
       filtered = filtered.filter((e) => tabStatuses.includes(e.status as EnrollmentStatus));
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((e) => {
-        const campaignTitle = e.campaign?.title?.toLowerCase() || "";
-        const productName = e.campaign?.product?.name?.toLowerCase() || "";
-        const orderId = e.orderId?.toLowerCase() || "";
-        return campaignTitle.includes(query) || productName.includes(query) || orderId.includes(query);
-      });
-    }
-
     return filtered;
-  }, [enrollments, activeTab, searchQuery]);
+  }, [enrollments, activeTab]);
 
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -622,8 +622,15 @@ export function EnrollmentsList() {
     };
   }, [enrollments]);
 
-  // Check if user has any enrollments at all
-  const hasAnyEnrollments = enrollments.length > 0;
+  // Track if user ever had enrollments (to keep UI stable during search)
+  useEffect(() => {
+    if (!loading && enrollments.length > 0 && !hasInitialData) {
+      setHasInitialData(true);
+    }
+  }, [loading, enrollments.length, hasInitialData]);
+
+  // Show search/tabs if we ever had data OR currently have data
+  const showControls = hasInitialData || enrollments.length > 0;
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -634,7 +641,7 @@ export function EnrollmentsList() {
       </div>
 
       {/* Search Bar - only show when there are enrollments */}
-      {hasAnyEnrollments && (
+      {showControls && (
         <InputGroup>
           <MagnifyingGlassIcon />
           <Input
@@ -647,7 +654,7 @@ export function EnrollmentsList() {
       )}
 
       {/* Tabs - only show when there are enrollments */}
-      {hasAnyEnrollments && (
+      {showControls && (
         <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <TabButton
             label={tabLabels.all}
@@ -730,6 +737,7 @@ export function EnrollmentsList() {
                 enrollment={
                   enrollment as Parameters<typeof EnrollmentCard>[0]["enrollment"]
                 }
+                searchQuery={debouncedSearch}
               />
             ))}
           </div>
@@ -749,9 +757,9 @@ export function EnrollmentsList() {
       ) : (
         <EmptyState
           preset="enrollments"
-          title={activeTab !== "all" || searchQuery.trim() !== "" ? "No matching enrollments" : "No enrollments yet"}
-          description={activeTab !== "all" || searchQuery.trim() !== "" ? "Try adjusting your filters to find your enrollments." : "Start earning cashback by enrolling in campaigns."}
-          action={activeTab === "all" && searchQuery.trim() === "" ? { label: "Browse Campaigns", href: "/campaigns" } : undefined}
+          title={activeTab !== "all" || debouncedSearch ? "No matching enrollments" : "No enrollments yet"}
+          description={activeTab !== "all" || debouncedSearch ? "Try adjusting your filters or search to find your enrollments." : "Start earning cashback by enrolling in campaigns."}
+          action={activeTab === "all" && !debouncedSearch ? { label: "Browse Campaigns", href: "/campaigns" } : undefined}
         />
       )}
     </div>

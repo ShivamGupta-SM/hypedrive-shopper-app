@@ -56,7 +56,7 @@ function BalanceCard({
   kycVerified: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-emerald-600 shadow-sm dark:bg-emerald-700">
+    <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 ring-1 ring-emerald-600/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:from-emerald-600 dark:to-emerald-700">
       <div className="p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
@@ -148,16 +148,16 @@ function TransactionRow({ tx }: { tx: wallets.WalletTransaction }) {
     >
       {/* Coin-style icon */}
       <div
-        className={`flex size-9 shrink-0 items-center justify-center rounded-full sm:size-10 ${
+        className={`flex size-9 shrink-0 items-center justify-center rounded-full ring-1 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] sm:size-10 ${
           isCredit
-            ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700"
-            : "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700"
+            ? "bg-gradient-to-b from-emerald-400 to-emerald-600 ring-emerald-600/20 dark:from-emerald-500 dark:to-emerald-700"
+            : "bg-gradient-to-b from-zinc-500 to-zinc-700 ring-zinc-700/20 dark:from-zinc-600 dark:to-zinc-800"
         }`}
       >
         {isCredit ? (
-          <ArrowDownIcon className="size-4 text-white/95 sm:size-5" />
+          <ArrowDownIcon className="size-4 text-white/90 sm:size-5 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
         ) : (
-          <ArrowUpIcon className="size-4 text-white/95 sm:size-5" />
+          <ArrowUpIcon className="size-4 text-white/90 sm:size-5 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -202,8 +202,8 @@ function KYCAlert({ kycStatus, balance }: { kycStatus?: string; balance: number 
     <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30">
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-amber-500 dark:via-amber-600 dark:to-amber-700">
-            <ExclamationTriangleIcon className="size-4 text-white/95" />
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-amber-400 to-amber-600 ring-1 ring-amber-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-amber-500 dark:to-amber-700">
+            <ExclamationTriangleIcon className="size-4 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
@@ -302,8 +302,8 @@ export function Wallet() {
           href="/wallet/withdrawals"
           className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:bg-zinc-800/50"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700">
-            <ArrowUpIcon className="size-5 text-white/95" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sky-400 to-sky-600 ring-1 ring-sky-600/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-sky-500 dark:to-sky-700">
+            <ArrowUpIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-zinc-900 dark:text-white">Withdrawals</p>
@@ -316,8 +316,8 @@ export function Wallet() {
           href="/settings"
           className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:bg-zinc-800/50"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700">
-            <BuildingLibraryIcon className="size-5 text-white/95" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-zinc-500 to-zinc-700 ring-1 ring-zinc-700/20 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-zinc-600 dark:to-zinc-800">
+            <BuildingLibraryIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-zinc-900 dark:text-white">Bank Accounts</p>

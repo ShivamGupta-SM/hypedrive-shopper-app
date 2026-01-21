@@ -644,9 +644,9 @@ function CampaignTimeline({ className }: { className?: string }) {
 
 function TrustBadge() {
   return (
-    <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 dark:bg-emerald-950/30">
+    <div className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       <ShieldCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400" />
-      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+      <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
         2,000+ shoppers paid successfully
       </p>
     </div>
@@ -679,7 +679,7 @@ function ImportantInfo({
         <InformationCircleIcon className="size-4 text-sky-500 dark:text-sky-400" />
         <Subheading className="text-sm">Important</Subheading>
       </div>
-      <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
         {items.map((item, index) => (
           <div key={index} className="flex items-start gap-3 px-4 py-2.5">
             <item.icon className="mt-0.5 size-4 shrink-0 text-zinc-400" />
@@ -1761,7 +1761,7 @@ export function CampaignShow() {
               </div>
             )}
           </div>
-          <div className="max-h-72 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+          <div className="max-h-72 divide-y divide-zinc-200 overflow-y-auto dark:divide-zinc-700">
             {campaign?.tasks && campaign.tasks.length > 0 ? (
               campaign.tasks.map((task, index) => (
                 <div key={task.id} className="flex items-start gap-3 px-4 py-3">

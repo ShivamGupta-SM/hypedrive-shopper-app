@@ -249,11 +249,11 @@ export const surfaceColors = {
   elevated: "bg-white dark:bg-zinc-800",
 
   /** Card surface with ring */
-  card: "bg-white dark:bg-zinc-900 ring-1 ring-zinc-950/5 dark:ring-white/10",
+  card: "bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-800",
 
   /** Interactive card (hover state) */
   cardInteractive:
-    "bg-white dark:bg-zinc-900 ring-1 ring-zinc-950/5 dark:ring-white/10 hover:ring-zinc-950/10 dark:hover:ring-white/20",
+    "bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-800 hover:ring-zinc-300 dark:hover:ring-zinc-700",
 } as const;
 
 // =============================================================================
@@ -300,7 +300,7 @@ export const borderColors = {
   strong: "border-zinc-950/20 dark:border-white/20",
 
   /** Divider line */
-  divider: "divide-zinc-100 dark:divide-zinc-800",
+  divider: "divide-zinc-200 dark:divide-zinc-700",
 } as const;
 
 // =============================================================================

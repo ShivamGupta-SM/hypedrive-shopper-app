@@ -59,6 +59,7 @@ import {
   SunIcon,
   MoonIcon,
   ComputerDesktopIcon as MonitorIcon,
+  UserGroupIcon,
 } from "@heroicons/react/16/solid";
 import { duotoneColors, type DuotoneColor } from "@/components/menu-list";
 import { useLogout } from "@/store/auth-store";
@@ -1178,6 +1179,7 @@ function ProfileCard({
   profile,
   stats,
   isVerified,
+  isMediator,
   onEdit,
   onAvatarChange,
   avatarUploading,
@@ -1195,6 +1197,7 @@ function ProfileCard({
     totalEarnings: string;
   };
   isVerified: boolean;
+  isMediator?: boolean;
   onEdit: () => void;
   onAvatarChange: (file: File) => void;
   avatarUploading: boolean;
@@ -1205,13 +1208,22 @@ function ProfileCard({
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
       {/* Cover - sky blue gradient (top darker, bottom lighter fading to white) */}
       <div className="relative h-24 bg-gradient-to-b from-sky-200 via-sky-100 to-white dark:from-sky-900/50 dark:via-sky-900/20 dark:to-zinc-900">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700"
-        >
-          <PencilIcon className="size-4" />
-        </button>
+        {/* Top right actions */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {isMediator && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-sky-700 shadow-sm ring-1 ring-sky-200 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-sky-400 dark:ring-sky-800">
+              <UserGroupIcon className="size-3.5" />
+              Mediator
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700"
+          >
+            <PencilIcon className="size-4" />
+          </button>
+        </div>
       </div>
 
       {/* Profile content */}
@@ -1268,17 +1280,9 @@ function ProfileCard({
 
         {/* Name and email - always left-aligned */}
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="truncate text-lg font-semibold text-zinc-900 dark:text-white">
-              {profile.userName}
-            </h2>
-            {isVerified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                <ShieldCheckIcon className="size-3" />
-                Verified
-              </span>
-            )}
-          </div>
+          <h2 className="truncate text-lg font-semibold text-zinc-900 dark:text-white">
+            {profile.userName}
+          </h2>
           <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
             {profile.userEmail}
           </p>
@@ -1767,6 +1771,7 @@ export function Settings() {
           totalEarnings: stats.totalEarningsDecimal,
         } : undefined}
         isVerified={isVerified}
+        isMediator={shopper?.isMediator}
         onEdit={() => setView("editProfile")}
         onAvatarChange={handleAvatarChange}
         avatarUploading={avatarUploading}

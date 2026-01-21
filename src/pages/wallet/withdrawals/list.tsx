@@ -6,6 +6,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/dialog";
+import { EmptyState } from "@/components/empty-state";
 import { Heading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
@@ -34,24 +35,6 @@ function formatDateTime(dateString?: string) {
 }
 
 
-function EmptyWithdrawals() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700">
-        <ArrowUpIcon className="size-7 text-white/95" />
-      </div>
-      <p className="mt-4 text-base font-semibold text-zinc-900 dark:text-white">
-        No withdrawals yet
-      </p>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        When you withdraw funds, they'll appear here.
-      </p>
-      <Button href="/wallet" className="mt-6">
-        Go to Wallet
-      </Button>
-    </div>
-  );
-}
 
 function WithdrawalRow({ withdrawal, onCancel }: { withdrawal: wallets.Withdrawal; onCancel: (id: string) => void }) {
   const statusConfig: Record<string, { icon: typeof ClockIcon; color: "emerald" | "amber" | "red" | "zinc" | "sky"; label: string }> = {
@@ -159,7 +142,12 @@ export function WithdrawalsList() {
       </div>
 
       {withdrawalList.length === 0 ? (
-        <EmptyWithdrawals />
+        <EmptyState
+          preset="wallet"
+          title="No withdrawals yet"
+          description="When you withdraw funds, they'll appear here."
+          action={{ label: "Go to Wallet", href: "/wallet" }}
+        />
       ) : (
         <div className="space-y-6">
           {/* Pending/Processing */}

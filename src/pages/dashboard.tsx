@@ -164,11 +164,11 @@ function ActionAlerts({
           href={alert.href}
           className="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-amber-500 dark:via-amber-600 dark:to-amber-700">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-amber-600/20 bg-gradient-to-b from-amber-400 to-amber-600 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:from-amber-500 dark:to-amber-700">
             {alert.type === "proof" ? (
-              <DocumentArrowUpIcon className="size-5 text-white/95" />
+              <DocumentArrowUpIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
             ) : (
-              <ExclamationTriangleIcon className="size-5 text-white/95" />
+              <ExclamationTriangleIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
             )}
           </div>
           <div className="min-w-0 flex-1">

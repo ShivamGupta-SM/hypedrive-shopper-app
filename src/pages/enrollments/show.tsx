@@ -1328,7 +1328,7 @@ function ActivityTimeline({
   }[];
 }) {
   return (
-    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+    <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
       {history.slice(0, 5).map((entry) => {
         const statusConfig = getStatusConfig(entry.toStatus as EnrollmentStatusType);
 
@@ -1680,7 +1680,7 @@ export function EnrollmentShow() {
               </div>
 
               {/* Task List */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
                 {enrollment.tasks.map((task, index) => {
                   const isSubmitted = !!(task.proofLink || task.proofScreenshot);
                   const hasFeedback = !!task.feedback && enrollment.status === "changes_requested";
@@ -1732,7 +1732,7 @@ export function EnrollmentShow() {
 
               {/* Action Buttons */}
               {canEdit && (
-                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-700">
+                <div className="border-t border-zinc-200 p-4 lg:px-5 dark:border-zinc-700">
                   <div className="grid grid-cols-2 gap-3">
                     {/* Primary CTA */}
                     <Button
@@ -1779,7 +1779,7 @@ export function EnrollmentShow() {
 
               {/* Status Footer */}
               {!canEdit && (
-                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-700">
+                <div className="border-t border-zinc-200 p-4 lg:px-5 dark:border-zinc-700">
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-zinc-50 py-2.5 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                     {enrollment.status === "awaiting_review" ? (
                       <>

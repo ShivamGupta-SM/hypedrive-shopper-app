@@ -21,6 +21,7 @@ import { Select } from "@/components/select";
 import { Text } from "@/components/text";
 import { useCampaigns, useInfiniteCampaigns, usePlatforms, useProductCategories, getAssetUrl } from "@/hooks/use-api";
 import { getCampaignTypeConfig, getDaysLeft, getDisplayCashback } from "@/lib/campaign-utils";
+import { HighlightText } from "@/lib/highlight-text";
 import { CampaignCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
 
 function FilterChip({
@@ -179,6 +180,7 @@ function FilterBottomSheet({
 // Trending campaign card - horizontal layout with image on left, details on right
 function TrendingCard({
   campaign,
+  searchQuery = "",
 }: {
   campaign: {
     id: string;
@@ -204,6 +206,7 @@ function TrendingCard({
       icon?: string;
     };
   };
+  searchQuery?: string;
 }) {
   const daysLeft = getDaysLeft(campaign);
   const cashbackDisplay = getDisplayCashback(campaign);
@@ -251,13 +254,13 @@ function TrendingCard({
             {/* Brand */}
             {campaign.organization && (
               <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
-                {campaign.organization.name}
+                <HighlightText text={campaign.organization.name} query={searchQuery} />
               </p>
             )}
 
             {/* Product Name */}
             <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
-              {campaign.product?.name || campaign.title}
+              <HighlightText text={campaign.product?.name || campaign.title} query={searchQuery} />
             </h3>
           </div>
 
@@ -602,7 +605,7 @@ export function CampaignsList() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {campaigns.map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign} />
+              <CampaignCard key={campaign.id} campaign={campaign} searchQuery={search} />
             ))}
           </div>
 

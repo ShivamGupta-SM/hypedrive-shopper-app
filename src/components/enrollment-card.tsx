@@ -1,5 +1,5 @@
+import { Badge } from "@/components/badge";
 import { Link } from "@/components/link";
-import { getStatusColors } from "@/lib/theme";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -64,32 +64,28 @@ function formatCurrency(amount: string | number) {
   }).format(num);
 }
 
-// Status config
+// Status config - same pattern as campaigns/show.tsx (Catalyst Badge component)
 function getStatusConfig(status: string): {
   label: string;
   icon: typeof CheckCircleIcon;
-  bgClass: string;
-  iconClass: string;
+  color: "emerald" | "amber" | "red" | "zinc" | "sky";
 } {
-  const colors = getStatusColors(status);
-
-  const statusInfo: Record<string, { label: string; icon: typeof CheckCircleIcon }> = {
-    awaiting_submission: { label: "Pending", icon: DocumentTextIcon },
-    awaiting_review: { label: "In Review", icon: ClockIcon },
-    changes_requested: { label: "Changes Needed", icon: ExclamationTriangleIcon },
-    approved: { label: "Approved", icon: CheckCircleIcon },
-    permanently_rejected: { label: "Rejected", icon: XCircleIcon },
-    withdrawn: { label: "Withdrawn", icon: XMarkIcon },
-    expired: { label: "Expired", icon: ClockIcon },
+  const statusInfo: Record<string, { label: string; icon: typeof CheckCircleIcon; color: "emerald" | "amber" | "red" | "zinc" | "sky" }> = {
+    awaiting_submission: { label: "Pending", icon: DocumentTextIcon, color: "amber" },
+    awaiting_review: { label: "In Review", icon: ClockIcon, color: "sky" },
+    changes_requested: { label: "Changes Needed", icon: ExclamationTriangleIcon, color: "amber" },
+    approved: { label: "Approved", icon: CheckCircleIcon, color: "emerald" },
+    permanently_rejected: { label: "Rejected", icon: XCircleIcon, color: "red" },
+    withdrawn: { label: "Withdrawn", icon: XMarkIcon, color: "zinc" },
+    expired: { label: "Expired", icon: ClockIcon, color: "zinc" },
   };
 
-  const info = statusInfo[status] || { label: status, icon: ClockIcon };
+  const info = statusInfo[status] || { label: status, icon: ClockIcon, color: "zinc" as const };
 
   return {
     label: info.label,
     icon: info.icon,
-    bgClass: colors.bg,
-    iconClass: colors.icon,
+    color: info.color,
   };
 }
 
@@ -341,10 +337,10 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
               <h3 className="line-clamp-1 text-base font-semibold text-zinc-900 dark:text-white">
                 {productName}
               </h3>
-              <div className={`flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-medium ${statusConfig.bgClass}`}>
-                <StatusIcon className={`size-3 ${statusConfig.iconClass}`} />
-                <span className="text-zinc-700 dark:text-zinc-200">{statusConfig.label}</span>
-              </div>
+              <Badge color={statusConfig.color} className="inline-flex shrink-0 items-center gap-1 text-xs!">
+                <StatusIcon className="size-3" />
+                {statusConfig.label}
+              </Badge>
             </div>
 
             {/* Order & Date Info */}

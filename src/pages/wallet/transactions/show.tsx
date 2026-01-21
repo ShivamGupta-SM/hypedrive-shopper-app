@@ -115,16 +115,16 @@ export function TransactionShow() {
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Coin icon - gradient bg + white engraved icon */}
             <div
-              className={`flex size-11 shrink-0 items-center justify-center rounded-full lg:size-12 ${
+              className={`flex size-11 shrink-0 items-center justify-center rounded-full ring-1 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.2)] lg:size-12 ${
                 isCredit
-                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700"
-                  : "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700"
+                  ? "bg-gradient-to-b from-emerald-400 to-emerald-600 ring-emerald-600/20 dark:from-emerald-500 dark:to-emerald-700"
+                  : "bg-gradient-to-b from-zinc-500 to-zinc-700 ring-zinc-700/20 dark:from-zinc-600 dark:to-zinc-800"
               }`}
             >
               {isCredit ? (
-                <ArrowDownIcon className="size-5 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]" />
+                <ArrowDownIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
               ) : (
-                <ArrowUpIcon className="size-5 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]" />
+                <ArrowUpIcon className="size-5 text-white/90 [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.1))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
               )}
             </div>
 
@@ -225,7 +225,7 @@ export function TransactionShow() {
       {tx.enrollmentId && (
         <Link
           href={`/enrollments/${tx.enrollmentId}`}
-          className="flex items-center gap-3 overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 lg:p-5 dark:bg-zinc-900 dark:ring-white/10"
+          className="flex items-center gap-3 overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 lg:p-5 dark:bg-zinc-900 dark:ring-zinc-800"
         >
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/40">
             <HashtagIcon className="size-5 text-sky-600 dark:text-sky-400" />

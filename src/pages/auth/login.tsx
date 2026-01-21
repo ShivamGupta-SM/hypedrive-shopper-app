@@ -116,7 +116,7 @@ export function Login() {
             }}
           />
           <div className="relative z-10 max-w-md p-12">
-            <div className="mb-8 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
+            <div className="mb-8 rounded-2xl bg-white/5 p-6 ring-1 ring-white/20">
               <p className="text-sm font-medium text-zinc-400">Total cashback earned</p>
               <p className="mt-1 text-4xl font-bold tracking-tight text-white">₹2,34,567</p>
               <p className="mt-2 flex items-center gap-1.5 text-sm text-emerald-400">

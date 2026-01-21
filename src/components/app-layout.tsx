@@ -26,6 +26,7 @@ import {
 	LightBulbIcon,
 	ShieldCheckIcon,
 	UserCircleIcon,
+	UserGroupIcon,
 } from "@heroicons/react/16/solid";
 import {
 	ArrowLeftIcon,
@@ -165,7 +166,7 @@ function IconButton({
 			type="button"
 			onClick={onClick}
 			aria-label={ariaLabel}
-			className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-white/10 dark:active:bg-zinc-700 [&>svg]:h-4.5 [&>svg]:w-4.5"
+			className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:active:bg-zinc-700 [&>svg]:h-4.5 [&>svg]:w-4.5"
 		>
 			{children}
 		</button>
@@ -229,7 +230,7 @@ function MobileHeader({
 					)}
 				</div>
 				<Dropdown>
-					<DropdownButton as="div" className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:ring-white/10 dark:active:bg-zinc-700">
+					<DropdownButton as="div" className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:ring-zinc-700 dark:active:bg-zinc-700">
 						{identity?.avatar ? (
 							<img
 								src={identity.avatar}
@@ -363,9 +364,16 @@ export function AppLayout() {
 										<span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">
 											{enhancedIdentity?.name || "User"}
 										</span>
-										<span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
-											{enhancedIdentity?.email || ""}
-										</span>
+										{shopperProfile?.shopper?.isMediator ? (
+											<span className="flex items-center gap-1 text-xs/5 font-medium text-sky-600 dark:text-sky-400">
+												<UserGroupIcon className="size-3" />
+												Mediator
+											</span>
+										) : (
+											<span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
+												{enhancedIdentity?.email || ""}
+											</span>
+										)}
 									</span>
 								</span>
 								<ChevronUpIcon />

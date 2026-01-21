@@ -6,6 +6,7 @@ import {
   getDisplayCashback,
   isEndingSoon as checkIsEndingSoon,
 } from "@/lib/campaign-utils";
+import { HighlightText } from "@/lib/highlight-text";
 import {
   ArrowsRightLeftIcon,
   ClockIcon,
@@ -50,6 +51,7 @@ export interface CampaignCardProps {
       icon?: string;
     };
   };
+  searchQuery?: string;
 }
 
 // Campaign type icon mapping
@@ -65,7 +67,7 @@ const CAMPAIGN_TYPE_ICONS: Record<string, React.ComponentType<{ className?: stri
  * @example
  * <CampaignCard campaign={campaign} />
  */
-export function CampaignCard({ campaign }: CampaignCardProps) {
+export function CampaignCard({ campaign, searchQuery = "" }: CampaignCardProps) {
   const daysLeft = getDaysLeft(campaign);
   const isEndingSoon = checkIsEndingSoon(campaign);
   const cashbackDisplay = getDisplayCashback(campaign);
@@ -133,11 +135,11 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
         <div className="min-w-0 flex-1">
           {campaign.organization?.name && (
             <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
-              {campaign.organization.name}
+              <HighlightText text={campaign.organization.name} query={searchQuery} />
             </p>
           )}
           <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
-            {campaign.product?.name || campaign.title}
+            <HighlightText text={campaign.product?.name || campaign.title} query={searchQuery} />
           </h3>
         </div>
       </div>
