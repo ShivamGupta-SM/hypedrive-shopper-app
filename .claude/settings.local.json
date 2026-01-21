@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx biome:*)",
+      "Bash(npx vite build:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(dir /s /b \"c:\\\\Users\\\\Shivam Gupta\\\\Downloads\\\\catalyst-ui-kit\\\\catalyst-ui-kit\\\\demo\\\\typescript\\\\hypedrive-shopper\\\\src\\\\pages\\\\auth\\\\*.tsx\")"
+    ]
+  }
+}

@@ -7,15 +7,15 @@ import {
   DialogTitle,
 } from "@/components/dialog";
 import { UpiIcon } from "@/components/icons/upi-icon";
-import { getAuthenticatedClient } from "@/lib/client";
-import type { wallets } from "@/lib/api-client";
+import { useCreateWithdrawal } from "@/hooks/use-api";
+import type { wallets } from "@/hooks/use-api";
 import {
   BuildingLibraryIcon,
   CheckIcon,
   ExclamationTriangleIcon,
   XCircleIcon,
 } from "@heroicons/react/16/solid";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // =============================================================================
 // PAYMENT METHOD ROW - Simple, clean list item for method selection
@@ -107,46 +107,60 @@ export function WithdrawDialog({
   const [selectedMethodId, setSelectedMethodId] = useState(
     withdrawalMethods.find((m) => m.isDefault)?.id || withdrawalMethods[0]?.id || ""
   );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { createWithdrawal, isPending, error: withdrawalError, reset: resetError } = useCreateWithdrawal();
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const balanceNum = parseFloat(balance) || 0;
   const amountNum = parseFloat(amount) || 0;
 
+  // Reset error when dialog opens
+  useEffect(() => {
+    if (open) {
+      resetError();
+      setLocalError(null);
+    }
+  }, [open, resetError]);
+
   const handleWithdraw = async () => {
+    // Client-side validation
+    setLocalError(null);
+
     if (!amountNum || amountNum <= 0) {
-      setError("Please enter a valid amount");
+      setLocalError("Please enter a valid amount");
+      return;
+    }
+    if (amountNum < 100) {
+      setLocalError("Minimum withdrawal amount is ₹100");
       return;
     }
     if (amountNum > balanceNum) {
-      setError("Amount exceeds available balance");
+      setLocalError("Amount exceeds available balance");
       return;
     }
     if (!selectedMethodId) {
-      setError("Please select a withdrawal method");
+      setLocalError("Please select a withdrawal method");
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    const result = await createWithdrawal({
+      amount: amountNum,
+      withdrawalMethodId: selectedMethodId,
+    });
 
-    try {
-      const client = getAuthenticatedClient();
-      await client.wallets.createWithdrawal({
-        amount: Math.round(amountNum * 100),
-        withdrawalMethodId: selectedMethodId,
-      });
+    if (result.success) {
       onSuccess();
       onClose();
       setAmount("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create withdrawal");
-    } finally {
-      setLoading(false);
     }
+    // Error is handled by the hook and displayed via withdrawalError
   };
 
-  const verifiedMethods = withdrawalMethods.filter((m) => m.isVerified !== false);
+  // Only show verified methods (explicit check)
+  const verifiedMethods = withdrawalMethods.filter((m) => m.isVerified === true);
+
+  // Combined error message (local validation errors take precedence)
+  const errorMessage = localError || withdrawalError;
 
   return (
     <Dialog open={open} onClose={onClose} size="md">
@@ -227,7 +241,7 @@ export function WithdrawDialog({
                   <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
                     Add a bank account or UPI in Settings.
                   </p>
-                  <Button href="/settings" className="mt-3" color="amber" outline>
+                  <Button href="/settings" className="mt-3" outline>
                     Add Method
                   </Button>
                 </div>
@@ -236,10 +250,10 @@ export function WithdrawDialog({
           )}
 
           {/* Error */}
-          {error && (
+          {errorMessage && (
             <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
               <XCircleIcon className="size-4 shrink-0 text-red-500" />
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
             </div>
           )}
         </div>
@@ -251,10 +265,10 @@ export function WithdrawDialog({
         </Button>
         <Button
           onClick={handleWithdraw}
-          disabled={loading || !amountNum || amountNum > balanceNum || verifiedMethods.length === 0}
+          disabled={isPending || !amountNum || amountNum < 1 || amountNum > balanceNum || verifiedMethods.length === 0}
           color="emerald"
         >
-          {loading ? "Processing..." : `Withdraw ₹${amountNum > 0 ? amountNum.toLocaleString("en-IN") : "0"}`}
+          {isPending ? "Processing..." : `Withdraw ₹${amountNum > 0 ? amountNum.toLocaleString("en-IN") : "0"}`}
         </Button>
       </DialogActions>
     </Dialog>

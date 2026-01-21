@@ -1,4 +1,5 @@
 import { Button } from "@/components/button";
+import { InlineEmptyState } from "@/components/empty-state";
 import { Heading, Subheading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
@@ -10,7 +11,7 @@ import {
   useWalletTransactions,
   useWithdrawalMethods,
 } from "@/hooks/use-api";
-import type { wallets } from "@/lib/api-client";
+import type { wallets } from "@/hooks/use-api";
 import { WalletSkeleton } from "@/lib/skeleton";
 import {
   ArrowDownTrayIcon,
@@ -219,35 +220,13 @@ function KYCAlert({ kycStatus, balance }: { kycStatus?: string; balance: number 
   );
 }
 
-function EmptyTransactions() {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <BanknotesIcon className="size-6 text-zinc-400" />
-      </div>
-      <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">
-        No transactions yet
-      </p>
-      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-        Start earning by enrolling in campaigns
-      </p>
-      <Button href="/campaigns" className="mt-4">
-        Browse Campaigns
-      </Button>
-    </div>
-  );
-}
 
 export function Wallet() {
   const { data: profile, loading: profileLoading } = useShopperProfile();
   const { data: stats, loading: statsLoading } = useShopperStats();
   const { data: wallet, loading: walletLoading } = useWallet();
-  const { data: transactions, loading: txLoading, error: txError, refetch: refetchTx } = useWalletTransactions({ take: 20 });
-  const { data: methodsData, loading: methodsLoading, error: methodsError } = useWithdrawalMethods();
-
-  // Debug logging for API errors
-  if (txError) console.error("[Wallet] Transactions error:", txError);
-  if (methodsError) console.error("[Wallet] Methods error:", methodsError);
+  const { data: transactions, loading: txLoading, refetch: refetchTx } = useWalletTransactions({ take: 20 });
+  const { data: methodsData, loading: methodsLoading } = useWithdrawalMethods();
 
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
 
@@ -369,7 +348,12 @@ export function Wallet() {
             <div className="size-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
           </div>
         ) : txList.length === 0 ? (
-          <EmptyTransactions />
+          <InlineEmptyState
+            preset="wallet"
+            title="No transactions yet"
+            description="Start earning by enrolling in campaigns"
+            action={{ label: "Browse Campaigns", href: "/campaigns" }}
+          />
         ) : (
           <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {txList.map((tx: wallets.WalletTransaction) => (

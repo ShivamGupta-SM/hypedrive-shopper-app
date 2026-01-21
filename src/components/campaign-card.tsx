@@ -1,16 +1,23 @@
 import { Link } from "@/components/link";
-import { ClockIcon, SparklesIcon } from "@heroicons/react/16/solid";
+import { getAssetUrl } from "@/hooks/use-api";
+import {
+  getCampaignTypeConfig,
+  getDaysLeft,
+  getDisplayCashback,
+  isEndingSoon as checkIsEndingSoon,
+} from "@/lib/campaign-utils";
+import {
+  ArrowsRightLeftIcon,
+  ClockIcon,
+  CurrencyRupeeIcon,
+  SparklesIcon,
+} from "@heroicons/react/16/solid";
 
-// Helper to check if string is a valid URL (not a color hex code)
-function isValidImageUrl(url?: string): boolean {
-  if (!url) return false;
-  // Check if it's a hex color (6 chars without #, or starts with #)
-  if (/^#?[0-9A-Fa-f]{6}$/.test(url)) return false;
-  // Check if it looks like a URL
-  return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:');
-}
+// =============================================================================
+// CAMPAIGN CARD - Shared component for campaigns list and dashboard
+// =============================================================================
 
-interface CampaignCardProps {
+export interface CampaignCardProps {
   campaign: {
     id: string;
     title: string;
@@ -43,65 +50,42 @@ interface CampaignCardProps {
       icon?: string;
     };
   };
-  /** Variant: default (full details) or compact (minimal for dashboard) */
-  variant?: "default" | "compact";
 }
 
+// Campaign type icon mapping
+const CAMPAIGN_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  cashback: CurrencyRupeeIcon,
+  barter: ArrowsRightLeftIcon,
+  hybrid: SparklesIcon,
+};
+
 /**
- * CampaignCard - Unified campaign card component
+ * CampaignCard - iOS-style product card with 3-column footer
  *
- * @example Full card (Campaigns list)
+ * @example
  * <CampaignCard campaign={campaign} />
- *
- * @example Compact card (Dashboard grid)
- * <CampaignCard campaign={campaign} variant="compact" />
  */
-export function CampaignCard({
-  campaign,
-  variant = "default",
-}: CampaignCardProps) {
-  const cashback =
-    campaign.rebatePercentage && campaign.rebatePercentage > 0
-      ? `${campaign.rebatePercentage}%`
-      : null;
-
-  const bonus = campaign.bonusAmountDecimal
-    ? `₹${campaign.bonusAmountDecimal}`
-    : campaign.bonusAmount && campaign.bonusAmount > 0
-      ? `₹${(campaign.bonusAmount / 100).toFixed(0)}`
-      : null;
-
-  const daysLeft = campaign.endDate
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(campaign.endDate).getTime() - Date.now()) /
-            (1000 * 60 * 60 * 24)
-        )
-      )
-    : null;
-
-  const isEndingSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
-
-  const slotsLeft =
-    campaign.maxEnrollments && campaign.currentEnrollments !== undefined
-      ? Math.max(0, campaign.maxEnrollments - campaign.currentEnrollments)
-      : null;
-
-  const isCompact = variant === "compact";
+export function CampaignCard({ campaign }: CampaignCardProps) {
+  const daysLeft = getDaysLeft(campaign);
+  const isEndingSoon = checkIsEndingSoon(campaign);
+  const cashbackDisplay = getDisplayCashback(campaign);
+  const badgeConfig = getCampaignTypeConfig(campaign.campaignType);
+  const BadgeIcon = CAMPAIGN_TYPE_ICONS[campaign.campaignType || ""] || CurrencyRupeeIcon;
 
   return (
     <Link
       href={`/campaigns/${campaign.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
       {/* Image */}
       <div className="relative aspect-4/3 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         {campaign.product?.primaryImage ? (
           <img
-            src={campaign.product.primaryImage}
+            src={getAssetUrl(campaign.product.primaryImage)}
             alt={campaign.product.name || campaign.title}
-            className="size-full object-cover"
+            loading="lazy"
+            decoding="async"
+            className="size-full object-contain"
           />
         ) : (
           <div className="flex size-full items-center justify-center">
@@ -109,118 +93,89 @@ export function CampaignCard({
           </div>
         )}
 
+        {/* Campaign type badge - top right with solid bg for contrast */}
+        <span className={`absolute right-2 top-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium shadow-sm ${
+          badgeConfig.color === "emerald"
+            ? "bg-emerald-500 text-white"
+            : badgeConfig.color === "amber"
+              ? "bg-amber-500 text-white"
+              : "bg-sky-500 text-white"
+        }`}>
+          <BadgeIcon className="size-3" />
+          {badgeConfig.label}
+        </span>
+
         {/* Platform badge */}
-        {isValidImageUrl(campaign.platform?.icon) && (
-          <div className="absolute bottom-2 right-2 flex size-7 items-center justify-center rounded-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90">
+        {campaign.platform?.icon && (
+          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
             <img
-              src={campaign.platform!.icon}
-              alt={campaign.platform?.name || ""}
-              className="size-5 object-contain"
+              src={getAssetUrl(campaign.platform.icon)}
+              alt={campaign.platform.name || ""}
+              loading="lazy"
+              decoding="async"
+              className="size-4 object-contain"
             />
           </div>
         )}
 
         {/* Urgency badge */}
         {isEndingSoon && (
-          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-zinc-900/80 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-zinc-900/80 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:text-xs">
             <ClockIcon className="size-3" />
             {daysLeft}d left
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div
-        className={`flex flex-1 flex-col ${isCompact ? "p-2.5" : "p-3 sm:p-4"}`}
-      >
-        {/* Brand */}
-        {campaign.organization?.name && (
-          <p
-            className={`truncate font-medium uppercase tracking-wide text-zinc-400 ${
-              isCompact ? "text-[10px]" : "text-xs"
-            }`}
-          >
-            {campaign.organization.name}
-          </p>
-        )}
-
-        {/* Product Name */}
-        <h3
-          className={`line-clamp-2 font-semibold leading-snug text-zinc-900 dark:text-white ${
-            isCompact ? "mt-0.5 text-xs" : "mt-1 text-sm"
-          }`}
-        >
-          {campaign.product?.name || campaign.title}
-        </h3>
-
-        {/* Price + Rewards Row */}
-        <div
-          className={`flex items-baseline justify-between gap-2 ${
-            isCompact ? "mt-auto pt-2" : "mt-2"
-          }`}
-        >
-          {campaign.product?.priceDecimal && (
-            <p
-              className={`font-bold text-zinc-900 dark:text-white ${
-                isCompact ? "text-sm" : "text-base"
-              }`}
-            >
-              ₹{campaign.product.priceDecimal}
+      {/* Content - Product Info */}
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        {/* Brand + Product Name */}
+        <div className="min-w-0 flex-1">
+          {campaign.organization?.name && (
+            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
+              {campaign.organization.name}
             </p>
           )}
+          <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
+            {campaign.product?.name || campaign.title}
+          </h3>
+        </div>
+      </div>
 
-          <div className={`flex ${isCompact ? "flex-col items-end gap-0.5" : "items-center gap-1.5"}`}>
-            {cashback && (
-              <span
-                className={`rounded-md bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 ${
-                  isCompact ? "text-[10px]" : "text-xs"
-                }`}
-              >
-                {isCompact ? `${cashback} back` : cashback}
-              </span>
-            )}
-            {bonus && (
-              <span
-                className={`font-semibold text-amber-600 dark:text-amber-400 ${
-                  isCompact ? "text-[10px]" : "rounded-md bg-sky-50 px-1.5 py-0.5 text-xs text-sky-700 dark:bg-sky-950/50 dark:text-sky-400"
-                }`}
-              >
-                +{bonus}{isCompact ? " bonus" : ""}
-              </span>
-            )}
-          </div>
+      {/* Edge-to-edge divider */}
+      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Footer Stats - 3-column layout with dividers */}
+      <div className="grid grid-cols-3 divide-x divide-zinc-200 dark:divide-zinc-700">
+        {/* Price */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Price</span>
+          <span className="text-xs font-semibold text-zinc-900 sm:text-sm dark:text-white">
+            {campaign.product?.priceDecimal ? `₹${campaign.product.priceDecimal}` : "—"}
+          </span>
         </div>
 
-        {/* Footer (non-compact only) */}
-        {!isCompact && (slotsLeft !== null || campaign.platform?.name) && (
-          <div className="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
-            {slotsLeft !== null && <span>{slotsLeft} slots left</span>}
-            {slotsLeft !== null &&
-              campaign.platform?.name &&
-              !campaign.platform.icon && <span>·</span>}
-            {campaign.platform?.name && !campaign.platform.icon && (
-              <span>{campaign.platform.name}</span>
-            )}
-          </div>
-        )}
+        {/* Cashback */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Cashback</span>
+          <span className="text-xs font-semibold text-emerald-600 sm:text-sm dark:text-emerald-400">
+            {cashbackDisplay}
+          </span>
+        </div>
+
+        {/* Days Left */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Days Left</span>
+          <span className={`text-xs font-semibold sm:text-sm ${
+            daysLeft !== null && daysLeft <= 7
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-zinc-900 dark:text-white"
+          }`}>
+            {daysLeft !== null ? daysLeft : "—"}
+          </span>
+        </div>
       </div>
     </Link>
-  );
-}
-
-/**
- * CampaignCardSkeleton - Loading skeleton for campaign card
- */
-export function CampaignCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-      <div className="aspect-4/3 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800" />
-      <div className="space-y-2 p-3 sm:p-4">
-        <div className="h-3 w-16 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-        <div className="h-4 w-full animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-        <div className="h-4 w-20 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-      </div>
-    </div>
   );
 }
 
@@ -229,21 +184,13 @@ export function CampaignCardSkeleton() {
  */
 export function CampaignCardGrid({
   children,
-  columns = 3,
   className,
 }: {
   children: React.ReactNode;
-  columns?: 2 | 3 | 4;
   className?: string;
 }) {
-  const colsClass = {
-    2: "grid-cols-2",
-    3: "grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-3 lg:grid-cols-4",
-  }[columns];
-
   return (
-    <div className={`grid ${colsClass} gap-3 sm:gap-4 ${className || ""}`}>
+    <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 ${className || ""}`}>
       {children}
     </div>
   );

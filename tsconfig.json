@@ -1,5 +1,6 @@
 {
 	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["src/lib/client.ts"],
 	"compilerOptions": {
 		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
 		"target": "ES2022",

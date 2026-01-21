@@ -1,1132 +1,502 @@
-# Refine.dev v5 Admin Panel
+# HypeDrive Shopper - Vite + React CSR App
 
-<llm_info>Generic CLAUDE.md for any Refine.dev v5 project. Copy to project root and customize project_stack section.</llm_info>
+<llm_info>CLAUDE.md for Vite 7 + React 19 CSR application with TanStack Query, Zustand, and Catalyst UI.</llm_info>
 
 <project_stack>
-- Framework: Next.js 14+ with App Router
-- Admin: Refine.dev v5 (headless mode)
-- Styling: Tailwind CSS
-- Backend: Custom API
-- Auth: Custom Auth Provider
+- Build Tool: Vite 7.x
+- Framework: React 19 (CSR - Client-Side Rendering)
+- State: Zustand + TanStack Query v5
+- Styling: Tailwind CSS v4 + Catalyst UI
+- Forms: React Hook Form + Zod
+- Router: React Router v7
+- Testing: Vitest + Testing Library
+- Linting: Biome
 </project_stack>
 
 ---
 
 ## Table of Contents
 
-1. [Quick Reference](#quick-reference)
-2. [v5 Breaking Changes](#refine-v5-breaking-changes)
-3. [Providers](#providers)
-4. [Hooks Reference](#hooks-reference)
-5. [Forms & Tables](#forms--tables)
-6. [Filter Operators](#filter-operators)
-7. [Best Practices](#best-practices)
-8. [Project Structure](#project-structure)
-9. [TypeScript Types](#typescript-types)
-10. [Troubleshooting](#troubleshooting)
+1. [Vite 7 Best Practices](#vite-7-best-practices)
+2. [TanStack Query v5](#tanstack-query-v5)
+3. [Zustand State Management](#zustand-state-management)
+4. [React Hook Form + Zod](#react-hook-form--zod)
+5. [React Router v7](#react-router-v7)
+6. [Project Structure](#project-structure)
+7. [TypeScript Types](#typescript-types)
+8. [Troubleshooting](#troubleshooting)
+9. [Git Rules](#git-rules)
+10. [Design Rules](#design-rules)
+11. [Color Palette](#color-palette)
+12. [Catalyst UI Component Rules](#catalyst-ui-component-rules)
+13. [TypeScript Style Guide](#typescript-style-guide)
 
 ---
 
-## Quick Reference
+## Vite 7 Best Practices
 
-### All Hooks at a Glance
-
-| Category | Hooks |
-|----------|-------|
-| **Data** | `useList`, `useOne`, `useMany`, `useCreate`, `useUpdate`, `useDelete`, `useCustom`, `useCustomMutation`, `useInfiniteList`, `useDataProvider`, `useApiUrl` |
-| **Form/Table** | `useForm`, `useTable`, `useSelect`, `useShow`, `useModalForm` |
-| **Auth** | `useLogin`, `useLogout`, `useRegister`, `useIsAuthenticated`, `useGetIdentity`, `usePermissions`, `useForgotPassword`, `useUpdatePassword`, `useOnError` |
-| **Navigation** | `useNavigation`, `useGo`, `useParsed`, `useResource`, `useLink` |
-| **Access Control** | `useCan` |
-| **Notification** | `useNotification` |
-| **Import/Export** | `useImport`, `useExport` |
-| **i18n** | `useTranslate`, `useSetLocale`, `useGetLocale`, `useTranslation` |
-| **Realtime** | `useSubscription`, `usePublish` |
-| **UI/Utility** | `useMenu`, `useBreadcrumb`, `useTitle`, `useModal`, `useInvalidate` |
-
----
-
-## Refine v5 Breaking Changes
-
-### Hook Return Values (CRITICAL)
-
-| Hook | v4 Return | v5 Return |
-|------|-----------|-----------|
-| useList/useOne/useMany | `{ data, isLoading }` | `{ result, query: { isLoading } }` |
-| useShow | `{ queryResult }` | `{ result, query }` |
-| useCreate/useUpdate/useDelete | `{ mutate, isLoading }` | `{ mutate, mutation: { isPending } }` |
-| useLogin/useRegister | `{ mutate, isLoading }` | `{ mutate, isPending }` (direct!) |
-| useCustom | `{ data, isLoading }` | `{ result, query: { isLoading } }` |
-| useCustomMutation | `{ mutate, isLoading }` | `{ mutate, mutation: { isPending } }` |
-| useSelect | `{ options, queryResult }` | `{ options, query }` |
-| useTable (core) | `{ tableQueryResult }` | `{ tableQuery }` |
-| useForm | `{ queryResult, mutationResult }` | `{ query, mutation }` |
-| useInfiniteList | `{ data, fetchNextPage }` | `{ result, query: { fetchNextPage } }` |
-
-### Key Pattern: `result` vs `data`
+### Current Configuration
 
 ```typescript
-// v4
-const { data, isLoading } = useList();
-const products = data?.data;  // Nested
+// vite.config.ts
+import { fileURLToPath } from "node:url";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react-swc";
+import { defineConfig } from "vite";
 
-// v5 PREFERRED
-const { result, query: { isLoading } } = useList();
-const products = result.data;  // Cleaner
-```
-
-### Auth vs Data Hooks Return Type
-
-```typescript
-// DATA MUTATION HOOKS - wrapped in mutation
-const { mutate, mutation: { isPending } } = useCreate();
-
-// AUTH MUTATION HOOKS - direct (NOT wrapped!)
-const { mutate: login, isPending } = useLogin();
-```
-
-### Parameter Renames
-
-| Old (v4) | New (v5) |
-|----------|----------|
-| metaData | meta |
-| sort/sorter | sorters |
-| initialSorter/permanentSorter | sorters: { initial, permanent } |
-| initialFilter/permanentFilter | filters: { initial, permanent } |
-| hasPagination: false | pagination: { mode: "off" } |
-| initialCurrent | pagination: { currentPage } |
-| setCurrent | setCurrentPage |
-| queryResult | query |
-| mutationResult | mutation |
-| isLoading (mutations) | isPending |
-
-### Type/Import Renames
-
-```typescript
-// v4 → v5
-AuthBindings → AuthProvider
-RouterBindings → RouterProvider
-resources options → resources meta
-ThemedLayoutV2 → ThemedLayout
-```
-
-### Removed in v5
-
-- legacyRouterProvider, legacyAuthProvider
-- v3LegacyAuthProviderCompatible flag
-- Direct push, goBack, replace from useNavigation
-
----
-
-## Providers
-
-### Data Provider
-
-**Required Methods:**
-- `getList` - Fetch paginated, sorted, filtered list
-- `getOne` - Fetch single record by ID
-- `create` - Create new record
-- `update` - Update existing record
-- `deleteOne` - Delete single record
-- `getApiUrl` - Return API base URL
-
-**Optional Methods:** getMany, createMany, updateMany, deleteMany, custom
-
-```typescript
-import { DataProvider, HttpError } from "@refinedev/core";
-
-export const dataProvider = (apiUrl: string): DataProvider => ({
-  getApiUrl: () => apiUrl,
-
-  getList: async ({ resource, pagination, sorters, filters }) => {
-    const { current = 1, pageSize = 10 } = pagination ?? {};
-    const query: Record<string, any> = { page: current, limit: pageSize };
-    if (sorters?.length) query.sort = sorters.map(s => `${s.field}:${s.order}`).join(",");
-    filters?.forEach((filter) => {
-      if ("field" in filter) {
-        if (filter.operator === "eq") query[filter.field] = filter.value;
-        else if (filter.operator === "contains") query[`${filter.field}_like`] = filter.value;
-      }
-    });
-    const response = await fetch(`${apiUrl}/${resource}?${new URLSearchParams(query)}`);
-    const data = await response.json();
-    return { data: data.items || data, total: data.total || data.length };
-  },
-
-  getOne: async ({ resource, id }) => {
-    const response = await fetch(`${apiUrl}/${resource}/${id}`);
-    return { data: await response.json() };
-  },
-
-  create: async ({ resource, variables }) => {
-    const response = await fetch(`${apiUrl}/${resource}`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(variables),
-    });
-    return { data: await response.json() };
-  },
-
-  update: async ({ resource, id, variables }) => {
-    const response = await fetch(`${apiUrl}/${resource}/${id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(variables),
-    });
-    return { data: await response.json() };
-  },
-
-  deleteOne: async ({ resource, id }) => {
-    const response = await fetch(`${apiUrl}/${resource}/${id}`, { method: "DELETE" });
-    return { data: await response.json() };
-  },
-
-  custom: async ({ url, method, payload, query }) => {
-    const response = await fetch(`${apiUrl}${url}?${new URLSearchParams(query)}`, {
-      method, headers: { "Content-Type": "application/json" }, body: payload ? JSON.stringify(payload) : undefined,
-    });
-    return { data: await response.json() };
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
   },
 });
 ```
 
-### Auth Provider
+### Plugin Selection
 
-**Required Methods:**
-- `login` - returns `{ success, redirectTo?, error? }`
-- `check` - returns `{ authenticated, redirectTo?, logout?, error? }`
-- `logout` - returns `{ success, redirectTo? }`
-- `onError` - returns `{ logout?, redirectTo?, error? }`
+| Plugin | Purpose |
+|--------|---------|
+| `@vitejs/plugin-react-swc` | React Fast Refresh with SWC compiler (faster than Babel) |
+| `@tailwindcss/vite` | Native Tailwind CSS v4 integration |
 
-**Optional Methods:** getIdentity, getPermissions, register, forgotPassword, updatePassword
+### Environment Variables (CRITICAL)
+
+**Only variables prefixed with `VITE_` are exposed to client-side code.**
+
+```bash
+# .env
+VITE_API_URL=https://api.example.com    # ✅ Exposed to browser
+DATABASE_URL=postgres://...              # ❌ NOT exposed (server-only)
+```
 
 ```typescript
-import { AuthProvider } from "@refinedev/core";
+// Usage in code
+const apiUrl = import.meta.env.VITE_API_URL;
+const isDev = import.meta.env.DEV;
+const isProd = import.meta.env.PROD;
+```
 
-export const authProvider: AuthProvider = {
-  login: async ({ email, password }) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-    if (data.token) {
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      return { success: true, redirectTo: "/" };
+### TypeScript Support for Env
+
+```typescript
+// src/vite-env.d.ts
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string;
+  readonly VITE_APP_TITLE: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+```
+
+### Build Optimization
+
+```typescript
+// vite.config.ts - Production optimization
+export default defineConfig({
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    cssMinify: 'lightningcss',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            if (id.includes('@headlessui') || id.includes('@heroicons')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('@tanstack/react-query') || id.includes('zustand')) {
+              return 'data-vendor';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
+});
+```
+
+### Code Splitting & Lazy Loading
+
+```typescript
+import { lazy, Suspense } from 'react';
+
+// Route-level lazy loading
+const Dashboard = lazy(() => import('./pages/dashboard'));
+const Settings = lazy(() => import('./pages/settings'));
+
+// Always wrap with Suspense
+<Suspense fallback={<PageSkeleton />}>
+  <Dashboard />
+</Suspense>
+```
+
+**Rules:**
+- `React.lazy()` only works with **default exports**
+- Don't split chunks smaller than ~30KB
+- Use prefetch for predictable navigation
+
+### Dev Server Performance
+
+```typescript
+export default defineConfig({
+  server: {
+    warmup: {
+      clientFiles: ['./src/main.tsx', './src/App.tsx'],
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+});
+```
+
+### TypeScript Config Requirements
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",  // Required for Vite
+    "isolatedModules": true,        // Required - esbuild needs this
+    "skipLibCheck": true,           // Performance
+    "noEmit": true                  // Vite handles transpilation
+  }
+}
+```
+
+---
+
+## TanStack Query v5
+
+### Setup
+
+```typescript
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30,   // 30 minutes (renamed from cacheTime)
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+<QueryClientProvider client={queryClient}>
+  <App />
+</QueryClientProvider>
+```
+
+### useQuery
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+
+const { data, isLoading, isError, error, refetch } = useQuery({
+  queryKey: ['products', { page, status }],
+  queryFn: () => fetchProducts({ page, status }),
+  enabled: !!userId, // conditional fetching
+});
+```
+
+### useMutation
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+const queryClient = useQueryClient();
+
+const { mutate, isPending } = useMutation({
+  mutationFn: (data) => createProduct(data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    toast.success('Product created');
+  },
+  onError: (error) => {
+    toast.error(error.message);
+  },
+});
+
+// Usage
+mutate({ name: 'Product', price: 100 });
+```
+
+### useInfiniteQuery
+
+```typescript
+import { useInfiniteQuery } from '@tanstack/react-query';
+
+const {
+  data,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = useInfiniteQuery({
+  queryKey: ['products', 'infinite'],
+  queryFn: ({ pageParam = 1 }) => fetchProducts({ page: pageParam }),
+  getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+  initialPageParam: 1,
+});
+
+// Flatten pages
+const products = data?.pages.flatMap(page => page.data) ?? [];
+```
+
+### Query Invalidation
+
+```typescript
+const queryClient = useQueryClient();
+
+// Invalidate all products queries
+queryClient.invalidateQueries({ queryKey: ['products'] });
+
+// Invalidate specific query
+queryClient.invalidateQueries({ queryKey: ['products', productId] });
+
+// Set data directly
+queryClient.setQueryData(['products', productId], updatedProduct);
+```
+
+---
+
+## Zustand State Management
+
+### Creating a Store
+
+```typescript
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      setUser: (user) => set({ user }),
+      setToken: (token) => set({ token }),
+      logout: () => set({ user: null, token: null }),
+    }),
+    {
+      name: 'auth-storage', // localStorage key
     }
-    return { success: false, error: { name: "LoginError", message: "Invalid credentials" } };
-  },
-
-  check: async () => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) return { authenticated: false, redirectTo: "/login", logout: true };
-    return { authenticated: true };
-  },
-
-  logout: async () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user");
-    return { success: true, redirectTo: "/login" };
-  },
-
-  onError: async (error) => {
-    if (error?.statusCode === 401 || error?.statusCode === 403) return { logout: true, redirectTo: "/login" };
-    return {};
-  },
-
-  getIdentity: async () => {
-    const user = localStorage.getItem("user");
-    return user ? JSON.parse(user) : null;
-  },
-
-  getPermissions: async () => {
-    const user = localStorage.getItem("user");
-    return user ? JSON.parse(user).role : null;
-  },
-};
+  )
+);
 ```
 
-### Notification Provider
+### Using the Store
 
 ```typescript
-import { NotificationProvider } from "@refinedev/core";
-import { toast } from "react-toastify";
+// Get state
+const user = useAuthStore((state) => state.user);
+const { user, token, logout } = useAuthStore();
 
-export const notificationProvider: NotificationProvider = {
-  open: ({ key, message, type }) => {
-    if (type === "success") toast.success(message, { toastId: key });
-    else if (type === "error") toast.error(message, { toastId: key });
-    else toast.info(message, { toastId: key });
-  },
-  close: (key) => toast.dismiss(key),
-};
+// Actions
+const setUser = useAuthStore((state) => state.setUser);
+setUser({ id: '1', name: 'John' });
+
+// Outside React
+useAuthStore.getState().logout();
 ```
 
-### Access Control Provider
+### Derived State with Selectors
 
 ```typescript
-import { AccessControlProvider } from "@refinedev/core";
+// Create selector for derived state
+const selectIsAuthenticated = (state: AuthState) => !!state.token;
 
-export const accessControlProvider: AccessControlProvider = {
-  can: async ({ resource, action, params }) => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.role === "admin") return { can: true };
-    if (action === "delete") return { can: false, reason: "Only admins can delete" };
-    return { can: true };
-  },
-};
-```
-
-### Refine Setup (Next.js App Router)
-
-```typescript
-import { Refine } from "@refinedev/core";
-import routerProvider from "@refinedev/nextjs-router";
-
-const resources = [
-  { name: "products", list: "/products", show: "/products/:id", edit: "/products/:id/edit", meta: { label: "Products" } },
-  { name: "users", list: "/users", show: "/users/:id", create: "/users/create", meta: { label: "Users", canDelete: true } },
-];
-
-<Refine
-  routerProvider={routerProvider}
-  dataProvider={dataProvider(API_URL)}
-  authProvider={authProvider}
-  resources={resources}
-  options={{ syncWithLocation: true }}
->
-  {children}
-</Refine>
+// Use in component
+const isAuthenticated = useAuthStore(selectIsAuthenticated);
 ```
 
 ---
 
-## Hooks Reference
+## React Hook Form + Zod
 
-### 1. Data Hooks
-
-#### useList
-Fetch paginated list of records.
+### Basic Form
 
 ```typescript
-const { result, query: { isLoading, isError } } = useList({
-  resource: "products",
-  pagination: { current: 1, pageSize: 10 },
-  sorters: [{ field: "createdAt", order: "desc" }],
-  filters: [{ field: "status", operator: "eq", value: "active" }],
-});
-const products = result.data ?? [];
-const total = result.total;
-```
-
-#### useOne
-Fetch single record by ID.
-
-```typescript
-const { result, query: { isLoading } } = useOne({
-  resource: "products",
-  id: "123"
-});
-const product = result.data;
-```
-
-#### useMany
-Fetch multiple records by IDs.
-
-```typescript
-const { result, query: { isLoading } } = useMany({
-  resource: "products",
-  ids: ["1", "2", "3"]
-});
-const products = result.data;
-```
-
-#### useCreate
-Create new record.
-
-```typescript
-const { mutate, mutation: { isPending } } = useCreate();
-
-mutate({
-  resource: "products",
-  values: { name: "Product", price: 100 }
-}, {
-  onSuccess: (data) => console.log("Created:", data),
-  onError: (error) => console.error(error),
-});
-```
-
-#### useUpdate
-Update existing record.
-
-```typescript
-const { mutate, mutation: { isPending } } = useUpdate();
-
-mutate({
-  resource: "products",
-  id: "123",
-  values: { name: "Updated Product" }
-});
-
-// With optimistic updates
-const { mutate } = useUpdate({ mutationMode: "optimistic" });
-
-// With undo capability
-const { mutate } = useUpdate({ mutationMode: "undoable", undoableTimeout: 5000 });
-```
-
-#### useDelete
-Delete record.
-
-```typescript
-const { mutate, mutation: { isPending } } = useDelete();
-
-mutate({ resource: "products", id: "123" });
-```
-
-#### useCustom
-Custom GET request.
-
-```typescript
-const { result, query: { isLoading } } = useCustom({
-  url: "/admin/stats",
-  method: "get",
-  config: { query: { period: "monthly" } }
-});
-```
-
-#### useCustomMutation
-Custom POST/PUT/PATCH/DELETE request.
-
-```typescript
-const { mutate, mutation: { isPending } } = useCustomMutation();
-
-mutate({
-  url: "/products/123/publish",
-  method: "post",
-  values: { publishedAt: new Date().toISOString() }
-});
-```
-
-#### useInfiniteList
-Infinite scroll pagination.
-
-```typescript
-const { result, query: { hasNextPage, fetchNextPage, isFetchingNextPage } } = useInfiniteList({
-  resource: "products",
-  pagination: { pageSize: 20 }
-});
-
-// Load more button
-{hasNextPage && (
-  <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-    Load More
-  </button>
-)}
-```
-
-#### useDataProvider
-Direct access to data provider.
-
-```typescript
-const dataProvider = useDataProvider();
-
-const fetchCustomData = async () => {
-  const result = await dataProvider().custom({
-    url: "/api/custom-endpoint",
-    method: "get",
-  });
-  return result.data;
-};
-
-// Access specific named data provider
-const secondaryProvider = dataProvider("secondary");
-```
-
-#### useApiUrl
-Get API base URL.
-
-```typescript
-const apiUrl = useApiUrl();
-// Returns the URL from dataProvider.getApiUrl()
-```
-
----
-
-### 2. Authentication Hooks
-
-#### useLogin
-User login.
-
-```typescript
-const { mutate: login, isPending } = useLogin();
-
-login({ email: "user@example.com", password: "password123" }, {
-  onSuccess: () => console.log("Logged in!"),
-  onError: (error) => console.error(error.message),
-});
-```
-
-#### useLogout
-User logout.
-
-```typescript
-const { mutate: logout, isPending } = useLogout();
-
-logout();
-// or with redirect
-logout({ redirectPath: "/goodbye" });
-```
-
-#### useRegister
-User registration.
-
-```typescript
-const { mutate: register, isPending } = useRegister();
-
-register({
-  email: "newuser@example.com",
-  password: "password123",
-  name: "New User"
-});
-```
-
-#### useIsAuthenticated
-Check authentication status.
-
-```typescript
-const { data, isLoading } = useIsAuthenticated();
-
-if (data?.authenticated) {
-  // User is logged in
-}
-```
-
-#### useGetIdentity
-Get current user info.
-
-```typescript
-const { data: identity, isLoading } = useGetIdentity();
-
-// identity = { id, name, email, avatar, role, ... }
-```
-
-#### usePermissions
-Get user permissions.
-
-```typescript
-const { data: permissions, isLoading } = usePermissions();
-
-if (permissions?.includes("admin")) {
-  // Show admin features
-}
-```
-
-#### useForgotPassword
-Send password reset email.
-
-```typescript
-const { mutate: forgotPassword, isPending } = useForgotPassword<{ email: string }>();
-
-forgotPassword({ email: "user@example.com" }, {
-  onSuccess: () => toast.success("Reset link sent!"),
-  onError: (error) => toast.error(error.message),
-});
-```
-
-#### useUpdatePassword
-Update password (reset password page).
-
-```typescript
-const { mutate: updatePassword, isPending } = useUpdatePassword<{
-  password: string;
-  confirmPassword: string
-}>();
-
-updatePassword({
-  password: "newPassword123",
-  confirmPassword: "newPassword123"
-}, {
-  onSuccess: () => go({ to: "/login" }),
-});
-```
-
-#### useOnError
-Handle auth errors programmatically.
-
-```typescript
-const { mutate: onError } = useOnError();
-
-// Manual error handling
-onError({ statusCode: 401, message: "Unauthorized" });
-```
-
----
-
-### 3. Navigation Hooks
-
-#### useNavigation
-Resource-based navigation.
-
-```typescript
-const { list, create, edit, show, clone } = useNavigation();
-
-list("products");           // Go to /products
-create("products");         // Go to /products/create
-edit("products", "123");    // Go to /products/123/edit
-show("products", "123");    // Go to /products/123
-clone("products", "123");   // Go to /products/clone/123
-```
-
-#### useGo
-Generic navigation with query params.
-
-```typescript
-const go = useGo();
-
-go({ to: "/posts" });                           // push
-go({ to: "/posts", type: "replace" });          // replace
-go({ to: "/products", query: { search: "test", page: 1 } });
-
-// Go back: use Next.js router
-import { useRouter } from "next/navigation";
-const router = useRouter();
-router.back();
-```
-
-#### useParsed
-Parse current URL params.
-
-```typescript
-const { resource, action, id, params, pathname } = useParsed();
-
-// On /products/123/edit:
-// resource = { name: "products", ... }
-// action = "edit"
-// id = "123"
-```
-
-#### useResource
-Get current resource info.
-
-```typescript
-const { resource, action, id } = useResource();
-
-// resource = { name: "products", list: "/products", ... }
-```
-
-#### useLink
-Get router Link component.
-
-```typescript
-const Link = useLink();
-
-<Link to="/products">Products</Link>
-```
-
----
-
-### 4. Access Control Hook
-
-#### useCan
-Check user permissions.
-
-```typescript
-const { data: canEdit } = useCan({
-  resource: "products",
-  action: "edit",
-  params: { id: "123" }
-});
-
-{canEdit?.can && <button>Edit</button>}
-{!canEdit?.can && <span>{canEdit?.reason}</span>}
-```
-
----
-
-### 5. Notification Hook
-
-#### useNotification
-Programmatic notifications.
-
-```typescript
-const { open, close } = useNotification();
-
-// Open notification
-open({
-  key: "unique-key",
-  type: "success",  // "success" | "error" | "progress"
-  message: "Record created successfully",
-  description: "Product has been added to the catalog",
-});
-
-// Close notification
-close("unique-key");
-```
-
----
-
-### 6. Import/Export Hooks
-
-#### useExport
-Export data to CSV.
-
-```typescript
-const { triggerExport, isLoading } = useExport({
-  resource: "products",
-  mapData: (item) => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    status: item.status,
-  }),
-  maxItemCount: 1000,
-  pageSize: 50,
-  sorters: [{ field: "createdAt", order: "desc" }],
-  filters: [{ field: "status", operator: "eq", value: "active" }],
-});
-
-<button onClick={triggerExport} disabled={isLoading}>
-  {isLoading ? "Exporting..." : "Export CSV"}
-</button>
-```
-
-#### useImport
-Import data from CSV.
-
-```typescript
-const { inputProps, isLoading, mutationResult } = useImport({
-  resource: "products",
-  mapData: (item) => ({
-    name: item.name,
-    price: Number(item.price),
-    status: item.status || "draft",
-  }),
-  onFinish: (results) => {
-    console.log("Imported:", results.succeeded.length);
-    console.log("Failed:", results.errored.length);
-  },
-});
-
-<input type="file" accept=".csv" {...inputProps} />
-```
-
----
-
-### 7. i18n/Translation Hooks
-
-#### useTranslate
-Translate text.
-
-```typescript
-const translate = useTranslate();
-
-<h1>{translate("pages.products.title")}</h1>
-<button>{translate("buttons.save", "Save")}</button>  // with fallback
-```
-
-#### useSetLocale
-Change language.
-
-```typescript
-const changeLocale = useSetLocale();
-
-<button onClick={() => changeLocale("en")}>English</button>
-<button onClick={() => changeLocale("hi")}>हिंदी</button>
-<button onClick={() => changeLocale("es")}>Español</button>
-```
-
-#### useGetLocale
-Get current language.
-
-```typescript
-const getLocale = useGetLocale();
-const currentLocale = getLocale();  // "en", "hi", etc.
-```
-
-#### useTranslation
-Combined i18n hook.
-
-```typescript
-const { translate, changeLocale, getLocale } = useTranslation();
-
-const locale = getLocale();
-const title = translate("pages.home.title");
-changeLocale("en");
-```
-
----
-
-### 8. Realtime Hooks
-
-#### useSubscription
-Subscribe to live updates.
-
-```typescript
-useSubscription({
-  channel: "products",
-  types: ["created", "updated", "deleted"],
-  onLiveEvent: (event) => {
-    console.log("Event:", event.type, event.payload);
-    // Invalidate queries or update UI
-  },
-});
-```
-
-#### usePublish
-Publish events (frontend).
-
-```typescript
-const publish = usePublish();
-
-publish({
-  channel: "notifications",
-  type: "custom",
-  payload: { message: "New order received!" },
-  date: new Date(),
-});
-```
-
----
-
-### 9. UI/Utility Hooks
-
-#### useMenu
-Build navigation menu.
-
-```typescript
-const { menuItems, selectedKey, defaultOpenKeys } = useMenu();
-
-// menuItems: [{ key, label, route, icon, children }]
-
-{menuItems.map((item) => (
-  <NavLink
-    key={item.key}
-    to={item.route}
-    className={selectedKey === item.key ? "active" : ""}
-  >
-    {item.icon}
-    {item.label}
-  </NavLink>
-))}
-```
-
-#### useBreadcrumb
-Generate breadcrumbs.
-
-```typescript
-const { breadcrumbs } = useBreadcrumb();
-
-// breadcrumbs: [{ label, href }, ...]
-
-<nav>
-  {breadcrumbs.map((crumb, index) => (
-    <span key={index}>
-      {crumb.href ? <Link to={crumb.href}>{crumb.label}</Link> : crumb.label}
-      {index < breadcrumbs.length - 1 && " / "}
-    </span>
-  ))}
-</nav>
-```
-
-#### useTitle
-Access title component.
-
-```typescript
-const Title = useTitle();
-
-<header>
-  <Title collapsed={sidebarCollapsed} />
-</header>
-```
-
-#### useModal (Ant Design)
-Manage modal state.
-
-```typescript
-import { useModal } from "@refinedev/antd";
-
-const { show, close, modalProps } = useModal();
-
-<button onClick={show}>Open Modal</button>
-<Modal {...modalProps} title="My Modal">
-  <p>Modal content</p>
-  <button onClick={close}>Close</button>
-</Modal>
-```
-
-#### useInvalidate
-Invalidate query cache.
-
-```typescript
-const invalidate = useInvalidate();
-
-invalidate({
-  resource: "products",
-  invalidates: ["list", "many", "detail"]
-});
-```
-
----
-
-## Forms & Tables
-
-### useForm
-
-```typescript
-const { query, mutation, onFinish, formLoading } = useForm({
-  resource: "products",
-  action: "edit",  // "create" | "edit" | "clone"
-  id: "123",
-  redirect: "list",  // "list" | "show" | "edit" | false
-  autoSave: { enabled: true, debounce: 2000 },
-});
-
-const product = query?.data?.data;
-
-<form onSubmit={(e) => {
-  e.preventDefault();
-  onFinish(Object.fromEntries(new FormData(e.currentTarget)));
-}}>
-  <input name="name" defaultValue={product?.name} />
-  <button disabled={mutation.isPending}>
-    {mutation.isPending ? "Saving..." : "Save"}
-  </button>
-</form>
-```
-
-### useForm with React Hook Form + Zod
-
-```typescript
-import { useForm } from "@refinedev/react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 const schema = z.object({
-  name: z.string().min(3),
-  price: z.number().positive(),
-  status: z.enum(["active", "inactive"]),
+  email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
-const {
-  refineCore: { onFinish, formLoading },
-  register,
-  handleSubmit,
-  formState: { errors }
-} = useForm({
-  resolver: zodResolver(schema),
-  refineCoreProps: { resource: "products", action: "create" },
-});
+type FormData = z.infer<typeof schema>;
 
-<form onSubmit={handleSubmit(onFinish)}>
-  <input {...register("name")} />
-  {errors.name && <span>{errors.name.message}</span>}
-  <button disabled={formLoading}>Submit</button>
-</form>
+function LoginForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = async (data: FormData) => {
+    await login(data);
+    reset();
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register('email')} />
+      {errors.email && <span>{errors.email.message}</span>}
+
+      <input type="password" {...register('password')} />
+      {errors.password && <span>{errors.password.message}</span>}
+
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Loading...' : 'Login'}
+      </button>
+    </form>
+  );
+}
 ```
 
-### useTable (Core)
+### With Controlled Components
 
 ```typescript
-const {
-  tableQuery,
-  currentPage, setCurrentPage,
-  pageSize, setPageSize,
-  sorters, setSorters,
-  filters, setFilters,
-  pageCount
-} = useTable({
-  resource: "products",
-  pagination: { pageSize: 10 },
-  sorters: { initial: [{ field: "createdAt", order: "desc" }] },
-  filters: { initial: [], permanent: [] },
-  syncWithLocation: true,
-});
+import { Controller } from 'react-hook-form';
 
-const { data, isLoading } = tableQuery;
+<Controller
+  name="category"
+  control={control}
+  render={({ field }) => (
+    <Select {...field} options={categories} />
+  )}
+/>
 ```
 
-### useTable with TanStack Table
+### Common Zod Patterns
 
 ```typescript
-import { useTable } from "@refinedev/react-table";
-import { flexRender } from "@tanstack/react-table";
+const schema = z.object({
+  // Strings
+  name: z.string().min(1, 'Required'),
+  email: z.string().email(),
+  phone: z.string().regex(/^\d{10}$/, 'Invalid phone'),
 
-const { reactTable, refineCore } = useTable({
-  columns,
-  refineCoreProps: {
-    resource: "products",
-    pagination: { mode: "server" },
-    filters: { permanent: refineFilters },
+  // Numbers
+  price: z.coerce.number().positive(),
+  quantity: z.coerce.number().int().min(1),
+
+  // Enums
+  status: z.enum(['active', 'inactive']),
+
+  // Optional with default
+  role: z.string().default('user'),
+
+  // Conditional
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords must match',
+  path: ['confirmPassword'],
+});
+```
+
+---
+
+## React Router v7
+
+### Route Setup
+
+```typescript
+import { createBrowserRouter, RouterProvider } from 'react-router';
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <Dashboard /> },
+      { path: 'products', element: <ProductList /> },
+      { path: 'products/:id', element: <ProductShow /> },
+      { path: 'products/:id/edit', element: <ProductEdit /> },
+    ],
   },
-});
+  {
+    path: '/login',
+    element: <Login />,
+  },
+]);
 
-const { getHeaderGroups, getRowModel, nextPage, previousPage } = reactTable;
-const { tableQuery } = refineCore;
-
-// Render
-<table>
-  <thead>
-    {getHeaderGroups().map(hg => (
-      <tr key={hg.id}>
-        {hg.headers.map(h => (
-          <th key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</th>
-        ))}
-      </tr>
-    ))}
-  </thead>
-  <tbody>
-    {getRowModel().rows.map(row => (
-      <tr key={row.id}>
-        {row.getVisibleCells().map(cell => (
-          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-        ))}
-      </tr>
-    ))}
-  </tbody>
-</table>
+<RouterProvider router={router} />
 ```
 
-### useSelect
+### Navigation
 
 ```typescript
-const { options, query: { isLoading } } = useSelect({
-  resource: "categories",
-  optionLabel: "name",
-  optionValue: "id",
-  filters: [{ field: "status", operator: "eq", value: "active" }],
-  defaultValue: ["1", "2"],  // Pre-fetch these IDs
-});
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router';
 
-<select>
-  {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-</select>
+// Programmatic navigation
+const navigate = useNavigate();
+navigate('/products');
+navigate('/products/123');
+navigate(-1); // go back
+
+// Get route params
+const { id } = useParams();
+
+// Query params
+const [searchParams, setSearchParams] = useSearchParams();
+const page = searchParams.get('page') || '1';
+setSearchParams({ page: '2' });
+
+// Link component
+<Link to="/products">Products</Link>
+<Link to={`/products/${id}`}>View Product</Link>
 ```
 
-### useShow
+### Protected Routes
 
 ```typescript
-const { result, query: { isLoading } } = useShow({
-  resource: "products",
-  id: "123"
-});
+import { Navigate, Outlet } from 'react-router';
 
-const product = result.data;
-```
+function ProtectedRoute() {
+  const { token } = useAuthStore();
 
-### useModalForm
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-```typescript
-const {
-  modal: { visible, show, close },
-  formProps
-} = useModalForm({
-  resource: "products",
-  action: "create"
-});
-
-<button onClick={() => show()}>Create Product</button>
-
-<Modal visible={visible} onClose={close}>
-  <form {...formProps}>
-    {/* form fields */}
-  </form>
-</Modal>
-```
-
-### Filters Format
-
-```typescript
-// Initial vs Permanent
-filters: {
-  initial: [],      // Applied ONLY on first load
-  permanent: [],    // ALWAYS applied - use for dynamic filters
+  return <Outlet />;
 }
 
-// Dynamic filters pattern
-const refineFilters = useMemo(() => {
-  return filters
-    .filter(f => f.value)
-    .map(f => ({ field: f.field, operator: f.operator, value: f.value }));
-}, [filters]);
-
-refineCoreProps: { filters: { permanent: refineFilters } }
-```
-
----
-
-## Filter Operators
-
-| Category | Operators |
-|----------|-----------|
-| **Comparison** | `eq`, `ne`, `lt`, `lte`, `gt`, `gte` |
-| **Array** | `in`, `nin`, `ina`, `nina` |
-| **String** | `contains`, `ncontains`, `containss`, `ncontainss`, `startswith`, `endswith` |
-| **Range** | `between`, `nbetween` |
-| **Null** | `null`, `nnull` |
-| **Logical** | `or`, `and` |
-
-```typescript
-// Examples
-filters: [{ field: "status", operator: "eq", value: "active" }]
-filters: [{ field: "price", operator: "gte", value: 100 }, { field: "price", operator: "lte", value: 500 }]
-filters: [{ field: "category", operator: "in", value: ["electronics", "clothing"] }]
-filters: [{
-  operator: "or",
-  value: [
-    { field: "status", operator: "eq", value: "pending" },
-    { field: "status", operator: "eq", value: "processing" }
-  ]
-}]
-```
-
----
-
-## Best Practices
-
-### Error Handling
-
-```typescript
-mutate({ resource: "products", values }, {
-  onError: (error) => toast.error(error.message),
-  onSuccess: () => toast.success("Created successfully"),
-});
-```
-
-### Cache Invalidation
-
-```typescript
-const invalidate = useInvalidate();
-invalidate({ resource: "products", invalidates: ["list", "many", "detail"] });
-```
-
-### Token Refresh Pattern
-
-```typescript
-import axios from "axios";
-const axiosInstance = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
-
-axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && !error.config._retry) {
-      error.config._retry = true;
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, { refreshToken });
-          localStorage.setItem("auth_token", data.token);
-          error.config.headers.Authorization = `Bearer ${data.token}`;
-          return axiosInstance(error.config);
-        } catch { /* redirect to login */ }
-      }
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
+// In router config
+{
+  path: '/',
+  element: <ProtectedRoute />,
+  children: [
+    { path: 'dashboard', element: <Dashboard /> },
+  ],
+}
 ```
 
 ---
@@ -1135,30 +505,33 @@ axiosInstance.interceptors.response.use(
 
 ```
 src/
-├── app/                      # Next.js App Router pages
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── login/page.tsx
-│   └── [resource]/
-│       ├── page.tsx          # List
-│       ├── create/page.tsx   # Create
-│       ├── [id]/
-│       │   ├── page.tsx      # Show
-│       │   └── edit/page.tsx # Edit
+├── main.tsx                  # Entry point
+├── App.tsx                   # Root component with providers
+├── App.css                   # Global styles + Tailwind imports
+├── vite-env.d.ts            # Vite type declarations
 ├── components/
-│   ├── layout/               # Layout components
-│   └── common/               # Shared components
-├── providers/
-│   ├── dataProvider.ts
-│   ├── authProvider.ts
-│   ├── accessControlProvider.ts
-│   └── notificationProvider.ts
+│   ├── app-layout.tsx       # Main layout wrapper
+│   ├── sidebar-layout.tsx   # Sidebar navigation
+│   ├── command-menu.tsx     # Command palette (Cmd+K)
+│   ├── protected-route.tsx  # Auth guard
+│   └── [component].tsx      # Feature components
+├── pages/
+│   ├── dashboard.tsx
+│   ├── auth/                # Login, Register, etc.
+│   ├── campaigns/           # Campaign CRUD
+│   ├── enrollments/         # Enrollment management
+│   ├── wallet/              # Wallet & transactions
+│   └── settings/            # User settings
+├── hooks/
+│   └── use-api.ts           # API hooks
 ├── lib/
-│   ├── api-client.ts
-│   └── utils.ts
-├── hooks/                    # Custom hooks
-├── types/                    # TypeScript types
-└── config/                   # Configuration
+│   ├── client.ts            # API client
+│   ├── theme.ts             # Color system
+│   ├── money-utils.ts       # Currency formatting
+│   └── error-utils.ts       # Error handling
+├── store/
+│   └── [store].ts           # Zustand stores
+└── types/                   # TypeScript types
 ```
 
 ### Naming Conventions
@@ -1207,10 +580,10 @@ export interface ListResponse<T> {
   total: number;
 }
 
-export type FilterOperator =
-  | "eq" | "ne" | "lt" | "lte" | "gt" | "gte"
-  | "contains" | "startswith" | "endswith"
-  | "in" | "nin" | "between" | "null" | "nnull";
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
 ```
 
 ---
@@ -1219,12 +592,12 @@ export type FilterOperator =
 
 | Problem | Solution |
 |---------|----------|
-| Data not fetching | Check data provider, API endpoint, auth token in headers |
-| Auth not working | Verify `check()` returns `{ authenticated: true/false }`, check localStorage |
-| Routing issues | Verify routerProvider, resource paths, syncWithLocation |
-| Type errors | Add generic types: `useList<Product>` |
-| Performance issues | Enable pagination, use React.memo/useCallback/useMemo, server-side pagination |
-| v5 Migration | `result` vs `data`, `query` vs `queryResult`, `isPending` vs `isLoading`, `setCurrentPage` vs `setCurrent` |
+| HMR not working | Check for circular imports, restart dev server |
+| Env vars undefined | Check `VITE_` prefix, restart server after .env changes |
+| Build fails | Run `tsc --noEmit` to find type errors |
+| Query not refetching | Check queryKey, invalidate correctly |
+| Form not submitting | Check handleSubmit wrapper, validation errors |
+| Store not persisting | Check localStorage key, hydration timing |
 
 ### HTTP Status Codes
 

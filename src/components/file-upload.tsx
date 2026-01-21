@@ -81,7 +81,7 @@ function FilePreview({ uploadedFile, onRemove, showPreview }: FilePreviewProps) 
 			{/* Thumbnail / Icon */}
 			<div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-700">
 				{isImage && showPreview && preview ? (
-					<img src={preview} alt={file.name} className="size-full object-cover" />
+					<img src={preview} alt={file.name} className="size-full object-contain" />
 				) : isImage ? (
 					<PhotoIcon className="size-6 text-zinc-400" />
 				) : (
@@ -192,46 +192,51 @@ export function FileUpload({
 		disabled,
 	});
 
+	// Check if we've reached the file limit (for single file mode, hide dropzone when file is uploaded)
+	const hasReachedLimit = files.length >= maxFiles;
+
 	return (
 		<div className={className}>
-			{/* Dropzone */}
-			<div
-				{...getRootProps()}
-				className={clsx(
-					"relative cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors",
-					isDragActive && !isDragReject && "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20",
-					isDragReject && "border-red-400 bg-red-50 dark:bg-red-950/20",
-					!isDragActive && "border-zinc-300 hover:border-zinc-400 dark:border-zinc-600 dark:hover:border-zinc-500",
-					disabled && "cursor-not-allowed opacity-50"
-				)}
-			>
-				<input {...getInputProps()} />
-
-				<CloudArrowUpIcon
+			{/* Dropzone - Hide when file limit is reached */}
+			{!hasReachedLimit && (
+				<div
+					{...getRootProps()}
 					className={clsx(
-						"mx-auto size-10",
-						isDragActive && !isDragReject && "text-emerald-500",
-						isDragReject && "text-red-500",
-						!isDragActive && "text-zinc-400"
+						"relative cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+						isDragActive && !isDragReject && "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20",
+						isDragReject && "border-red-400 bg-red-50 dark:bg-red-950/20",
+						!isDragActive && "border-zinc-300 hover:border-zinc-400 dark:border-zinc-600 dark:hover:border-zinc-500",
+						disabled && "cursor-not-allowed opacity-50"
 					)}
-				/>
+				>
+					<input {...getInputProps()} />
 
-				<p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-					{isDragActive ? (isDragReject ? "File not supported" : "Drop files here") : placeholder}
-				</p>
+					<CloudArrowUpIcon
+						className={clsx(
+							"mx-auto size-10",
+							isDragActive && !isDragReject && "text-emerald-500",
+							isDragReject && "text-red-500",
+							!isDragActive && "text-zinc-400"
+						)}
+					/>
 
-				<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-					Max {formatFileSize(maxSize)} per file
-					{multiple && ` (up to ${maxFiles} files)`}
-				</p>
-			</div>
+					<p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+						{isDragActive ? (isDragReject ? "File not supported" : "Drop files here") : placeholder}
+					</p>
+
+					<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+						Max {formatFileSize(maxSize)} per file
+						{multiple && ` (up to ${maxFiles} files)`}
+					</p>
+				</div>
+			)}
 
 			{/* Error Message */}
 			{error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
 			{/* File Previews */}
 			{files.length > 0 && (
-				<div className="mt-4 space-y-2">
+				<div className={clsx(!hasReachedLimit && "mt-4", "space-y-2")}>
 					{files.map((uploadedFile) => (
 						<FilePreview key={uploadedFile.id} uploadedFile={uploadedFile} onRemove={removeFile} showPreview={showPreview} />
 					))}

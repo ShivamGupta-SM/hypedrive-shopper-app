@@ -1,49 +1,126 @@
+import {
+  ArrowTrendingUpIcon,
+  BanknotesIcon,
+  ClockIcon,
+  CurrencyRupeeIcon,
+  DocumentTextIcon,
+  FireIcon,
+  FolderIcon,
+  GiftIcon,
+  ReceiptPercentIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
+  TagIcon,
+} from "@heroicons/react/24/solid";
+import clsx from "clsx";
+
 import { Button } from "@/components/button";
-import { SparklesIcon } from "@heroicons/react/16/solid";
+
+// Preset card configurations - clean, minimal icons with soft colors
+const cardPresets = {
+  campaigns: {
+    cards: [
+      { icon: TagIcon, iconColor: "text-orange-400" },
+      { icon: GiftIcon, iconColor: "text-rose-400" },
+      { icon: ReceiptPercentIcon, iconColor: "text-teal-400" },
+    ],
+  },
+  enrollments: {
+    cards: [
+      { icon: ShoppingBagIcon, iconColor: "text-sky-400" },
+      { icon: ClockIcon, iconColor: "text-amber-400" },
+      { icon: DocumentTextIcon, iconColor: "text-violet-400" },
+    ],
+  },
+  wallet: {
+    cards: [
+      { icon: BanknotesIcon, iconColor: "text-emerald-400" },
+      { icon: CurrencyRupeeIcon, iconColor: "text-emerald-500" },
+      { icon: ArrowTrendingUpIcon, iconColor: "text-sky-400" },
+    ],
+  },
+  generic: {
+    cards: [
+      { icon: FolderIcon, iconColor: "text-zinc-300" },
+      { icon: SparklesIcon, iconColor: "text-zinc-400" },
+      { icon: FireIcon, iconColor: "text-zinc-300" },
+    ],
+  },
+};
+
+type PresetType = keyof typeof cardPresets;
 
 interface EmptyStateProps {
-  /** Icon to display */
-  icon?: React.ComponentType<{ className?: string }>;
-  /** Title text */
+  preset?: PresetType;
   title: string;
-  /** Description text */
   description: string;
-  /** Optional action button */
   action?: {
     label: string;
     href?: string;
     onClick?: () => void;
   };
-  /** Optional secondary action (like "Clear filters") */
   secondaryAction?: {
     label: string;
     onClick: () => void;
   };
-  /** Optional className */
   className?: string;
 }
 
+function CollageCards({ preset = "generic" }: { preset?: PresetType }) {
+  const { cards } = cardPresets[preset];
+  const LeftIcon = cards[0].icon;
+  const CenterIcon = cards[1].icon;
+  const RightIcon = cards[2].icon;
+
+  return (
+    <div className="group isolate flex justify-center">
+      {/* Left card */}
+      <div
+        className={clsx(
+          "relative left-3 top-2 grid size-12 place-items-center rounded-xl",
+          "bg-white shadow-sm ring-1 ring-zinc-100",
+          "-rotate-12 transition-all duration-500 ease-out",
+          "group-hover:-translate-x-5 group-hover:-translate-y-1 group-hover:-rotate-[20deg]",
+          "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
+        )}
+      >
+        <LeftIcon className={clsx("size-5 transition-transform duration-500 group-hover:scale-110", cards[0].iconColor)} />
+      </div>
+
+      {/* Center card */}
+      <div
+        className={clsx(
+          "relative z-10 grid size-14 place-items-center rounded-xl",
+          "bg-white shadow-md ring-1 ring-zinc-100",
+          "transition-all duration-500 ease-out",
+          "group-hover:-translate-y-3 group-hover:scale-105 group-hover:shadow-lg",
+          "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
+        )}
+      >
+        <CenterIcon className={clsx("size-6 transition-transform duration-500 group-hover:scale-110", cards[1].iconColor)} />
+      </div>
+
+      {/* Right card */}
+      <div
+        className={clsx(
+          "relative right-3 top-2 grid size-12 place-items-center rounded-xl",
+          "bg-white shadow-sm ring-1 ring-zinc-100",
+          "rotate-12 transition-all duration-500 ease-out",
+          "group-hover:translate-x-5 group-hover:-translate-y-1 group-hover:rotate-[20deg]",
+          "dark:bg-zinc-800/80 dark:ring-zinc-700/50"
+        )}
+      >
+        <RightIcon className={clsx("size-5 transition-transform duration-500 group-hover:scale-110", cards[2].iconColor)} />
+      </div>
+    </div>
+  );
+}
+
 /**
- * EmptyState - Unified empty state component
- *
- * @example Basic empty state
- * <EmptyState
- *   icon={ShoppingBagIcon}
- *   title="No enrollments yet"
- *   description="Start earning cashback by enrolling in campaigns."
- *   action={{ label: "Browse Campaigns", href: "/campaigns" }}
- * />
- *
- * @example With filter clear option
- * <EmptyState
- *   icon={SparklesIcon}
- *   title="No campaigns found"
- *   description="We couldn't find any campaigns matching your criteria."
- *   secondaryAction={{ label: "Clear filters", onClick: handleClear }}
- * />
+ * EmptyState - Clean empty state with animated card collage
  */
 export function EmptyState({
-  icon: Icon = SparklesIcon,
+  preset = "generic",
   title,
   description,
   action,
@@ -51,63 +128,65 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50 ${className || ""}`}
-    >
-      <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <Icon className="size-7 text-zinc-400 dark:text-zinc-500" />
+    <div className={clsx("group w-full px-4 py-10", className)}>
+      {/* Collage cards */}
+      <CollageCards preset={preset} />
+
+      {/* Text content */}
+      <div className="mt-6 text-center">
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
+        <p className="mx-auto mt-1.5 max-w-64 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+          {description}
+        </p>
       </div>
-      <p className="mt-4 font-semibold text-zinc-900 dark:text-white">
-        {title}
-      </p>
-      <p className="mt-1 max-w-xs text-center text-sm text-zinc-500">
-        {description}
-      </p>
-      {action && (
-        <Button
-          color="dark/zinc"
-          href={action.href}
-          onClick={action.onClick}
-          className="mt-5"
-        >
-          {action.label}
-        </Button>
-      )}
-      {secondaryAction && (
-        <Button outline onClick={secondaryAction.onClick} className="mt-5">
-          {secondaryAction.label}
-        </Button>
+
+      {/* Action buttons */}
+      {(action || secondaryAction) && (
+        <div className="mt-5 flex items-center justify-center gap-2.5">
+          {action && (
+            <Button outline href={action.href} onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+          {secondaryAction && (
+            <Button plain onClick={secondaryAction.onClick}>
+              {secondaryAction.label}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
 /**
- * InlineEmptyState - Smaller empty state for inline use (e.g., in cards)
+ * InlineEmptyState - Compact version for cards/sections
  */
 export function InlineEmptyState({
-  icon: Icon = SparklesIcon,
+  preset = "generic",
   title,
   description,
   action,
   className,
 }: Omit<EmptyStateProps, "secondaryAction">) {
+  const { cards } = cardPresets[preset];
+  const CenterIcon = cards[1].icon;
+
   return (
-    <div
-      className={`flex flex-col items-center justify-center py-12 text-center ${className || ""}`}
-    >
-      <div className="flex size-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
-        <Icon className="size-6 text-zinc-400" />
+    <div className={clsx("flex flex-col items-center justify-center py-8 text-center", className)}>
+      {/* Single icon card */}
+      <div className="grid size-12 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-800/80 dark:ring-zinc-700/50">
+        <CenterIcon className={clsx("size-5", cards[1].iconColor)} />
       </div>
-      <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-white">
-        {title}
-      </p>
-      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+
+      <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-white">{title}</p>
+      <p className="mt-1 max-w-48 text-xs text-zinc-500 dark:text-zinc-400">
         {description}
       </p>
+
       {action && (
         <Button
-          color="dark/zinc"
+          outline
           href={action.href}
           onClick={action.onClick}
           className="mt-4"

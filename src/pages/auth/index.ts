@@ -3,3 +3,4 @@ export { Register } from "./register";
 export { ForgotPassword } from "./forgot-password";
 export { ResetPassword } from "./reset-password";
 export { VerifyEmail } from "./verify-email";
+export { Onboarding } from "./onboarding";

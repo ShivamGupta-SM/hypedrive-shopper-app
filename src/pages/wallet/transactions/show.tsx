@@ -1,192 +1,250 @@
-import { Heading } from "@/components/heading";
-import { Text } from "@/components/text";
-import { useWalletTransactions } from "@/hooks/use-api";
-import type { wallets } from "@/lib/api-client";
+import { Link } from "@/components/link";
+import { useWalletTransaction } from "@/hooks/use-api";
+import { formatCurrency } from "@/lib/money-utils";
+import { TransactionShowSkeleton } from "@/lib/skeleton";
+import { showSuccess } from "@/lib/toast";
 import {
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
+  ArrowDownIcon,
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  ArrowUpIcon,
   BanknotesIcon,
-  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
   HashtagIcon,
+  XCircleIcon,
 } from "@heroicons/react/16/solid";
+import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useParams } from "react-router";
 
 function formatDateTime(dateString?: string) {
   if (!dateString) return "—";
   return new Date(dateString).toLocaleString("en-IN", {
+    weekday: "short",
     day: "numeric",
-    month: "long",
+    month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-5">
-      <div className="h-8 w-48 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-40 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-64 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
-    </div>
-  );
-}
+const categoryConfig: Record<string, { label: string; description: string }> = {
+  enrollment_hold: { label: "Enrollment Hold", description: "Campaign enrollment reserved" },
+  deposit: { label: "Deposit", description: "Money added to wallet" },
+  payout: { label: "Cashback Payout", description: "Earnings from campaign" },
+  refund: { label: "Refund", description: "Refunded amount" },
+  admin_credit: { label: "Admin Credit", description: "Credit from support" },
+  withdrawal: { label: "Withdrawal", description: "Transferred to bank" },
+  other: { label: "Other", description: "Wallet transaction" },
+};
 
-function DetailRow({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.ComponentType<{ className?: string }> }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-3">
-      <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-        {Icon && <Icon className="size-4" />}
-        {label}
-      </div>
-      <div className="text-right text-sm font-medium text-zinc-900 dark:text-white">
-        {value}
-      </div>
-    </div>
-  );
+function copyToClipboard(text: string, label: string) {
+  navigator.clipboard.writeText(text);
+  showSuccess("Copied!", `${label} copied`);
 }
 
 export function TransactionShow() {
   const { id } = useParams<{ id: string }>();
-  const { data: transactions, loading } = useWalletTransactions({ take: 100 });
-
-  // Find the transaction from the list (since there's no single transaction endpoint)
-  const tx = transactions?.data?.find((t: wallets.WalletTransaction) => t.id === id);
+  const { data: tx, loading, error, refetch } = useWalletTransaction(id);
 
   if (loading) {
-    return <LoadingSkeleton />;
+    return <TransactionShowSkeleton />;
   }
 
-  if (!tx) {
+  if (error || !tx) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-          <BanknotesIcon className="size-8 text-zinc-400" />
+        <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+          <BanknotesIcon className="size-6 text-zinc-400 dark:text-zinc-500" />
         </div>
         <p className="mt-4 text-base font-semibold text-zinc-900 dark:text-white">
           Transaction not found
         </p>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          This transaction may have been removed or doesn't exist.
+          {error || "This transaction may have been removed."}
         </p>
+        {error && (
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+          >
+            <ArrowPathIcon className="size-4" />
+            Try again
+          </button>
+        )}
       </div>
     );
   }
 
   const isCredit = tx.type === "credit";
   const isPending = tx.status === "pending";
+  const isVoided = tx.status === "voided";
+  const category = categoryConfig[tx.category || "other"] || categoryConfig.other;
+
+  // Status with duotone colors
+  const statusConfig = isVoided
+    ? {
+        label: "Voided",
+        icon: XCircleIcon,
+        text: "text-zinc-500 dark:text-zinc-400",
+        bg: "bg-zinc-100 dark:bg-zinc-800",
+      }
+    : isPending
+      ? {
+          label: "Pending",
+          icon: ClockIcon,
+          text: "text-amber-600 dark:text-amber-400",
+          bg: "bg-amber-100 dark:bg-amber-900/40",
+        }
+      : {
+          label: "Completed",
+          icon: CheckCircleIcon,
+          text: "text-emerald-600 dark:text-emerald-400",
+          bg: "bg-emerald-100 dark:bg-emerald-900/40",
+        };
+
+  const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <Heading>Transaction Details</Heading>
-        <Text className="mt-1 text-sm">View transaction information</Text>
+    <div className="space-y-3 lg:space-y-4">
+      {/* HEADER CARD */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div className="p-4 lg:p-5">
+          <div className="flex items-center gap-3 lg:gap-4">
+            {/* Coin-style icon with engraved effect */}
+            <div
+              className={`flex size-11 shrink-0 items-center justify-center rounded-full lg:size-12 ${
+                isCredit
+                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.1)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700"
+                  : "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.1)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700"
+              }`}
+            >
+              {isCredit ? (
+                <ArrowDownIcon className="size-5 text-white [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.35))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
+              ) : (
+                <ArrowUpIcon className="size-5 text-white [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.35))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
+              )}
+            </div>
+
+            {/* Amount & Description */}
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-lg font-bold tracking-tight lg:text-xl ${
+                  isVoided
+                    ? "text-zinc-400 line-through"
+                    : isCredit
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-zinc-900 dark:text-white"
+                }`}
+              >
+                {isCredit ? "+" : "-"}{formatCurrency(tx.amountDecimal)}
+              </p>
+              <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+                {tx.description || category.description}
+              </p>
+            </div>
+
+            {/* Status */}
+            <div className={`flex shrink-0 items-center gap-1.5 ${statusConfig.text}`}>
+              <StatusIcon className="size-4" />
+              <span className="text-sm font-medium">{statusConfig.label}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Amount Card */}
-      <div className={`overflow-hidden rounded-2xl ${
-        isPending
-          ? "bg-amber-500 dark:bg-amber-600"
-          : isCredit
-            ? "bg-emerald-600 dark:bg-emerald-700"
-            : "bg-sky-600 dark:bg-sky-700"
-      }`}>
-        <div className="p-6 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-white/20">
-            {isCredit ? (
-              <ArrowDownTrayIcon className="size-7 text-white" />
-            ) : (
-              <ArrowUpTrayIcon className="size-7 text-white" />
+      {/* DETAILS CARD */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          {/* Date */}
+          <div className="flex items-center justify-between px-4 py-3 lg:px-5">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">Date</span>
+            <span className="text-sm font-medium text-zinc-900 dark:text-white">
+              {formatDateTime(tx.createdAt)}
+            </span>
+          </div>
+
+          {/* Type */}
+          <div className="flex items-center justify-between px-4 py-3 lg:px-5">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">Type</span>
+            <span
+              className={`text-sm font-medium ${
+                isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-white"
+              }`}
+            >
+              {isCredit ? "Credit" : "Debit"}
+            </span>
+          </div>
+
+          {/* Category */}
+          <div className="flex items-center justify-between px-4 py-3 lg:px-5">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">Category</span>
+            <span className="text-sm font-medium text-zinc-900 dark:text-white">
+              {category.label}
+            </span>
+          </div>
+
+          {/* Transaction ID */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5">
+            <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">Transaction ID</span>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(tx.id, "Transaction ID")}
+              className="group flex min-w-0 items-center gap-1.5"
+            >
+              <span className="truncate font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                {tx.id}
+              </span>
+              <DocumentDuplicateIcon className="size-4 shrink-0 text-zinc-300 group-hover:text-zinc-500 dark:text-zinc-600 dark:group-hover:text-zinc-400" />
+            </button>
+          </div>
+
+          {/* Reference */}
+          {tx.reference && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5">
+              <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">Reference</span>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(tx.reference!, "Reference")}
+                className="group flex min-w-0 items-center gap-1.5"
+              >
+                <span className="truncate font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                  {tx.reference}
+                </span>
+                <DocumentDuplicateIcon className="size-4 shrink-0 text-zinc-300 group-hover:text-zinc-500 dark:text-zinc-600 dark:group-hover:text-zinc-400" />
+              </button>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* RELATED ENROLLMENT */}
+      {tx.enrollmentId && (
+        <Link
+          href={`/enrollments/${tx.enrollmentId}`}
+          className="flex items-center gap-3 overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 lg:p-5 dark:bg-zinc-900 dark:ring-white/10"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/40">
+            <HashtagIcon className="size-5 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+              {tx.enrollmentDisplayId
+                ? `ENR-${String(tx.enrollmentDisplayId).padStart(6, "0")}`
+                : "View Enrollment"}
+            </p>
+            {tx.campaignDisplayId && (
+              <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                Campaign #{tx.campaignDisplayId}
+              </p>
             )}
           </div>
-          <p className="mt-4 text-4xl font-bold tracking-tight text-white">
-            {isCredit ? "+" : "-"}₹{tx.amountDecimal}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {tx.description || (isCredit ? "Credit" : "Debit")}
-          </p>
-          {isPending && (
-            <span className="mt-3 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white">
-              Pending
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Type Badge */}
-      <div className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 ${
-        isPending
-          ? "bg-amber-50 dark:bg-amber-950/50"
-          : isCredit
-            ? "bg-emerald-50 dark:bg-emerald-950/50"
-            : "bg-sky-50 dark:bg-sky-950/50"
-      }`}>
-        {isCredit ? (
-          <ArrowDownTrayIcon className={`size-5 ${isPending ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
-        ) : (
-          <ArrowUpTrayIcon className={`size-5 ${isPending ? "text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400"}`} />
-        )}
-        <span className={`text-sm font-medium ${
-          isPending
-            ? "text-amber-600 dark:text-amber-400"
-            : isCredit
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-sky-600 dark:text-sky-400"
-        }`}>
-          {isPending ? "Pending" : isCredit ? "Money Received" : "Money Sent"}
-        </span>
-      </div>
-
-      {/* Details */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-        <div className="px-4 py-3">
-          <p className="text-sm font-medium text-zinc-900 dark:text-white">Details</p>
-        </div>
-        <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
-        <div className="divide-y divide-zinc-200 px-4 dark:divide-zinc-700">
-          <DetailRow
-            label="Transaction ID"
-            value={<span className="font-mono text-xs">{tx.id}</span>}
-            icon={HashtagIcon}
-          />
-          <DetailRow
-            label="Type"
-            value={
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
-                isCredit
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                  : "bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-400"
-              }`}>
-                {tx.type}
-              </span>
-            }
-            icon={BanknotesIcon}
-          />
-          <DetailRow
-            label="Status"
-            value={
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
-                isPending
-                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
-                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-              }`}>
-                {isPending ? "Pending" : "Completed"}
-              </span>
-            }
-          />
-          <DetailRow
-            label="Date"
-            value={formatDateTime(tx.createdAt)}
-            icon={CalendarIcon}
-          />
-          <DetailRow
-            label="Currency"
-            value={tx.currency || "INR"}
-          />
-        </div>
-      </div>
-
+          <ArrowTopRightOnSquareIcon className="size-4 shrink-0 text-zinc-400" />
+        </Link>
+      )}
     </div>
   );
 }

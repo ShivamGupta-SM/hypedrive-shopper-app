@@ -9,9 +9,9 @@ import {
 import { Heading } from "@/components/heading";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
-import { useWithdrawals } from "@/hooks/use-api";
-import { getAuthenticatedClient } from "@/lib/client";
-import type { wallets } from "@/lib/api-client";
+import { useWithdrawals, useCancelWithdrawal, type wallets } from "@/hooks/use-api";
+import { WithdrawalsListSkeleton } from "@/lib/skeleton";
+import { showError, showSuccess } from "@/lib/toast";
 import {
   ArrowPathIcon,
   ArrowUpTrayIcon,
@@ -33,16 +33,6 @@ function formatDateTime(dateString?: string) {
   });
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-5">
-      <div className="h-8 w-48 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
-      ))}
-    </div>
-  );
-}
 
 function EmptyWithdrawals() {
   return (
@@ -125,10 +115,10 @@ function WithdrawalRow({ withdrawal, onCancel }: { withdrawal: wallets.Withdrawa
 }
 
 export function WithdrawalsList() {
-  const { data: withdrawals, loading, refetch } = useWithdrawals({ take: 50 });
+  const { data: withdrawals, loading } = useWithdrawals({ take: 50 });
+  const { cancelWithdrawal, isPending: cancelling } = useCancelWithdrawal();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [cancelling, setCancelling] = useState(false);
 
   const handleCancelClick = (id: string) => {
     setCancellingId(id);
@@ -138,22 +128,19 @@ export function WithdrawalsList() {
   const confirmCancel = async () => {
     if (!cancellingId) return;
 
-    setCancelling(true);
     try {
-      const client = getAuthenticatedClient();
-      await client.wallets.cancelWithdrawal(cancellingId);
+      await cancelWithdrawal(cancellingId);
       setShowCancelDialog(false);
       setCancellingId(null);
-      refetch();
+      showSuccess("Withdrawal cancelled", "Amount returned to your wallet");
     } catch (err) {
-      console.error("Failed to cancel withdrawal:", err);
-    } finally {
-      setCancelling(false);
+      const message = err instanceof Error ? err.message : "Failed to cancel withdrawal";
+      showError("Cancellation failed", message);
     }
   };
 
   if (loading) {
-    return <LoadingSkeleton />;
+    return <WithdrawalsListSkeleton />;
   }
 
   const withdrawalList = withdrawals?.data || [];

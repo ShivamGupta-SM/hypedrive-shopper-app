@@ -1,14 +1,34 @@
 import { Button } from "@/components/button";
 import { Dialog, DialogTitle, DialogDescription, DialogBody, DialogActions } from "@/components/dialog";
-import { Heading, Subheading, SectionTitle } from "@/components/heading";
+import { Heading, SectionTitle } from "@/components/heading";
 import { UpiIcon } from "@/components/icons/upi-icon";
 import { MenuSection, MenuRow, MenuSeparator, MenuDangerButton } from "@/components/menu-list";
 import { Text } from "@/components/text";
-import { useShopperProfile, useKYCStatus, useWithdrawalMethods, useNotificationPreferences } from "@/hooks/use-api";
-import { getAuthenticatedClient } from "@/lib/client";
-import { SettingsSkeleton } from "@/lib/skeleton";
-import type { wallets } from "@/lib/api-client";
 import {
+  useShopperProfile,
+  useShopperStats,
+  useWithdrawalMethods,
+  useNotificationPreferences,
+  useDeviceSessions,
+  useRevokeDeviceSession,
+  useRevokeOtherSessions,
+  useGetIdentity,
+  useChangeEmail,
+  useChangePassword,
+  useUpdateShopperProfile,
+  useSubmitPAN,
+  useAddWithdrawalMethod,
+  useVerifyWithdrawalMethod,
+  useSetDefaultWithdrawalMethod,
+  useDeleteWithdrawalMethod,
+  useUpdateNotificationPreferences,
+  useUploadProfilePicture,
+  type AuthUser,
+} from "@/hooks/use-api";
+import { SettingsSkeleton } from "@/lib/skeleton";
+import type { wallets } from "@/hooks/use-api";
+import {
+  ArrowPathIcon,
   CheckCircleIcon,
   XCircleIcon,
   IdentificationIcon,
@@ -19,8 +39,6 @@ import {
   CalendarDaysIcon,
   BuildingLibraryIcon,
   PlusIcon,
-  TrashIcon,
-  StarIcon,
   ChatBubbleLeftRightIcon,
   DocumentTextIcon,
   ShieldCheckIcon as ShieldCheckIconSolid,
@@ -28,15 +46,25 @@ import {
   CameraIcon,
   ShieldCheckIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   BellIcon,
   EnvelopeIcon,
   DeviceTabletIcon,
   PencilIcon,
   BanknotesIcon,
+  LockClosedIcon,
+  ComputerDesktopIcon,
+  GlobeAltIcon,
+  ClockIcon,
+  SunIcon,
+  MoonIcon,
+  ComputerDesktopIcon as MonitorIcon,
 } from "@heroicons/react/16/solid";
 import { duotoneColors, type DuotoneColor } from "@/components/menu-list";
-import { useLogout } from "@refinedev/core";
+import { useLogout } from "@/store/auth-store";
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { showError, showSuccess } from "@/lib/toast";
 
 // =============================================================================
 // LOADING & UTILITY COMPONENTS
@@ -104,8 +132,8 @@ function EditProfileView({ profile, onSave, onBack }: EditProfileViewProps) {
     state: profile.state,
     postalCode: profile.postalCode,
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateProfile, isPending: loading } = useUpdateShopperProfile();
 
   // Indian states for dropdown
   const indianStates = [
@@ -142,12 +170,10 @@ function EditProfileView({ profile, onSave, onBack }: EditProfileViewProps) {
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      const client = getAuthenticatedClient();
-      await client.shoppers.updateShopperProfile({
+      await updateProfile({
         displayName: formData.displayName.trim() || undefined,
         phoneNumber: formData.phoneNumber.trim() || undefined,
         bio: formData.bio.trim() || undefined,
@@ -160,8 +186,6 @@ function EditProfileView({ profile, onSave, onBack }: EditProfileViewProps) {
       onSave();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update profile");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -324,19 +348,20 @@ function ChangeEmailDialog({
   onCancel: () => void;
 }) {
   const [newEmail, setNewEmail] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { changeEmail, isPending: loading, reset: resetMutation } = useChangeEmail();
 
   useEffect(() => {
     if (open) {
       setNewEmail("");
       setError(null);
       setSuccess(false);
+      resetMutation();
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [open]);
+  }, [open, resetMutation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,21 +379,14 @@ function ChangeEmailDialog({
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      const client = getAuthenticatedClient();
-      await client.auth.changeEmail({
-        newEmail: newEmail.trim(),
-        callbackURL: `${window.location.origin}/settings`,
-      });
+      await changeEmail({ newEmail: newEmail.trim() });
       setSuccess(true);
       setTimeout(() => onSave(), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to change email");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -434,6 +452,358 @@ function ChangeEmailDialog({
 }
 
 // =============================================================================
+// CHANGE PASSWORD DIALOG
+// =============================================================================
+
+function ChangePasswordDialog({
+  open,
+  onSuccess,
+  onCancel,
+}: {
+  open: boolean;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [revokeOtherSessions, setRevokeOtherSessions] = useState(false);
+  const { changePassword, isPending: loading, reset: resetMutation } = useChangePassword();
+
+  useEffect(() => {
+    if (open) {
+      setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setError(null);
+      setSuccess(false);
+      setRevokeOtherSessions(false);
+      resetMutation();
+    }
+  }, [open, resetMutation]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.currentPassword.trim()) {
+      setError("Please enter your current password");
+      return;
+    }
+    if (!formData.newPassword.trim()) {
+      setError("Please enter a new password");
+      return;
+    }
+    if (formData.newPassword.length < 8) {
+      setError("New password must be at least 8 characters");
+      return;
+    }
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setError(null);
+
+    try {
+      await changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+        revokeOtherSessions,
+      });
+      setSuccess(true);
+      setTimeout(() => onSuccess(), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to change password");
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onCancel} size="sm">
+      <div className="flex items-start gap-4">
+        <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${duotoneColors.amber.bg}`}>
+          <LockClosedIcon className={`size-4 ${duotoneColors.amber.icon}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Change Password</DialogTitle>
+          <DialogDescription className="mt-1">
+            Update your account password for security.
+          </DialogDescription>
+        </div>
+      </div>
+
+      <DialogBody>
+        <form id="change-password-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
+            <div className="px-4 py-3">
+              <label className="text-[13px] text-zinc-500 dark:text-zinc-400">Current Password</label>
+              <input
+                type="password"
+                value={formData.currentPassword}
+                onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                placeholder="Enter current password"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+              />
+            </div>
+            <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
+            <div className="px-4 py-3">
+              <label className="text-[13px] text-zinc-500 dark:text-zinc-400">New Password</label>
+              <input
+                type="password"
+                value={formData.newPassword}
+                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                placeholder="Enter new password (min. 8 characters)"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+              />
+            </div>
+            <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
+            <div className="px-4 py-3">
+              <label className="text-[13px] text-zinc-500 dark:text-zinc-400">Confirm New Password</label>
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="Re-enter new password"
+                className="mt-1 w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white dark:placeholder:text-zinc-600"
+              />
+            </div>
+          </div>
+
+          {/* Revoke other sessions option */}
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
+            <input
+              type="checkbox"
+              checked={revokeOtherSessions}
+              onChange={(e) => setRevokeOtherSessions(e.target.checked)}
+              className="size-4 rounded border-zinc-300 text-sky-600 focus:ring-sky-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-zinc-900 dark:text-white">Sign out other devices</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Log out from all other active sessions</p>
+            </div>
+          </label>
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+              <XCircleIcon className="size-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+              <CheckCircleIcon className="size-4 shrink-0" />
+              Password changed successfully!
+            </div>
+          )}
+        </form>
+      </DialogBody>
+
+      <DialogActions>
+        <Button type="button" outline onClick={onCancel}>Cancel</Button>
+        <Button type="submit" form="change-password-form" disabled={loading || success} color="dark/zinc">
+          {loading ? "Changing..." : success ? "Changed!" : "Change Password"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// =============================================================================
+// ACTIVE SESSIONS DIALOG
+// =============================================================================
+
+function SessionsDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data: sessions, loading, refetch } = useDeviceSessions();
+  const { revoke, revoking: isRevoking } = useRevokeDeviceSession();
+  const { revokeAll, revoking: isRevokingAll } = useRevokeOtherSessions();
+  const [revokingToken, setRevokingToken] = useState<string | null>(null);
+
+  const handleRevokeSession = async (token: string) => {
+    setRevokingToken(token);
+    const success = await revoke(token);
+    if (success) {
+      refetch();
+    }
+    setRevokingToken(null);
+  };
+
+  const handleRevokeOtherSessions = async () => {
+    const success = await revokeAll();
+    if (success) {
+      refetch();
+    }
+  };
+
+  const formatSessionDate = (dateString?: string) => {
+    if (!dateString) return "Unknown";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  };
+
+  const getDeviceIcon = (session: { device?: string; userAgent?: string | null }) => {
+    // Use device field if available (from DeviceSession)
+    if (session.device) {
+      const device = session.device.toLowerCase();
+      if (device.includes("mobile") || device.includes("phone")) return DevicePhoneMobileIcon;
+      if (device.includes("tablet")) return DeviceTabletIcon;
+    }
+    // Fallback to userAgent parsing
+    if (!session.userAgent) return ComputerDesktopIcon;
+    const ua = session.userAgent.toLowerCase();
+    if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) {
+      return DevicePhoneMobileIcon;
+    }
+    return ComputerDesktopIcon;
+  };
+
+  const getDeviceName = (session: { device?: string; userAgent?: string | null }) => {
+    // Use device field if available
+    if (session.device) return session.device;
+    // Fallback to userAgent parsing
+    if (!session.userAgent) return "Unknown Device";
+    const ua = session.userAgent.toLowerCase();
+    if (ua.includes("iphone")) return "iPhone";
+    if (ua.includes("ipad")) return "iPad";
+    if (ua.includes("android")) return "Android";
+    if (ua.includes("mac")) return "Mac";
+    if (ua.includes("windows")) return "Windows";
+    if (ua.includes("linux")) return "Linux";
+    return "Unknown Device";
+  };
+
+  const getBrowserName = (session: { browser?: string; userAgent?: string | null }) => {
+    // Use browser field if available
+    if (session.browser) return session.browser;
+    // Fallback to userAgent parsing
+    if (!session.userAgent) return "";
+    const ua = session.userAgent.toLowerCase();
+    if (ua.includes("chrome")) return "Chrome";
+    if (ua.includes("safari")) return "Safari";
+    if (ua.includes("firefox")) return "Firefox";
+    if (ua.includes("edge")) return "Edge";
+    return "";
+  };
+
+  // Count other sessions (non-current)
+  const otherSessionsCount = sessions.filter(s => !s.current).length;
+
+  return (
+    <Dialog open={open} onClose={onClose} size="md">
+      <div className="flex items-start gap-4">
+        <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${duotoneColors.sky.bg}`}>
+          <ComputerDesktopIcon className={`size-4 ${duotoneColors.sky.icon}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <DialogTitle className="text-lg">Active Sessions</DialogTitle>
+          <DialogDescription className="mt-1">
+            Manage devices where you're signed in.
+          </DialogDescription>
+        </div>
+      </div>
+
+      <DialogBody>
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="size-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-600" />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="py-8 text-center text-sm text-zinc-500">No active sessions found</div>
+        ) : (
+          <div className="space-y-3">
+            {sessions.map((session) => {
+              const DeviceIcon = getDeviceIcon(session);
+              const isCurrentSession = session.current;
+
+              return (
+                <div
+                  key={session.id || session.token}
+                  className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700"
+                >
+                  <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                    isCurrentSession ? duotoneColors.emerald.bg : duotoneColors.zinc.bg
+                  }`}>
+                    <DeviceIcon className={`size-5 ${
+                      isCurrentSession ? duotoneColors.emerald.icon : duotoneColors.zinc.icon
+                    }`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                        {getDeviceName(session)}
+                        {getBrowserName(session) && ` · ${getBrowserName(session)}`}
+                      </p>
+                      {isCurrentSession && (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      {session.ipAddress && (
+                        <>
+                          <GlobeAltIcon className="size-3" />
+                          <span>{session.ipAddress}</span>
+                          <span>·</span>
+                        </>
+                      )}
+                      <ClockIcon className="size-3" />
+                      <span>{formatSessionDate(session.createdAt)}</span>
+                    </div>
+                  </div>
+                  {!isCurrentSession && session.token && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeSession(session.token)}
+                      disabled={revokingToken === session.token || isRevoking}
+                      className="text-xs font-medium text-red-500 hover:text-red-600 disabled:opacity-50 dark:text-red-400"
+                    >
+                      {revokingToken === session.token ? "..." : "Sign out"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            {otherSessionsCount > 0 && (
+              <button
+                type="button"
+                onClick={handleRevokeOtherSessions}
+                disabled={isRevokingAll}
+                className="mt-2 w-full rounded-xl bg-red-50 p-3 text-center text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+              >
+                {isRevokingAll ? "Signing out..." : `Sign out all other devices (${otherSessionsCount})`}
+              </button>
+            )}
+          </div>
+        )}
+      </DialogBody>
+
+      <DialogActions>
+        <Button type="button" onClick={onClose} color="dark/zinc">Done</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// =============================================================================
 // ADD BANK ACCOUNT DIALOG
 // =============================================================================
 
@@ -455,8 +825,8 @@ function AddBankAccountDialog({
     ifscCode: "",
     upiId: "",
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addMethod, isPending: loading, reset: resetMutation } = useAddWithdrawalMethod();
 
   useEffect(() => {
     if (open) {
@@ -470,8 +840,9 @@ function AddBankAccountDialog({
         upiId: "",
       });
       setError(null);
+      resetMutation();
     }
-  }, [open]);
+  }, [open, resetMutation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -510,11 +881,8 @@ function AddBankAccountDialog({
       }
     }
 
-    setLoading(true);
-
     try {
-      const client = getAuthenticatedClient();
-      await client.wallets.addWithdrawalMethod({
+      await addMethod({
         accountType,
         ...(accountType === "bank_account"
           ? {
@@ -530,8 +898,6 @@ function AddBankAccountDialog({
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add payment method");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -673,119 +1039,58 @@ function AddBankAccountDialog({
 // KYC VERIFICATION DIALOG
 // =============================================================================
 
+/**
+ * PAN-only KYC Verification Dialog
+ * NOTE: Aadhaar verification removed as per API v2 - KYC is PAN-only now
+ */
 function KYCVerificationDialog({
   open,
-  kycStatus,
+  kycStatus: _kycStatus,
   onSuccess,
   onCancel,
 }: {
   open: boolean;
-  kycStatus: { status?: string; panVerified?: boolean; aadhaarVerified?: boolean } | null;
+  kycStatus: { status?: string; panVerified?: boolean } | null;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
-  const [step, setStep] = useState<"pan" | "aadhaar" | "aadhaar_otp">(
-    kycStatus?.panVerified ? "aadhaar" : "pan"
-  );
   const [panNumber, setPanNumber] = useState("");
-  const [aadhaarNumber, setAadhaarNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [panVerifiedName, setPanVerifiedName] = useState<string | null>(null);
+  const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const { submitPAN, isPending: loading, reset: resetMutation } = useSubmitPAN();
 
   useEffect(() => {
     if (open) {
-      setStep(kycStatus?.panVerified ? "aadhaar" : "pan");
       setPanNumber("");
-      setAadhaarNumber("");
-      setOtp("");
-      setClientId("");
       setError(null);
-      setPanVerifiedName(null);
+      setVerifiedName(null);
+      resetMutation();
     }
-  }, [open, kycStatus?.panVerified]);
-
-  const formatAadhaar = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 12);
-    const parts = [];
-    for (let i = 0; i < digits.length; i += 4) {
-      parts.push(digits.slice(i, i + 4));
-    }
-    return parts.join(" ");
-  };
+  }, [open, resetMutation]);
 
   const handleSubmitPAN = async () => {
+    // Client-side validation
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber.toUpperCase())) {
       setError("Please enter a valid PAN number (e.g., ABCDE1234F)");
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      const client = getAuthenticatedClient();
-      const result = await client.shoppers.submitPAN({ panNumber: panNumber.toUpperCase() });
+      const result = await submitPAN({ panNumber: panNumber.toUpperCase() });
 
       if (result.verified) {
-        setPanVerifiedName(result.name || null);
-        setTimeout(() => { setStep("aadhaar"); setError(null); }, 1500);
+        setVerifiedName(result.name || null);
+        // Close dialog and refresh after success
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
       } else {
         setError(result.error || "PAN verification failed. Please check the number.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to verify PAN");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInitiateAadhaar = async () => {
-    const cleanAadhaar = aadhaarNumber.replace(/\s/g, "");
-    if (!/^\d{12}$/.test(cleanAadhaar)) {
-      setError("Please enter a valid 12-digit Aadhaar number");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const client = getAuthenticatedClient();
-      const result = await client.shoppers.initiateAadhaarVerification({ aadhaarNumber: cleanAadhaar });
-      setClientId(result.clientId);
-      setStep("aadhaar_otp");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyAadhaarOTP = async () => {
-    if (otp.length !== 6) {
-      setError("Please enter the 6-digit OTP");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const client = getAuthenticatedClient();
-      const result = await client.shoppers.completeAadhaarVerification({ clientId, otp });
-
-      if (result.verified) {
-        onSuccess();
-      } else {
-        setError(result.error || "OTP verification failed. Please try again.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify OTP");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -796,155 +1101,99 @@ function KYCVerificationDialog({
           <IdentificationIcon className={`size-4 ${duotoneColors.amber.icon}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <DialogTitle className="text-lg">
-            {step === "pan" && "Verify PAN"}
-            {step === "aadhaar" && "Verify Aadhaar"}
-            {step === "aadhaar_otp" && "Enter OTP"}
-          </DialogTitle>
+          <DialogTitle className="text-lg">Verify PAN</DialogTitle>
           <DialogDescription className="mt-1">
-            {step === "pan" && "Enter your PAN card number for identity verification."}
-            {step === "aadhaar" && "Enter your Aadhaar number. An OTP will be sent to your linked mobile."}
-            {step === "aadhaar_otp" && "Enter the 6-digit OTP sent to your Aadhaar-linked mobile number."}
+            Enter your PAN card number for identity verification.
           </DialogDescription>
         </div>
       </div>
 
       <DialogBody>
         <div className="space-y-4">
-          {/* Progress indicator */}
-          <div className="flex items-center gap-2">
-            <div className={`flex size-7 items-center justify-center rounded-xl text-xs font-bold ${
-              step === "pan" ? "bg-sky-500 text-white"
-                : kycStatus?.panVerified || panVerifiedName ? "bg-emerald-500 text-white"
-                : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-            }`}>
-              {kycStatus?.panVerified || panVerifiedName ? <CheckCircleIcon className="size-4" /> : "1"}
-            </div>
-            <div className={`h-0.5 flex-1 ${step !== "pan" ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700"}`} />
-            <div className={`flex size-7 items-center justify-center rounded-xl text-xs font-bold ${
-              step === "aadhaar" || step === "aadhaar_otp" ? "bg-sky-500 text-white"
-                : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-            }`}>
-              2
+          {/* PAN Input */}
+          <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
+            <div className="px-4 py-3">
+              <label className="text-[13px] text-zinc-500 dark:text-zinc-400">PAN Number</label>
+              <input
+                type="text"
+                value={panNumber}
+                onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+                placeholder="ABCDE1234F"
+                maxLength={10}
+                className="mt-1 w-full bg-transparent font-mono text-base uppercase tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white"
+                autoFocus
+              />
             </div>
           </div>
 
-          {/* PAN Step */}
-          {step === "pan" && (
-            <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
-              <div className="px-4 py-3">
-                <label className="text-[13px] text-zinc-500 dark:text-zinc-400">PAN Number</label>
-                <input
-                  type="text"
-                  value={panNumber}
-                  onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
-                  placeholder="ABCDE1234F"
-                  maxLength={10}
-                  className="mt-1 w-full bg-transparent font-mono text-base uppercase tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          {step === "pan" && panVerifiedName && (
+          {/* Success Message */}
+          {verifiedName && (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
               <CheckCircleIcon className="size-4 shrink-0" />
-              PAN verified! Name: {panVerifiedName}
+              <span>PAN verified! Name: <strong>{verifiedName}</strong></span>
             </div>
           )}
 
-          {/* Aadhaar Step */}
-          {step === "aadhaar" && (
-            <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
-              <div className="px-4 py-3">
-                <label className="text-[13px] text-zinc-500 dark:text-zinc-400">Aadhaar Number</label>
-                <input
-                  type="text"
-                  value={aadhaarNumber}
-                  onChange={(e) => setAadhaarNumber(formatAadhaar(e.target.value))}
-                  placeholder="0000 0000 0000"
-                  maxLength={14}
-                  inputMode="numeric"
-                  className="mt-1 w-full bg-transparent font-mono text-base tracking-wider text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* OTP Step */}
-          {step === "aadhaar_otp" && (
-            <>
-              <div className="rounded-xl bg-sky-50 p-3 text-sm text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
-                OTP sent to your Aadhaar-linked mobile number
-              </div>
-              <div className="overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:ring-zinc-700">
-                <div className="px-4 py-3">
-                  <label className="text-[13px] text-zinc-500 dark:text-zinc-400">Enter OTP</label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
-                    maxLength={6}
-                    inputMode="numeric"
-                    className="mt-1 w-full bg-transparent font-mono text-base tracking-[0.5em] text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-white"
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleInitiateAadhaar}
-                disabled={loading}
-                className="text-sm text-sky-600 hover:underline dark:text-sky-400"
-              >
-                Resend OTP
-              </button>
-            </>
-          )}
-
+          {/* Error Message */}
           {error && (
             <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
               <ExclamationCircleIcon className="size-4 shrink-0" />
               {error}
             </div>
           )}
+
+          {/* Info Note */}
+          <div className="rounded-xl bg-sky-50 p-3 text-xs text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+            Your PAN will be verified instantly using government databases. Make sure the PAN number matches your official documents.
+          </div>
         </div>
       </DialogBody>
 
       <DialogActions>
         <Button type="button" outline onClick={onCancel}>Cancel</Button>
-        {step === "pan" && (
-          <Button onClick={handleSubmitPAN} disabled={loading || panNumber.length !== 10} color="dark/zinc">
-            {loading ? "Verifying..." : "Verify PAN"}
-          </Button>
-        )}
-        {step === "aadhaar" && (
-          <Button onClick={handleInitiateAadhaar} disabled={loading || aadhaarNumber.replace(/\s/g, "").length !== 12} color="dark/zinc">
-            {loading ? "Sending OTP..." : "Send OTP"}
-          </Button>
-        )}
-        {step === "aadhaar_otp" && (
-          <Button onClick={handleVerifyAadhaarOTP} disabled={loading || otp.length !== 6} color="dark/zinc">
-            {loading ? "Verifying..." : "Verify OTP"}
-          </Button>
-        )}
+        <Button
+          onClick={handleSubmitPAN}
+          disabled={loading || panNumber.length !== 10 || !!verifiedName}
+          color="dark/zinc"
+        >
+          {loading ? "Verifying..." : verifiedName ? "Verified" : "Verify PAN"}
+        </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
 // =============================================================================
-// PROFILE CARD
+// PROFILE CARD - Premium design with cover, overlapping avatar, and stats
 // =============================================================================
+
+/*
+ * BACKUP OF ORIGINAL ProfileCard (for reference):
+ * - Simple card with avatar, name, email, member since
+ * - No cover image, no stats row
+ * - Restored by reverting this edit if needed
+ */
 
 function ProfileCard({
   profile,
+  stats,
   isVerified,
   onEdit,
   onAvatarChange,
   avatarUploading,
 }: {
-  profile: { userName: string; userEmail: string; initials: string; avatarUrl?: string; memberSince: string };
+  profile: {
+    userName: string;
+    userEmail: string;
+    initials: string;
+    avatarUrl?: string;
+    memberSince: string;
+  };
+  stats?: {
+    totalEnrollments: number;
+    approvedEnrollments: number;
+    totalEarnings: string;
+  };
   isVerified: boolean;
   onEdit: () => void;
   onAvatarChange: (file: File) => void;
@@ -953,64 +1202,113 @@ function ProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          {/* Avatar */}
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="group relative"
-            >
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+      {/* Cover - sky blue gradient (top darker, bottom lighter fading to white) */}
+      <div className="relative h-24 bg-gradient-to-b from-sky-200 via-sky-100 to-white dark:from-sky-900/50 dark:via-sky-900/20 dark:to-zinc-900">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700"
+        >
+          <PencilIcon className="size-4" />
+        </button>
+      </div>
+
+      {/* Profile content */}
+      <div className="px-5 pb-5">
+        {/* Avatar - overlapping cover with solid white wrapper for opaque border */}
+        <div className="-mt-14 mb-4">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="group relative"
+          >
+            {/* Solid white wrapper creates opaque "border" effect */}
+            <div className="rounded-full bg-white p-1 shadow-sm dark:bg-zinc-900">
               {profile.avatarUrl ? (
-                <img src={profile.avatarUrl} alt={profile.userName} className="size-20 rounded-xl object-cover sm:size-16" />
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.userName}
+                  className="size-[88px] rounded-full object-cover"
+                />
               ) : (
-                <div className="flex size-20 items-center justify-center rounded-xl bg-zinc-200 text-2xl font-semibold text-zinc-600 sm:size-16 sm:text-xl dark:bg-zinc-700 dark:text-zinc-300">
+                <div className="flex size-[88px] items-center justify-center rounded-full bg-zinc-100 text-2xl font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                   {profile.initials}
                 </div>
               )}
-              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 group-hover:opacity-100">
-                {avatarUploading ? (
-                  <div className="size-5 animate-spin rounded-xl border-2 border-white/30 border-t-white" />
-                ) : (
-                  <CameraIcon className="size-5 text-white" />
-                )}
-              </div>
-            </button>
+            </div>
+            {/* Hover overlay */}
+            <div className="absolute inset-1 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              {avatarUploading ? (
+                <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <CameraIcon className="size-5 text-white" />
+              )}
+            </div>
+            {/* Verified badge */}
             {isVerified && !avatarUploading && (
-              <div className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-xl bg-emerald-500 ring-2 ring-white dark:ring-zinc-900">
-                <CheckCircleIcon className="size-3 text-white" />
+              <div className="absolute bottom-0 right-0 flex size-7 items-center justify-center rounded-full bg-emerald-500 ring-[3px] ring-white dark:ring-zinc-900">
+                <CheckCircleIcon className="size-4 text-white" />
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onAvatarChange(file);
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
-          </div>
-
-          {/* Info */}
-          <div className="min-w-0 flex-1 text-center sm:text-left">
-            <p className="truncate text-lg font-semibold text-zinc-900 dark:text-white">{profile.userName}</p>
-            <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">{profile.userEmail}</p>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Member since {profile.memberSince}</p>
-          </div>
-
-          {/* Edit button */}
-          <Button onClick={onEdit} outline className="w-full sm:w-auto">
-            <PencilIcon className="size-4" />
-            Edit Profile
-          </Button>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onAvatarChange(file);
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
         </div>
+
+        {/* Name and email - always left-aligned */}
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="truncate text-lg font-semibold text-zinc-900 dark:text-white">
+              {profile.userName}
+            </h2>
+            {isVerified && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                <ShieldCheckIcon className="size-3" />
+                Verified
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+            {profile.userEmail}
+          </p>
+        </div>
+
       </div>
+
+      {/* Stats row - edge to edge */}
+      {stats && (
+        <div className="flex divide-x divide-zinc-200 border-t border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+          <div className="flex-1 py-4 text-center">
+            <p className="text-xl font-semibold text-zinc-900 dark:text-white">
+              {stats.totalEnrollments}
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Enrollments</p>
+          </div>
+          <div className="flex-1 py-4 text-center">
+            <p className="text-xl font-semibold text-zinc-900 dark:text-white">
+              {stats.approvedEnrollments}
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Approved</p>
+          </div>
+          <div className="flex-1 py-4 text-center">
+            <p className="text-xl font-semibold text-zinc-900 dark:text-white">
+              ₹{stats.totalEarnings}
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Earned</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1019,16 +1317,17 @@ function ProfileCard({
 // KYC CARD
 // =============================================================================
 
+/**
+ * KYC Card - PAN-only verification status
+ * NOTE: Aadhaar removed - KYC is PAN-only now
+ */
 function KYCCard({ kycStatus, onStartKYC }: {
-  kycStatus: { status?: string; panVerified?: boolean; aadhaarVerified?: boolean } | null;
+  kycStatus: { status?: string; panVerified?: boolean } | null;
   onStartKYC: () => void;
 }) {
-  const isFullyVerified = kycStatus?.status === "verified";
-  const isPanVerified = kycStatus?.panVerified || false;
-  const isAadhaarVerified = kycStatus?.aadhaarVerified || false;
-  const isPartiallyVerified = isPanVerified || isAadhaarVerified;
+  const isVerified = kycStatus?.status === "verified" || kycStatus?.panVerified;
 
-  if (isFullyVerified) {
+  if (isVerified) {
     return (
       <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${duotoneColors.emerald.bg}`}>
@@ -1036,7 +1335,7 @@ function KYCCard({ kycStatus, onStartKYC }: {
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-medium text-zinc-900 dark:text-white">Identity Verified</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">PAN & Aadhaar verified</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">PAN verified</p>
         </div>
         <CheckCircleIcon className="size-5 text-emerald-500" />
       </div>
@@ -1051,23 +1350,11 @@ function KYCCard({ kycStatus, onStartKYC }: {
       <div className="min-w-0 flex-1">
         <p className="font-medium text-zinc-900 dark:text-white">Complete KYC</p>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {isPartiallyVerified ? (
-            <span className="flex items-center gap-2">
-              <span className={isPanVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                {isPanVerified ? "PAN ✓" : "PAN pending"}
-              </span>
-              <span>·</span>
-              <span className={isAadhaarVerified ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                {isAadhaarVerified ? "Aadhaar ✓" : "Aadhaar pending"}
-              </span>
-            </span>
-          ) : (
-            "Required for withdrawals over ₹30,000"
-          )}
+          Verify your PAN for withdrawals over ₹30,000
         </p>
       </div>
       <Button onClick={onStartKYC} color="dark/zinc" className="shrink-0">
-        {isPartiallyVerified ? "Continue" : "Verify"}
+        Verify
       </Button>
     </div>
   );
@@ -1164,6 +1451,92 @@ function BankAccountRow({
 }
 
 // =============================================================================
+// THEME TOGGLE
+// =============================================================================
+
+type ThemeOption = "light" | "dark" | "system";
+
+function useTheme() {
+  const [theme, setThemeState] = useState<ThemeOption>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as ThemeOption) || "system";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const applyTheme = (selectedTheme: ThemeOption) => {
+      if (selectedTheme === "system") {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.setAttribute("data-theme", prefersDark ? "dark" : "light");
+      } else {
+        root.setAttribute("data-theme", selectedTheme);
+      }
+    };
+
+    applyTheme(theme);
+    localStorage.setItem("theme", theme);
+
+    // Listen for system preference changes when in system mode
+    if (theme === "system") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => applyTheme("system");
+      mediaQuery.addEventListener("change", handler);
+      return () => mediaQuery.removeEventListener("change", handler);
+    }
+  }, [theme]);
+
+  return { theme, setTheme: setThemeState };
+}
+
+function ThemeSelector() {
+  const { theme, setTheme } = useTheme();
+
+  const options: { value: ThemeOption; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
+    { value: "light", icon: SunIcon, label: "Light" },
+    { value: "dark", icon: MoonIcon, label: "Dark" },
+    { value: "system", icon: MonitorIcon, label: "System" },
+  ];
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${duotoneColors.amber.bg}`}>
+        {theme === "dark" ? (
+          <MoonIcon className={`size-4 ${duotoneColors.amber.icon}`} />
+        ) : (
+          <SunIcon className={`size-4 ${duotoneColors.amber.icon}`} />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-base text-zinc-900 dark:text-white">Appearance</p>
+        <p className="text-[13px] text-zinc-500 dark:text-zinc-400">Choose your preferred theme</p>
+      </div>
+      <div className="flex shrink-0 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800">
+        {options.map((option) => {
+          const Icon = option.icon;
+          const isActive = theme === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setTheme(option.value)}
+              className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+                isActive
+                  ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white"
+                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+              title={option.label}
+            >
+              <Icon className="size-4" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // NOTIFICATION TOGGLE
 // =============================================================================
 
@@ -1215,8 +1588,20 @@ function NotificationToggle({
 // =============================================================================
 
 export function Settings() {
-  const { data: profile, loading: profileLoading, refetch: refetchProfile } = useShopperProfile();
-  const { data: kycStatus, loading: kycLoading } = useKYCStatus();
+  const navigate = useNavigate();
+  const { data: profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useShopperProfile();
+  const { data: identity } = useGetIdentity<AuthUser>();
+  const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useShopperStats();
+  // KYC status is now in shopper profile (API v2.1) - extract from profile.shopper
+  const kycStatus = profile?.shopper ? {
+    status: profile.shopper.kycStatus,
+    panVerified: profile.shopper.panVerified,
+    bankVerified: profile.shopper.bankVerified,
+    rejectionReason: profile.shopper.kycRejectionReason,
+  } : null;
+  const kycLoading = profileLoading;
+  const kycError = profileError;
+  const refetchKyc = refetchProfile;
   const { data: withdrawalMethodsData, loading: methodsLoading, refetch: refetchMethods } = useWithdrawalMethods();
   const { data: notificationPrefs, loading: notifLoading, refetch: refetchNotifPrefs } = useNotificationPreferences();
   const { mutate: logout } = useLogout();
@@ -1224,9 +1609,17 @@ export function Settings() {
   // View state - "main" or "editProfile"
   const [view, setView] = useState<"main" | "editProfile">("main");
   const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isViewingSessions, setIsViewingSessions] = useState(false);
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [isVerifyingKYC, setIsVerifyingKYC] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  // Hooks for mutations
+  const { uploadProfilePicture, isPending: avatarUploading } = useUploadProfilePicture();
+  const { updatePreferences } = useUpdateNotificationPreferences();
+  const { verifyMethod } = useVerifyWithdrawalMethod();
+  const { setDefault } = useSetDefaultWithdrawalMethod();
+  const { deleteMethod } = useDeleteWithdrawalMethod();
 
   // Notification preferences (optimistic updates)
   const [localNotifPrefs, setLocalNotifPrefs] = useState({ email: true, inApp: true });
@@ -1240,11 +1633,40 @@ export function Settings() {
     }
   }, [notificationPrefs]);
 
-  if (profileLoading || kycLoading) {
+  if (profileLoading || statsLoading || kycLoading) {
     return <LoadingState />;
   }
 
+  // Error state
+  const hasError = profileError || statsError || kycError;
+  if (hasError) {
+    const handleRetry = () => {
+      refetchProfile();
+      refetchStats();
+      refetchKyc();
+    };
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex size-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30">
+          <ExclamationTriangleIcon className="size-8 text-red-400" />
+        </div>
+        <p className="mt-4 text-lg font-semibold text-zinc-900 dark:text-white">
+          Something went wrong
+        </p>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          Failed to load your settings. Please try again.
+        </p>
+        <Button className="mt-6" onClick={handleRetry} color="dark/zinc">
+          <ArrowPathIcon className="size-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   const shopper = profile?.shopper;
+  // Use shopper avatar if available, fallback to identity avatar (same pattern as app-layout)
+  const avatarUrl = shopper?.avatarUrl || identity?.avatar;
   const userName = profile?.user?.name || `${shopper?.firstName || ""} ${shopper?.lastName || ""}`.trim() || "User";
   const userEmail = profile?.user?.email || "";
   const displayName = shopper?.displayName || userName;
@@ -1264,17 +1686,11 @@ export function Settings() {
 
   // Handlers
   const handleAvatarChange = async (file: File) => {
-    setAvatarUploading(true);
-    try {
-      const client = getAuthenticatedClient();
-      const { uploadUrl, fileUrl } = await client.storage.requestProfilePictureUploadUrl({ filename: file.name });
-      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      await client.shoppers.updateShopperProfile({ avatarUrl: fileUrl });
-      refetchProfile();
-    } catch (err) {
-      console.error("Failed to upload avatar:", err);
-    } finally {
-      setAvatarUploading(false);
+    const result = await uploadProfilePicture({ file });
+    if (result.success) {
+      showSuccess("Avatar updated");
+    } else {
+      showError("Upload failed", "Failed to upload avatar");
     }
   };
 
@@ -1283,8 +1699,7 @@ export function Settings() {
     setLocalNotifPrefs((prev) => ({ ...prev, [channel]: enabled }));
 
     try {
-      const client = getAuthenticatedClient();
-      await client.notifications.updateNotificationPreferences({
+      await updatePreferences({
         channels: { ...localNotifPrefs, [channel]: enabled },
       });
       refetchNotifPrefs();
@@ -1295,26 +1710,20 @@ export function Settings() {
 
   const handleVerifyMethod = async (id: string) => {
     try {
-      const client = getAuthenticatedClient();
-      await client.wallets.verifyWithdrawalMethod(id);
-      refetchMethods();
+      await verifyMethod(id);
     } catch {}
   };
 
   const handleSetDefault = async (id: string) => {
     try {
-      const client = getAuthenticatedClient();
-      await client.wallets.setDefaultWithdrawalMethod(id);
-      refetchMethods();
+      await setDefault(id);
     } catch {}
   };
 
   const handleDeleteMethod = async (id: string) => {
     if (!confirm("Are you sure you want to remove this payment method?")) return;
     try {
-      const client = getAuthenticatedClient();
-      await client.wallets.deleteWithdrawalMethod(id);
-      refetchMethods();
+      await deleteMethod(id);
     } catch {}
   };
 
@@ -1351,7 +1760,12 @@ export function Settings() {
 
       {/* Profile Card */}
       <ProfileCard
-        profile={{ userName, userEmail, initials, avatarUrl: shopper?.avatarUrl, memberSince }}
+        profile={{ userName, userEmail, initials, avatarUrl, memberSince }}
+        stats={stats ? {
+          totalEnrollments: stats.totalEnrollments,
+          approvedEnrollments: stats.approved,
+          totalEarnings: stats.totalEarningsDecimal,
+        } : undefined}
         isVerified={isVerified}
         onEdit={() => setView("editProfile")}
         onAvatarChange={handleAvatarChange}
@@ -1408,6 +1822,22 @@ export function Settings() {
             iconColor="zinc"
             label="Member Since"
             value={memberSince}
+          />
+          <MenuSeparator />
+          <MenuRow
+            icon={LockClosedIcon}
+            iconColor="amber"
+            label="Change Password"
+            value=""
+            onClick={() => setIsChangingPassword(true)}
+          />
+          <MenuSeparator />
+          <MenuRow
+            icon={ComputerDesktopIcon}
+            iconColor="sky"
+            label="Active Sessions"
+            value=""
+            onClick={() => setIsViewingSessions(true)}
             isLast
           />
           </MenuSection>
@@ -1499,6 +1929,17 @@ export function Settings() {
         </MenuSection>
       </div>
 
+      {/* Appearance */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 px-1">
+          <SunIcon className="size-4 text-zinc-400" />
+          <SectionTitle>Appearance</SectionTitle>
+        </div>
+        <MenuSection>
+          <ThemeSelector />
+        </MenuSection>
+      </div>
+
       {/* Support */}
       <div>
         <div className="mb-2 flex items-center gap-2 px-1">
@@ -1506,11 +1947,11 @@ export function Settings() {
           <SectionTitle>Support</SectionTitle>
         </div>
         <MenuSection>
-          <MenuRow icon={ChatBubbleLeftRightIcon} iconColor="sky" label="Help & FAQ" onClick={() => {}} isFirst />
+          <MenuRow icon={ChatBubbleLeftRightIcon} iconColor="sky" label="Help & FAQ" onClick={() => navigate("/support")} isFirst />
         <MenuSeparator />
-        <MenuRow icon={DocumentTextIcon} iconColor="zinc" label="Terms of Service" onClick={() => {}} />
+        <MenuRow icon={DocumentTextIcon} iconColor="zinc" label="Terms of Service" onClick={() => window.open("/terms", "_blank")} />
         <MenuSeparator />
-        <MenuRow icon={ShieldCheckIconSolid} iconColor="emerald" label="Privacy Policy" onClick={() => {}} isLast />
+        <MenuRow icon={ShieldCheckIconSolid} iconColor="emerald" label="Privacy Policy" onClick={() => window.open("/privacy", "_blank")} isLast />
         </MenuSection>
       </div>
 
@@ -1544,6 +1985,17 @@ export function Settings() {
         kycStatus={kycStatus}
         onSuccess={() => { refetchProfile(); setIsVerifyingKYC(false); }}
         onCancel={() => setIsVerifyingKYC(false)}
+      />
+
+      <ChangePasswordDialog
+        open={isChangingPassword}
+        onSuccess={() => setIsChangingPassword(false)}
+        onCancel={() => setIsChangingPassword(false)}
+      />
+
+      <SessionsDialog
+        open={isViewingSessions}
+        onClose={() => setIsViewingSessions(false)}
       />
     </div>
   );

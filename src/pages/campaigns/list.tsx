@@ -3,196 +3,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ArchiveBoxIcon,
-  ArrowsRightLeftIcon,
-  ClockIcon,
-  CurrencyRupeeIcon,
   FunnelIcon,
   PlayCircleIcon,
   SparklesIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
-import {
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
+import { CampaignCard } from "@/components/campaign-card";
+import { EmptyState } from "@/components/empty-state";
 import { Heading } from "@/components/heading";
 import { Input, InputGroup } from "@/components/input";
 import { Link } from "@/components/link";
 import { Select } from "@/components/select";
 import { Text } from "@/components/text";
-import { useCampaigns, useInfiniteCampaigns, usePlatforms, useProductCategories } from "@/hooks/use-api";
+import { useCampaigns, useInfiniteCampaigns, usePlatforms, useProductCategories, getAssetUrl } from "@/hooks/use-api";
+import { getCampaignTypeConfig, getDaysLeft, getDisplayCashback } from "@/lib/campaign-utils";
 import { CampaignCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
-
-function CampaignCard({
-  campaign,
-}: {
-  campaign: {
-    id: string;
-    title: string;
-    description?: string;
-    rebatePercentage?: number;
-    bonusAmount?: number;
-    bonusAmountDecimal?: string;
-    maxEnrollments?: number;
-    currentEnrollments?: number;
-    startDate?: string;
-    endDate?: string;
-    campaignType?: string;
-    product?: {
-      id: string;
-      name: string;
-      price: number;
-      priceDecimal: string;
-      productLink: string;
-      primaryImage?: string;
-    };
-    organization?: {
-      id: string;
-      name: string;
-      logo?: string;
-    };
-    platform?: {
-      id: string;
-      name: string;
-      logo?: string;
-      icon?: string;
-    };
-  };
-}) {
-  const cashback = campaign.rebatePercentage && campaign.rebatePercentage > 0
-    ? campaign.rebatePercentage
-    : null;
-
-  const bonus = campaign.bonusAmountDecimal
-    ? parseFloat(campaign.bonusAmountDecimal)
-    : campaign.bonusAmount && campaign.bonusAmount > 0
-      ? campaign.bonusAmount / 100
-      : null;
-
-  const daysLeft = campaign.endDate
-    ? Math.max(0, Math.ceil((new Date(campaign.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
-
-  const isEndingSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
-
-  const slotsLeft = campaign.maxEnrollments && campaign.currentEnrollments !== undefined
-    ? Math.max(0, campaign.maxEnrollments - campaign.currentEnrollments)
-    : null;
-
-  // Campaign type badge config
-  const typeConfig: Record<string, { color: "emerald" | "amber" | "sky"; label: string; icon: React.ComponentType<{ className?: string }> }> = {
-    cashback: { color: "emerald", label: "Cashback", icon: CurrencyRupeeIcon },
-    barter: { color: "amber", label: "Barter", icon: ArrowsRightLeftIcon },
-    hybrid: { color: "sky", label: "Hybrid", icon: SparklesIcon },
-  };
-  const badgeConfig = typeConfig[campaign.campaignType || ""] || typeConfig.cashback;
-  const BadgeIcon = badgeConfig.icon;
-
-  return (
-    <Link
-      href={`/campaigns/${campaign.id}`}
-      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
-    >
-      {/* Image */}
-      <div className="relative aspect-4/3 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-        {campaign.product?.primaryImage ? (
-          <img
-            src={campaign.product.primaryImage}
-            alt={campaign.product.name}
-            loading="lazy"
-            decoding="async"
-            className="size-full object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center">
-            <SparklesIcon className="size-10 text-zinc-300 dark:text-zinc-600" />
-          </div>
-        )}
-
-        {/* Campaign type badge - top right with solid bg for contrast */}
-        <span className={`absolute right-2 top-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium shadow-sm ${
-          badgeConfig.color === "emerald"
-            ? "bg-emerald-500 text-white"
-            : badgeConfig.color === "amber"
-              ? "bg-amber-500 text-white"
-              : "bg-sky-500 text-white"
-        }`}>
-          <BadgeIcon className="size-3" />
-          {badgeConfig.label}
-        </span>
-
-        {/* Platform badge */}
-        {campaign.platform?.icon && (
-          <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
-            <img
-              src={campaign.platform.icon}
-              alt={campaign.platform.name}
-              loading="lazy"
-              decoding="async"
-              className="size-4 object-contain"
-            />
-          </div>
-        )}
-
-        {/* Urgency badge */}
-        {isEndingSoon && (
-          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-zinc-900/80 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:text-xs">
-            <ClockIcon className="size-3" />
-            {daysLeft}d left
-          </div>
-        )}
-      </div>
-
-      {/* Content - Product Info */}
-      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
-        {/* Brand + Product Name */}
-        <div className="min-w-0 flex-1">
-          {campaign.organization && (
-            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px] dark:text-zinc-500">
-              {campaign.organization.name}
-            </p>
-          )}
-          <h3 className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-zinc-900 sm:text-sm dark:text-white">
-            {campaign.product?.name || campaign.title}
-          </h3>
-        </div>
-
-        {/* Price */}
-        {campaign.product?.priceDecimal && (
-          <p className="mt-2 text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
-            ₹{campaign.product.priceDecimal}
-          </p>
-        )}
-      </div>
-
-      {/* Edge-to-edge divider */}
-      <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
-
-      {/* Footer Stats Bar - inspired by enrollment cards */}
-      <div className="flex items-center justify-between px-2.5 py-2 sm:px-3">
-        <div className="flex items-center gap-2 text-[10px] sm:gap-3 sm:text-[11px]">
-          {cashback !== null && cashback > 0 && (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              <span className="font-semibold">{cashback}%</span> cashback
-            </span>
-          )}
-          {bonus !== null && bonus > 0 && (
-            <span className="text-sky-600 dark:text-sky-400">
-              +₹{Math.round(bonus)} bonus
-            </span>
-          )}
-        </div>
-        {slotsLeft !== null && slotsLeft >= 0 && (
-          <span className="text-[10px] text-zinc-400 sm:text-[11px] dark:text-zinc-500">
-            {slotsLeft} left
-          </span>
-        )}
-      </div>
-    </Link>
-  );
-}
 
 function FilterChip({
   label,
@@ -218,24 +47,6 @@ function FilterChip({
   );
 }
 
-function EmptyState({ onClearFilters }: { onClearFilters?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50">
-      <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <SparklesIcon className="size-7 text-zinc-400 dark:text-zinc-500" />
-      </div>
-      <p className="mt-4 font-semibold text-zinc-900 dark:text-white">No campaigns found</p>
-      <p className="mt-1 text-sm text-zinc-500">
-        We couldn't find any campaigns matching your criteria.
-      </p>
-      {onClearFilters && (
-        <Button onClick={onClearFilters} outline className="mt-5">
-          Clear filters
-        </Button>
-      )}
-    </div>
-  );
-}
 
 function LoadingSkeleton() {
   return (
@@ -249,28 +60,32 @@ function LoadingSkeleton() {
   );
 }
 
+interface FilterState {
+  platform: string;
+  category: string;
+}
+
+interface FilterBottomSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  filters: FilterState;
+  onFilterChange: (key: keyof FilterState, value: string) => void;
+  onClear: () => void;
+  options: {
+    platforms: { id: string; name: string }[];
+    categories: { id: string; name: string }[];
+  };
+}
+
 function FilterBottomSheet({
   isOpen,
   onClose,
-  platformFilter,
-  setPlatformFilter,
-  categoryFilter,
-  setCategoryFilter,
-  platforms,
-  categories,
+  filters,
+  onFilterChange,
   onClear,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  platformFilter: string;
-  setPlatformFilter: (value: string) => void;
-  categoryFilter: string;
-  setCategoryFilter: (value: string) => void;
-  platforms: { id: string; name: string }[];
-  categories: { id: string; name: string }[];
-  onClear: () => void;
-}) {
-  const hasActiveFilters = platformFilter || categoryFilter;
+  options,
+}: FilterBottomSheetProps) {
+  const hasActiveFilters = filters.platform || filters.category;
 
   return (
     <Headless.Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -311,11 +126,11 @@ function FilterBottomSheet({
                   <Select
                     id="platform-mobile"
                     name="platform-mobile"
-                    value={platformFilter}
-                    onChange={(e) => setPlatformFilter(e.target.value)}
+                    value={filters.platform}
+                    onChange={(e) => onFilterChange("platform", e.target.value)}
                   >
                     <option value="">All Platforms</option>
-                    {platforms.map((platform) => (
+                    {options.platforms.map((platform) => (
                       <option key={platform.id} value={platform.id}>
                         {platform.name}
                       </option>
@@ -330,11 +145,11 @@ function FilterBottomSheet({
                   <Select
                     id="category-mobile"
                     name="category-mobile"
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    value={filters.category}
+                    onChange={(e) => onFilterChange("category", e.target.value)}
                   >
                     <option value="">All Categories</option>
-                    {categories.map((category) => (
+                    {options.categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
@@ -371,6 +186,7 @@ function TrendingCard({
     rebatePercentage?: number;
     bonusAmount?: number;
     bonusAmountDecimal?: string;
+    endDate?: string;
     campaignType?: string;
     product?: {
       id: string;
@@ -389,23 +205,9 @@ function TrendingCard({
     };
   };
 }) {
-  const cashback = campaign.rebatePercentage && campaign.rebatePercentage > 0
-    ? campaign.rebatePercentage
-    : null;
-
-  const bonus = campaign.bonusAmountDecimal
-    ? parseFloat(campaign.bonusAmountDecimal)
-    : campaign.bonusAmount && campaign.bonusAmount > 0
-      ? campaign.bonusAmount / 100
-      : null;
-
-  // Campaign type badge config
-  const typeConfig: Record<string, { color: "emerald" | "amber" | "sky"; label: string }> = {
-    cashback: { color: "emerald", label: "Cashback" },
-    barter: { color: "amber", label: "Barter" },
-    hybrid: { color: "sky", label: "Hybrid" },
-  };
-  const badgeConfig = typeConfig[campaign.campaignType || ""] || typeConfig.cashback;
+  const daysLeft = getDaysLeft(campaign);
+  const cashbackDisplay = getDisplayCashback(campaign);
+  const badgeConfig = getCampaignTypeConfig(campaign.campaignType);
 
   return (
     <Link
@@ -417,11 +219,11 @@ function TrendingCard({
         <div className="relative size-28 shrink-0 overflow-hidden bg-zinc-100 sm:size-32 lg:size-28 xl:size-32 dark:bg-zinc-800">
           {campaign.product?.primaryImage ? (
             <img
-              src={campaign.product.primaryImage}
+              src={getAssetUrl(campaign.product.primaryImage)}
               alt={campaign.product.name}
               loading="lazy"
               decoding="async"
-              className="size-full object-cover"
+              className="size-full object-contain"
             />
           ) : (
             <div className="flex size-full items-center justify-center">
@@ -433,7 +235,7 @@ function TrendingCard({
           {campaign.platform?.icon && (
             <div className="absolute bottom-2 right-2 flex size-6 items-center justify-center rounded-md bg-white/90 shadow-sm dark:bg-zinc-900/90">
               <img
-                src={campaign.platform.icon}
+                src={getAssetUrl(campaign.platform.icon)}
                 alt={campaign.platform.name}
                 loading="lazy"
                 decoding="async"
@@ -459,13 +261,8 @@ function TrendingCard({
             </h3>
           </div>
 
-          {/* Price + Badge */}
-          <div className="mt-2 flex items-center justify-between gap-2">
-            {campaign.product?.priceDecimal && (
-              <span className="text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
-                ₹{campaign.product.priceDecimal}
-              </span>
-            )}
+          {/* Badge */}
+          <div className="mt-2">
             <Badge color={badgeConfig.color} className="text-[10px]">
               {badgeConfig.label}
             </Badge>
@@ -476,19 +273,34 @@ function TrendingCard({
       {/* Edge-to-edge divider */}
       <div className="h-px bg-zinc-200 dark:bg-zinc-700" />
 
-      {/* Footer Stats Bar - matches CampaignCard pattern */}
-      <div className="flex items-center justify-between px-2.5 py-2 sm:px-3">
-        <div className="flex items-center gap-2 text-[10px] sm:gap-3 sm:text-[11px]">
-          {cashback !== null && cashback > 0 && (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              <span className="font-semibold">{cashback}%</span> cashback
-            </span>
-          )}
-          {bonus !== null && bonus > 0 && (
-            <span className="text-sky-600 dark:text-sky-400">
-              +₹{Math.round(bonus)} bonus
-            </span>
-          )}
+      {/* Footer Stats - 3-column layout with dividers */}
+      <div className="grid grid-cols-3 divide-x divide-zinc-200 dark:divide-zinc-700">
+        {/* Price */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Price</span>
+          <span className="text-xs font-semibold text-zinc-900 sm:text-sm dark:text-white">
+            {campaign.product?.priceDecimal ? `₹${campaign.product.priceDecimal}` : "—"}
+          </span>
+        </div>
+
+        {/* Cashback */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Cashback</span>
+          <span className="text-xs font-semibold text-emerald-600 sm:text-sm dark:text-emerald-400">
+            {cashbackDisplay}
+          </span>
+        </div>
+
+        {/* Days Left */}
+        <div className="flex flex-col items-center justify-center py-2">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Days Left</span>
+          <span className={`text-xs font-semibold sm:text-sm ${
+            daysLeft !== null && daysLeft <= 7
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-zinc-900 dark:text-white"
+          }`}>
+            {daysLeft !== null ? daysLeft : "—"}
+          </span>
         </div>
       </div>
     </Link>
@@ -807,20 +619,25 @@ export function CampaignsList() {
           )}
         </>
       ) : (
-        <EmptyState onClearFilters={hasActiveFilters ? clearAllFilters : undefined} />
+        <EmptyState
+          preset="campaigns"
+          title="No campaigns found"
+          description="We couldn't find any campaigns matching your criteria."
+          action={hasActiveFilters ? { label: "Clear filters", onClick: clearAllFilters } : { label: "Browse All", href: "/campaigns" }}
+        />
       )}
 
       {/* Mobile Filter Sheet */}
       <FilterBottomSheet
         isOpen={showFilterSheet}
         onClose={() => setShowFilterSheet(false)}
-        platformFilter={platformFilter}
-        setPlatformFilter={setPlatformFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        platforms={platforms}
-        categories={categories}
+        filters={{ platform: platformFilter, category: categoryFilter }}
+        onFilterChange={(key, value) => {
+          if (key === "platform") setPlatformFilter(value);
+          else if (key === "category") setCategoryFilter(value);
+        }}
         onClear={clearAllFilters}
+        options={{ platforms, categories }}
       />
     </div>
   );

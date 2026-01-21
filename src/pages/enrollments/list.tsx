@@ -12,26 +12,18 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
+import { EmptyState } from "@/components/empty-state";
 import { Heading } from "@/components/heading";
 import { Input, InputGroup } from "@/components/input";
 import { Link } from "@/components/link";
 import { Text } from "@/components/text";
 import type { shared } from "@/hooks/use-api";
 import { useInfiniteEnrollments } from "@/hooks/use-api";
+import { formatCurrency } from "@/lib/money-utils";
 import { EnrollmentCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
 import { getStatusColors } from "@/lib/theme";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
-
-function formatCurrency(amount: string | number) {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(num);
-}
 
 function getStatusConfig(status: EnrollmentStatus): {
   label: string;
@@ -325,7 +317,7 @@ function EnrollmentCard({
   return (
     <Link
       href={`/enrollments/${enrollment.id}`}
-      className="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
+      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800"
     >
       {/* Main Content */}
       <div className="p-3 sm:p-4">
@@ -340,7 +332,7 @@ function EnrollmentCard({
                   alt={productName || "Product"}
                   loading="lazy"
                   decoding="async"
-                  className="size-full object-cover"
+                  className="size-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -475,28 +467,6 @@ function EnrollmentCard({
   );
 }
 
-function EmptyState({ hasFilters }: { hasFilters: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50">
-      <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <ShoppingBagIcon className="size-7 text-zinc-400 dark:text-zinc-500" />
-      </div>
-      <p className="mt-4 font-semibold text-zinc-900 dark:text-white">
-        {hasFilters ? "No matching enrollments" : "No enrollments yet"}
-      </p>
-      <p className="mt-1 max-w-xs text-center text-sm text-zinc-500">
-        {hasFilters
-          ? "Try adjusting your filters to find your enrollments."
-          : "Start earning cashback by enrolling in campaigns."}
-      </p>
-      {!hasFilters && (
-        <Button href="/campaigns" className="mt-5">
-          Browse Campaigns
-        </Button>
-      )}
-    </div>
-  );
-}
 
 // Tab types for filtering
 type TabType = "all" | "pending" | "changes_requested" | "in_progress" | "completed" | "expired";
@@ -652,6 +622,9 @@ export function EnrollmentsList() {
     };
   }, [enrollments]);
 
+  // Check if user has any enrollments at all
+  const hasAnyEnrollments = enrollments.length > 0;
+
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Header */}
@@ -660,75 +633,79 @@ export function EnrollmentsList() {
         <Text className="mt-0.5 text-sm">Track your campaign enrollments and earnings</Text>
       </div>
 
-      {/* Search Bar */}
-      <InputGroup>
-        <MagnifyingGlassIcon />
-        <Input
-          name="search"
-          placeholder="Search by product, campaign, or order ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </InputGroup>
+      {/* Search Bar - only show when there are enrollments */}
+      {hasAnyEnrollments && (
+        <InputGroup>
+          <MagnifyingGlassIcon />
+          <Input
+            name="search"
+            placeholder="Search by product, campaign, or order ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </InputGroup>
+      )}
 
-      {/* Tabs - Scrollable */}
-      <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <TabButton
-          label={tabLabels.all}
-          icon={QueueListIcon}
-          iconColor="text-sky-500"
-          isActive={activeTab === "all"}
-          onClick={() => setActiveTab("all")}
-        />
-        <TabButton
-          label={tabLabels.pending}
-          icon={DocumentTextIcon}
-          iconColor="text-amber-500"
-          isActive={activeTab === "pending"}
-          onClick={() => setActiveTab("pending")}
-          count={stats?.pending}
-        />
-        <TabButton
-          label={tabLabels.changes_requested}
-          icon={ExclamationTriangleIcon}
-          iconColor="text-orange-500"
-          isActive={activeTab === "changes_requested"}
-          onClick={() => setActiveTab("changes_requested")}
-          count={stats?.changesRequested}
-        />
-        <TabButton
-          label={tabLabels.in_progress}
-          icon={ClockIcon}
-          iconColor="text-sky-500"
-          isActive={activeTab === "in_progress"}
-          onClick={() => setActiveTab("in_progress")}
-          count={stats?.inProgress}
-        />
-        <TabButton
-          label={tabLabels.completed}
-          icon={CheckCircleIcon}
-          iconColor="text-emerald-500"
-          isActive={activeTab === "completed"}
-          onClick={() => setActiveTab("completed")}
-        />
-        <TabButton
-          label={tabLabels.expired}
-          icon={XCircleIcon}
-          iconColor="text-red-500"
-          isActive={activeTab === "expired"}
-          onClick={() => setActiveTab("expired")}
-          count={stats?.expired}
-        />
-      </div>
+      {/* Tabs - only show when there are enrollments */}
+      {hasAnyEnrollments && (
+        <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <TabButton
+            label={tabLabels.all}
+            icon={QueueListIcon}
+            iconColor="text-sky-500"
+            isActive={activeTab === "all"}
+            onClick={() => setActiveTab("all")}
+          />
+          <TabButton
+            label={tabLabels.pending}
+            icon={DocumentTextIcon}
+            iconColor="text-amber-500"
+            isActive={activeTab === "pending"}
+            onClick={() => setActiveTab("pending")}
+            count={stats?.pending}
+          />
+          <TabButton
+            label={tabLabels.changes_requested}
+            icon={ExclamationTriangleIcon}
+            iconColor="text-orange-500"
+            isActive={activeTab === "changes_requested"}
+            onClick={() => setActiveTab("changes_requested")}
+            count={stats?.changesRequested}
+          />
+          <TabButton
+            label={tabLabels.in_progress}
+            icon={ClockIcon}
+            iconColor="text-sky-500"
+            isActive={activeTab === "in_progress"}
+            onClick={() => setActiveTab("in_progress")}
+            count={stats?.inProgress}
+          />
+          <TabButton
+            label={tabLabels.completed}
+            icon={CheckCircleIcon}
+            iconColor="text-emerald-500"
+            isActive={activeTab === "completed"}
+            onClick={() => setActiveTab("completed")}
+          />
+          <TabButton
+            label={tabLabels.expired}
+            icon={XCircleIcon}
+            iconColor="text-red-500"
+            isActive={activeTab === "expired"}
+            onClick={() => setActiveTab("expired")}
+            count={stats?.expired}
+          />
+        </div>
+      )}
 
-      {/* Results count */}
-      <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 sm:pb-3 dark:border-zinc-800">
-        <p className="text-[13px] text-zinc-500 sm:text-sm">
-          {loading
-            ? "Loading..."
-            : `${filteredEnrollments.length} enrollment${filteredEnrollments.length !== 1 ? "s" : ""}`}
-        </p>
-      </div>
+      {/* Results count - only show when there are filtered results */}
+      {!loading && filteredEnrollments.length > 0 && (
+        <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 sm:pb-3 dark:border-zinc-800">
+          <p className="text-[13px] text-zinc-500 sm:text-sm">
+            {`${filteredEnrollments.length} enrollment${filteredEnrollments.length !== 1 ? "s" : ""}`}
+          </p>
+        </div>
+      )}
 
       {/* Results */}
       {loading ? (
@@ -770,7 +747,12 @@ export function EnrollmentsList() {
           )}
         </>
       ) : (
-        <EmptyState hasFilters={activeTab !== "all" || searchQuery.trim() !== ""} />
+        <EmptyState
+          preset="enrollments"
+          title={activeTab !== "all" || searchQuery.trim() !== "" ? "No matching enrollments" : "No enrollments yet"}
+          description={activeTab !== "all" || searchQuery.trim() !== "" ? "Try adjusting your filters to find your enrollments." : "Start earning cashback by enrolling in campaigns."}
+          action={activeTab === "all" && searchQuery.trim() === "" ? { label: "Browse Campaigns", href: "/campaigns" } : undefined}
+        />
       )}
     </div>
   );

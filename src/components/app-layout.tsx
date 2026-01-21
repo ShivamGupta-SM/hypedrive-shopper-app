@@ -40,11 +40,11 @@ import {
 	UserCircleIcon as UserCircleSolidIcon,
 	QuestionMarkCircleIcon,
 } from "@heroicons/react/20/solid";
-import { useGetIdentity, useLogout } from "@refinedev/core";
+import { useLogout } from "@/store/auth-store";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import clsx from "clsx";
 import { useState } from "react";
-import { useShopperProfile, useUnreadNotificationCount } from "@/hooks/use-api";
+import { useGetIdentity, useShopperProfile, useUnreadNotificationCount } from "@/hooks/use-api";
 import { CommandMenu } from "@/components/command-menu";
 import { NotificationPanel } from "@/components/notification-panel";
 
@@ -97,9 +97,9 @@ const tabItems = [
 
 function TabBar({ pathname }: { pathname: string }) {
 	return (
-		<nav className="fixed inset-x-0 bottom-0 z-50 touch-none bg-stone-100 pb-safe dark:bg-zinc-950 lg:hidden">
-			{/* Tab buttons container - fixed 56px height */}
-			<div className="flex h-14 items-center justify-around px-2">
+		<nav className="fixed inset-x-0 bottom-0 z-50 touch-none bg-stone-100 dark:bg-zinc-950 lg:hidden">
+			{/* Tab buttons container - py-2 for equal top/bottom padding */}
+			<div className="flex items-end justify-around px-2 py-2">
 				{tabItems.map((item) => {
 					const isActive = item.href === "/"
 						? pathname === "/"
@@ -110,22 +110,19 @@ function TabBar({ pathname }: { pathname: string }) {
 						<Link
 							key={item.href}
 							to={item.href}
-							className="flex min-w-16 flex-1 flex-col items-center justify-center gap-0.5"
+							className="flex min-w-16 flex-1 flex-col items-center gap-1"
 						>
-							{/* Icon container */}
-							<span className="flex size-7 items-center justify-center">
-								<Icon
-									className={clsx(
-										"size-6",
-										isActive
-											? "text-zinc-900 dark:text-white"
-											: "text-zinc-400 dark:text-zinc-500"
-									)}
-								/>
-							</span>
+							<Icon
+								className={clsx(
+									"size-6",
+									isActive
+										? "text-zinc-900 dark:text-white"
+										: "text-zinc-400 dark:text-zinc-500"
+								)}
+							/>
 							<span
 								className={clsx(
-									"text-[10px] font-medium leading-tight",
+									"text-[10px] font-medium",
 									isActive
 										? "text-zinc-900 dark:text-white"
 										: "text-zinc-400 dark:text-zinc-500"
@@ -137,6 +134,8 @@ function TabBar({ pathname }: { pathname: string }) {
 					);
 				})}
 			</div>
+			{/* Safe area spacer */}
+			<div className="pb-safe" />
 		</nav>
 	);
 }
@@ -191,14 +190,17 @@ function MobileHeader({
 }) {
 	const navigate = useNavigate();
 
-	// Determine if we're on a detail page (has ID in path)
-	const isDetailPage = /\/(campaigns|enrollments|wallet|settings)\/[^/]+/.test(pathname);
+	// Determine if we're on a page that needs back button
+	// Detail pages with IDs OR secondary pages like /support, /settings
+	const isDetailPage = /\/(campaigns|enrollments|wallet)\/[^/]+/.test(pathname);
+	const isSecondaryPage = pathname === "/support" || pathname === "/settings";
+	const showBackButton = isDetailPage || isSecondaryPage;
 
 	return (
 		<div className="flex w-full items-center justify-between">
 			{/* Left: Search or Back */}
 			<div className="flex w-20 shrink-0 justify-start">
-				{isDetailPage ? (
+				{showBackButton ? (
 					<IconButton onClick={() => navigate(-1)} aria-label="Go back">
 						<ArrowLeftIcon />
 					</IconButton>
@@ -341,7 +343,7 @@ export function AppLayout() {
 						<SidebarSpacer />
 
 						<SidebarSection>
-							<SidebarItem href="#">
+							<SidebarItem href="/support" current={pathname.startsWith("/support")}>
 								<QuestionMarkCircleIcon />
 								<SidebarLabel>Support</SidebarLabel>
 							</SidebarItem>

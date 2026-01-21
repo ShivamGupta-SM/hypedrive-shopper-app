@@ -2,7 +2,8 @@
 
 import * as Headless from '@headlessui/react'
 import { motion } from 'motion/react'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router'
 
 function OpenMenuIcon() {
   return (
@@ -78,7 +79,15 @@ export function SidebarLayout({
   mobileHeader,
   hideNavbarOnMobile = false,
 }: React.PropsWithChildren<{ navbar: React.ReactNode; sidebar: React.ReactNode; tabBar?: React.ReactNode; mobileHeader?: React.ReactNode; hideNavbarOnMobile?: boolean }>) {
-  let [showSidebar, setShowSidebar] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+
+  // Reset scroll position when route changes
+  // eslint-disable-next-line react-compiler/react-compiler
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo(0, 0)
+  }, [location.pathname])
 
   return (
     <div className="relative isolate flex h-svh w-full overflow-hidden bg-stone-100 max-lg:flex-col lg:bg-stone-100 dark:bg-zinc-950 dark:lg:bg-zinc-950">
@@ -115,9 +124,9 @@ export function SidebarLayout({
         </header>
       )}
 
-      {/* Content - pb for TabBar: h-14 (56px) + safe area handled by CSS calc */}
-      <main className="flex min-h-0 flex-1 flex-col p-2 pb-[calc(56px+env(safe-area-inset-bottom)+8px)] lg:min-w-0 lg:p-2 lg:pb-2 lg:pl-64">
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      {/* Content - pb for TabBar height + safe area + gap */}
+      <main className="flex min-h-0 flex-1 flex-col p-2 pb-[calc(52px+env(safe-area-inset-bottom)+8px)] lg:min-w-0 lg:p-2 lg:pb-2 lg:pl-64">
+        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
           <div className="mx-auto max-w-7xl">{children}</div>
         </div>
       </main>

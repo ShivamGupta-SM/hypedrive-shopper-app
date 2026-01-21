@@ -1,15 +1,14 @@
 import { Dialog, DialogTitle, DialogBody } from "@/components/dialog";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
-import { useUnreadNotificationCount } from "@/hooks/use-api";
-import { getAuthenticatedClient } from "@/lib/client";
+import { useUnreadNotificationCount, useMarkAllNotificationsRead } from "@/hooks/use-api";
+import { showError, showSuccess } from "@/lib/toast";
 import {
 	BellIcon,
 	BellSlashIcon,
 	CheckCircleIcon,
 	Cog6ToothIcon,
 } from "@heroicons/react/16/solid";
-import { useState } from "react";
 import { Link } from "react-router";
 
 interface NotificationPanelProps {
@@ -18,21 +17,18 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
-	const { data: countData, refetch } = useUnreadNotificationCount();
-	const [markingRead, setMarkingRead] = useState(false);
+	const { data: countData } = useUnreadNotificationCount();
+	const { markAllRead, isPending: markingRead } = useMarkAllNotificationsRead();
 
 	const unreadCount = countData?.count ?? 0;
 
 	const handleMarkAllRead = async () => {
-		setMarkingRead(true);
 		try {
-			const client = getAuthenticatedClient();
-			await client.notifications.markAllAsRead();
-			refetch();
+			await markAllRead();
+			showSuccess("All notifications marked as read");
 		} catch (err) {
-			console.error("Failed to mark notifications as read:", err);
-		} finally {
-			setMarkingRead(false);
+			const message = err instanceof Error ? err.message : "Failed to mark notifications as read";
+			showError("Failed", message);
 		}
 	};
 
