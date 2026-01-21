@@ -473,6 +473,7 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
     instructions?: string;
     proofLink?: string;
     proofScreenshot?: string;
+    platformName?: string;
   }[];
 }
 

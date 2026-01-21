@@ -22,6 +22,7 @@ import { Text } from "@/components/text";
 import { useCampaigns, useInfiniteCampaigns, usePlatforms, useProductCategories, getAssetUrl } from "@/hooks/use-api";
 import { getCampaignTypeConfig, getDaysLeft, getDisplayCashback } from "@/lib/campaign-utils";
 import { HighlightText } from "@/lib/highlight-text";
+import { CampaignsListSkeleton } from "@/lib/skeleton";
 
 function FilterChip({
   label,
@@ -576,7 +577,7 @@ export function CampaignsList() {
       </div>
 
       {/* Results Grid */}
-      {loading ? null : error ? (
+      {loading ? <CampaignsListSkeleton /> : error ? (
         <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50">
           <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
             <XMarkIcon className="size-6 text-red-500" />

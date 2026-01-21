@@ -22,6 +22,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/16/solid";
 import { useState } from "react";
+import { WithdrawalsListSkeleton } from "@/lib/skeleton";
 
 function formatDateTime(dateString?: string) {
   if (!dateString) return "—";
@@ -122,7 +123,7 @@ export function WithdrawalsList() {
   };
 
   if (loading) {
-    return null;
+    return <WithdrawalsListSkeleton />;
   }
 
   const withdrawalList = withdrawals?.data || [];

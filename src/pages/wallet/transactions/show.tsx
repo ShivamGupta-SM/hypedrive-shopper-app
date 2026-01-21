@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useParams } from "react-router";
+import { TransactionShowSkeleton } from "@/lib/skeleton";
 
 function formatDateTime(dateString?: string) {
   if (!dateString) return "—";
@@ -48,7 +49,7 @@ export function TransactionShow() {
   const { data: tx, loading, error, refetch } = useWalletTransaction(id);
 
   if (loading) {
-    return null;
+    return <TransactionShowSkeleton />;
   }
 
   if (error || !tx) {

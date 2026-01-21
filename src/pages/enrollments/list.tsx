@@ -23,6 +23,7 @@ import type { shared } from "@/hooks/use-api";
 import { useInfiniteEnrollments } from "@/hooks/use-api";
 import { HighlightText } from "@/lib/highlight-text";
 import { formatCurrency } from "@/lib/money-utils";
+import { EnrollmentsListSkeleton } from "@/lib/skeleton";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
 
@@ -356,9 +357,10 @@ function EnrollmentCard({
               <div className="flex gap-1.5 pb-1" style={{ minWidth: 'max-content' }}>
                 {tasks.map((task) => {
                   const isComplete = task.proofLink || task.proofScreenshot;
-                  const detectedPlatform = detectPlatformFromTaskName(task.name);
-                  const TaskPlatformIcon = detectedPlatform ? getPlatformIcon(detectedPlatform) : null;
-                  const platformColor = detectedPlatform ? getPlatformColor(detectedPlatform) : "";
+                  // Detect platform from task name
+                  const platform = detectPlatformFromTaskName(task.name);
+                  const TaskPlatformIcon = platform ? getPlatformIcon(platform) : null;
+                  const platformColor = platform ? getPlatformColor(platform) : "";
 
                   return (
                     <span
@@ -680,7 +682,7 @@ export function EnrollmentsList() {
       )}
 
       {/* Results */}
-      {loading ? null : error ? (
+      {loading ? <EnrollmentsListSkeleton /> : error ? (
         <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-12 sm:py-16 dark:bg-zinc-900/50">
           <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
             <XMarkIcon className="size-6 text-red-500" />

@@ -65,6 +65,7 @@ import { useLogout } from "@/store/auth-store";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { showError, showSuccess } from "@/lib/toast";
+import { SettingsSkeleton } from "@/lib/skeleton";
 
 
 // =============================================================================
@@ -1630,7 +1631,7 @@ export function Settings() {
   }, [notificationPrefs]);
 
   if (profileLoading || statsLoading || kycLoading) {
-    return null;
+    return <SettingsSkeleton />;
   }
 
   // Error state

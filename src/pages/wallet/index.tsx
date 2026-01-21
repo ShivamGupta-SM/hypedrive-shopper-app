@@ -12,6 +12,7 @@ import {
   useWithdrawalMethods,
 } from "@/hooks/use-api";
 import type { wallets } from "@/hooks/use-api";
+import { WalletSkeleton } from "@/lib/skeleton";
 import {
   ArrowDownIcon,
   ArrowTrendingUpIcon,
@@ -231,7 +232,7 @@ export function Wallet() {
   const isLoading = profileLoading || statsLoading || walletLoading || methodsLoading || txLoading;
 
   if (isLoading) {
-    return null;
+    return <WalletSkeleton />;
   }
 
   const kycVerified = profile?.shopper?.kycStatus === "verified";

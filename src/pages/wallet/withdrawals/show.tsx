@@ -20,6 +20,7 @@ import {
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { useParams } from "react-router";
+import { WithdrawalShowSkeleton } from "@/lib/skeleton";
 
 function formatDateTime(dateString?: string) {
   if (!dateString) return "—";
@@ -60,7 +61,7 @@ export function WithdrawalShow() {
   };
 
   if (loading) {
-    return null;
+    return <WithdrawalShowSkeleton />;
   }
 
   if (error || !withdrawal) {

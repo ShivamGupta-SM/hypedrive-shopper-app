@@ -87,6 +87,7 @@ import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { showError, showSuccess } from "@/lib/toast";
+import { EnrollmentShowSkeleton } from "@/lib/skeleton";
 
 type EnrollmentStatusType = shared.EnrollmentStatus;
 
@@ -1513,7 +1514,7 @@ export function EnrollmentShow() {
     refetch();
   }, [refetch]);
 
-  if (loading) return null;
+  if (loading) return <EnrollmentShowSkeleton />;
 
   if (error || !enrollment) {
     return (
