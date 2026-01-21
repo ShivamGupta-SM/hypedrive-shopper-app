@@ -134,90 +134,6 @@ function DeadlineGauge({
   );
 }
 
-// Get icon for deliverable type based on name
-function getDeliverableIcon(name: string): { icon: string; color: string } {
-  const nameLower = name.toLowerCase();
-  if (nameLower.includes('amazon') || nameLower.includes('review')) {
-    return { icon: 'amazon', color: 'text-orange-500' };
-  }
-  if (nameLower.includes('instagram') || nameLower.includes('insta') || nameLower.includes('reel')) {
-    return { icon: 'instagram', color: 'text-pink-500' };
-  }
-  if (nameLower.includes('youtube') || nameLower.includes('video')) {
-    return { icon: 'youtube', color: 'text-red-500' };
-  }
-  if (nameLower.includes('facebook') || nameLower.includes('fb')) {
-    return { icon: 'facebook', color: 'text-blue-600' };
-  }
-  if (nameLower.includes('twitter') || nameLower.includes('tweet') || nameLower.includes('x')) {
-    return { icon: 'twitter', color: 'text-sky-500' };
-  }
-  if (nameLower.includes('rating') || nameLower.includes('star')) {
-    return { icon: 'star', color: 'text-amber-500' };
-  }
-  if (nameLower.includes('photo') || nameLower.includes('image')) {
-    return { icon: 'photo', color: 'text-violet-500' };
-  }
-  return { icon: 'document', color: 'text-zinc-500' };
-}
-
-// Simple icon component for deliverables
-function DeliverableIcon({ type, className }: { type: string; className?: string }) {
-  const baseClass = `shrink-0 ${className || 'size-3'}`;
-
-  switch (type) {
-    case 'amazon':
-      return (
-        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M.045 18.02c.072-.116.187-.124.348-.022 3.636 2.11 7.594 3.166 11.87 3.166 2.852 0 5.668-.533 8.447-1.595l.315-.14c.138-.06.234-.1.293-.13.226-.088.39-.046.493.13.063.1.08.22.05.36-.03.14-.1.28-.2.4-.5.6-1.1 1.1-1.8 1.5-2.1 1.2-4.5 2.1-7.2 2.6-.9.2-1.8.3-2.7.4-.6 0-1.1.1-1.7.1-2.6 0-5.1-.5-7.6-1.5-2.3-.9-4.4-2.2-6.3-3.8-.3-.3-.4-.5-.3-.8z"/>
-          <path d="M6.265 13.768c0-1.18.314-2.2.944-3.057.63-.857 1.456-1.51 2.474-1.96 1.018-.45 2.127-.73 3.326-.84.5-.04 1.22-.08 2.16-.13v-.55c0-.91-.13-1.56-.4-1.95-.44-.6-1.13-.9-2.07-.9-.5 0-.92.1-1.28.3-.36.2-.57.5-.62.9-.02.2-.07.4-.15.55-.1.15-.26.25-.47.3l-2.7-.4c-.16-.03-.28-.1-.35-.2-.07-.1-.08-.22-.04-.35.2-1.06.72-1.9 1.54-2.5.82-.6 1.81-1 2.97-1.2.5-.09 1.05-.13 1.65-.13 1.18 0 2.23.2 3.15.6.92.4 1.57.96 1.95 1.68.38.72.57 1.61.57 2.67v5.26c0 .5.04.95.1 1.35.07.4.2.73.4 1 .06.1.1.2.13.28.02.08 0 .17-.07.25l-2.14 1.6c-.14.1-.26.15-.38.13-.12-.02-.24-.09-.35-.2-.35-.37-.6-.7-.77-.99-.17-.3-.33-.66-.5-1.08-.94 1.08-2.05 1.8-3.35 2.15-.5.13-1.04.2-1.63.2-1.12 0-2.06-.34-2.82-1.03-.76-.69-1.14-1.65-1.14-2.87zm3.77-.6c0 .55.14.99.41 1.32.27.33.64.5 1.1.5.06 0 .13 0 .22-.02.09-.01.18-.03.28-.06.53-.15.97-.46 1.32-.94.35-.48.52-1.05.52-1.7v-.9l-1.46.08c-1.11.06-1.86.29-2.26.68-.23.23-.13.52-.13 1.04z"/>
-        </svg>
-      );
-    case 'instagram':
-      return (
-        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-        </svg>
-      );
-    case 'youtube':
-      return (
-        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-        </svg>
-      );
-    case 'facebook':
-      return (
-        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-      );
-    case 'twitter':
-      return (
-        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-      );
-    case 'star':
-      return (
-        <svg className={baseClass} viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
-        </svg>
-      );
-    case 'photo':
-      return (
-        <svg className={baseClass} viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909.47.47a.75.75 0 11-1.06 1.06L6.53 8.091a.75.75 0 00-1.06 0l-2.97 2.97zM12 7a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
-        </svg>
-      );
-    default:
-      return (
-        <svg className={baseClass} viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm2.25 8.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 3a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clipRule="evenodd" />
-        </svg>
-      );
-  }
-}
-
 function EnrollmentCard({
   enrollment,
   searchQuery = "",
@@ -245,8 +161,8 @@ function EnrollmentCard({
         icon?: string;
       };
     };
-    deliverables?: Array<{
-      campaignDeliverableId: string;
+    tasks?: Array<{
+      enrollmentTaskId: string;
       name: string;
       isRequired: boolean;
       requireLink: boolean;
@@ -301,8 +217,8 @@ function EnrollmentCard({
   const platformIcon = enrollment.campaign?.platform?.icon;
   const platformName = enrollment.campaign?.platform?.name;
 
-  // Get deliverables from API
-  const deliverables = enrollment.deliverables || [];
+  // Get tasks from API
+  const tasks = enrollment.tasks || [];
 
   // Format date
   const enrollmentDate = new Date(enrollment.createdAt).toLocaleDateString("en-IN", {
@@ -390,26 +306,25 @@ function EnrollmentCard({
           </div>
         </div>
 
-        {/* Deliverables Section - Horizontal scrollable chips */}
-        {deliverables.length > 0 && (
+        {/* Tasks Section - Horizontal scrollable chips */}
+        {tasks.length > 0 && (
           <div className="mt-3">
-            <p className="mb-2 text-xs font-medium text-zinc-900 dark:text-white">Required Deliverables</p>
+            <p className="mb-2 text-xs font-medium text-zinc-900 dark:text-white">Required Tasks</p>
             <div className="-mx-3 overflow-x-auto px-3 sm:-mx-4 sm:px-4">
               <div className="flex gap-1.5 pb-1" style={{ minWidth: 'max-content' }}>
-                {deliverables.map((d) => {
-                  const isComplete = d.proofLink || d.proofScreenshot;
-                  const iconInfo = getDeliverableIcon(d.name);
+                {tasks.map((task) => {
+                  const isComplete = task.proofLink || task.proofScreenshot;
                   return (
                     <span
-                      key={d.campaignDeliverableId}
+                      key={task.enrollmentTaskId}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
                         isComplete
                           ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400"
-                          : "border-zinc-200 bg-gradient-to-b from-white to-zinc-50 text-zinc-700 dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-800/80 dark:text-zinc-300"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                       }`}
                     >
-                      <DeliverableIcon type={iconInfo.icon} className={`size-3 ${isComplete ? 'text-emerald-500' : iconInfo.color}`} />
-                      {d.name}
+                      <QueueListIcon className={`size-3 ${isComplete ? 'text-emerald-500' : 'text-zinc-400'}`} />
+                      {task.name}
                       {isComplete && <CheckCircleIcon className="size-3 text-emerald-500" />}
                     </span>
                   );

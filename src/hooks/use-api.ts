@@ -464,6 +464,16 @@ export interface EnrichedEnrollment extends enrollments.Enrollment {
       icon?: string;
     };
   };
+  tasks?: {
+    enrollmentTaskId: string;
+    name: string;
+    requireLink: boolean;
+    requireScreenshot: boolean;
+    isRequired: boolean;
+    instructions?: string;
+    proofLink?: string;
+    proofScreenshot?: string;
+  }[];
 }
 
 // Enrollments List with campaign enrichment

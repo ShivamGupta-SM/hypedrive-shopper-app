@@ -16,34 +16,34 @@ import clsx from "clsx";
 
 import { Button } from "@/components/button";
 
-// Preset card configurations - clean, minimal icons with soft colors
+// Preset card configurations - meaningful icons with cohesive colors
 const cardPresets = {
   campaigns: {
     cards: [
-      { icon: TagIcon, iconColor: "text-orange-400" },
-      { icon: GiftIcon, iconColor: "text-rose-400" },
-      { icon: ReceiptPercentIcon, iconColor: "text-teal-400" },
+      { icon: MegaphoneIcon, iconColor: "text-sky-500" },
+      { icon: GiftIcon, iconColor: "text-rose-500" },
+      { icon: ReceiptPercentIcon, iconColor: "text-amber-500" },
     ],
   },
   enrollments: {
     cards: [
-      { icon: ShoppingBagIcon, iconColor: "text-sky-400" },
-      { icon: ClockIcon, iconColor: "text-amber-400" },
-      { icon: DocumentTextIcon, iconColor: "text-violet-400" },
+      { icon: BuildingStorefrontIcon, iconColor: "text-indigo-500" },
+      { icon: ShoppingCartIcon, iconColor: "text-sky-500" },
+      { icon: CheckBadgeIcon, iconColor: "text-emerald-500" },
     ],
   },
   wallet: {
     cards: [
-      { icon: BanknotesIcon, iconColor: "text-emerald-400" },
-      { icon: CurrencyRupeeIcon, iconColor: "text-emerald-500" },
-      { icon: ArrowTrendingUpIcon, iconColor: "text-sky-400" },
+      { icon: WalletIcon, iconColor: "text-emerald-500" },
+      { icon: CurrencyRupeeIcon, iconColor: "text-emerald-600" },
+      { icon: BanknotesIcon, iconColor: "text-teal-500" },
     ],
   },
   generic: {
     cards: [
-      { icon: FolderIcon, iconColor: "text-zinc-300" },
-      { icon: SparklesIcon, iconColor: "text-zinc-400" },
-      { icon: FireIcon, iconColor: "text-zinc-300" },
+      { icon: InboxIcon, iconColor: "text-zinc-400" },
+      { icon: ChartBarIcon, iconColor: "text-zinc-500" },
+      { icon: CreditCardIcon, iconColor: "text-zinc-400" },
     ],
   },
 };
