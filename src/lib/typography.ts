@@ -68,13 +68,13 @@ export const spacing = {
 
 export const cardStyles = {
   /** Standard card with subtle border */
-  default: "rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10",
+  default: "rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800",
 
   /** Elevated card with shadow (Settings style) */
-  elevated: "rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10",
+  elevated: "rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800",
 
   /** Interactive card with hover state */
-  interactive: "rounded-xl bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 hover:ring-zinc-950/10 dark:hover:ring-white/20",
+  interactive: "rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 hover:ring-zinc-300 dark:hover:ring-zinc-700",
 
   /** Hero card (Balance card style) */
   hero: "rounded-2xl bg-emerald-600 p-5 dark:bg-emerald-700",

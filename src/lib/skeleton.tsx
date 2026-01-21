@@ -631,7 +631,7 @@ export function CampaignsListSkeleton() {
         </div>
 
         {/* Results count */}
-        <div className="border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <div className="border-b border-zinc-200 pb-3 dark:border-zinc-700">
           <Skeleton width={100} height={14} borderRadius={4} />
         </div>
 
@@ -669,7 +669,7 @@ export function EnrollmentsListSkeleton() {
         </div>
 
         {/* Results count */}
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 sm:pb-3 dark:border-zinc-800">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5 sm:pb-3 dark:border-zinc-700">
           <Skeleton width={100} height={13} borderRadius={4} />
         </div>
 
@@ -965,7 +965,7 @@ export function CampaignShowSkeleton() {
 
             {/* How It Works Timeline */}
             <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-              <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+              <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <Skeleton width={16} height={16} borderRadius={4} />
                 <Skeleton width={90} height={14} borderRadius={4} />
               </div>
@@ -987,7 +987,7 @@ export function CampaignShowSkeleton() {
         <div className="grid items-start gap-5 md:grid-cols-2">
           {/* Left: Calculator */}
           <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-            <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+            <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
               <Skeleton width={16} height={16} borderRadius={4} />
               <Skeleton width={120} height={14} borderRadius={4} />
             </div>
@@ -1034,7 +1034,7 @@ export function CampaignShowSkeleton() {
 
           {/* Right: Deliverables */}
           <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-            <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
               <div className="flex items-center gap-2">
                 <Skeleton width={16} height={16} borderRadius={4} />
                 <Skeleton width={80} height={14} borderRadius={4} />
@@ -1057,7 +1057,7 @@ export function CampaignShowSkeleton() {
 
         {/* Section 3: Important Info */}
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-          <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+          <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <Skeleton width={16} height={16} borderRadius={4} />
             <Skeleton width={70} height={14} borderRadius={4} />
           </div>
@@ -1079,7 +1079,7 @@ export function CampaignShowSkeleton() {
 
         {/* FAQs */}
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-          <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+          <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <Skeleton width={16} height={16} borderRadius={4} />
             <Skeleton width={40} height={14} borderRadius={4} />
           </div>

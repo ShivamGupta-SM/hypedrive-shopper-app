@@ -524,7 +524,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           className="overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900"
         >
           {/* Search Input */}
-          <div className="flex items-center gap-3 border-b border-zinc-100 px-4 dark:border-zinc-800">
+          <div className="flex items-center gap-3 border-b border-zinc-200 px-4 dark:border-zinc-700">
             <MagnifyingGlassIcon className="size-5 shrink-0 text-zinc-400" />
             <Command.Input
               value={query}
@@ -545,7 +545,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
 
           {/* Filter Tabs - Only show when we have search results */}
           {hasQuery && facets && (
-            <div className="flex gap-1.5 border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">
+            <div className="flex gap-1.5 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -913,7 +913,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           </Command.List>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 text-[10px] text-zinc-400 dark:border-zinc-800">
+          <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 text-[10px] text-zinc-400 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <kbd className="rounded bg-zinc-100 px-1 py-0.5 font-mono dark:bg-zinc-800">

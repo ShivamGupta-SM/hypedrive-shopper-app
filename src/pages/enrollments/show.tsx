@@ -1669,7 +1669,7 @@ export function EnrollmentShow() {
           {/* TASKS CARD */}
           {enrollment.tasks && enrollment.tasks.length > 0 && (
             <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-              <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 lg:px-5 dark:border-zinc-800">
+              <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 lg:px-5 dark:border-zinc-700">
                 <div className="flex items-center gap-2">
                   <ClipboardDocumentListIcon className="size-4 text-rose-500 lg:size-5" />
                   <span className="text-sm font-medium text-zinc-900 lg:text-base dark:text-white">
@@ -1734,7 +1734,7 @@ export function EnrollmentShow() {
 
               {/* Action Buttons */}
               {canEdit && (
-                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-800">
+                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-700">
                   <div className="grid grid-cols-2 gap-3">
                     {/* Primary CTA */}
                     <Button
@@ -1781,7 +1781,7 @@ export function EnrollmentShow() {
 
               {/* Status Footer */}
               {!canEdit && (
-                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-800">
+                <div className="border-t border-zinc-100 p-4 lg:px-5 dark:border-zinc-700">
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-zinc-50 py-2.5 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                     {enrollment.status === "awaiting_review" ? (
                       <>
@@ -1807,7 +1807,7 @@ export function EnrollmentShow() {
 
           {/* ORDER INFO - Combined Details + Screenshot */}
           <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-            <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 lg:px-5 dark:border-zinc-800">
+            <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 lg:px-5 dark:border-zinc-700">
               <ShoppingBagIcon className="size-4 text-sky-500 lg:size-5" />
               <span className="text-sm font-medium text-zinc-900 lg:text-base dark:text-white">Order Information</span>
             </div>
@@ -1816,7 +1816,7 @@ export function EnrollmentShow() {
               <div className="space-y-3.5">
                 {/* Order ID with copy */}
                 <div className="flex items-start justify-between gap-3">
-                  <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">Order ID</span>
+                  <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">Order ID</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -1834,7 +1834,7 @@ export function EnrollmentShow() {
 
                 {/* Order Value */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400 dark:text-zinc-500">Order Value</span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">Order Value</span>
                   <span className="text-sm font-medium text-zinc-900 dark:text-white">
                     {formatCurrency(enrollment.orderValueDecimal)}
                   </span>
@@ -1843,7 +1843,7 @@ export function EnrollmentShow() {
                 {/* Purchase Date */}
                 {enrollment.purchaseDate && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400 dark:text-zinc-500">Purchase Date</span>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">Purchase Date</span>
                     <span className="text-sm font-medium text-zinc-900 dark:text-white">
                       {formatDate(enrollment.purchaseDate)}
                     </span>
@@ -1853,7 +1853,7 @@ export function EnrollmentShow() {
                 {/* Deadline */}
                 {enrollment.expiresAt && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400 dark:text-zinc-500">Deadline</span>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">Deadline</span>
                     <span className="text-sm font-medium text-zinc-900 dark:text-white">
                       {formatDate(enrollment.expiresAt)}
                     </span>
@@ -1863,7 +1863,7 @@ export function EnrollmentShow() {
 
               {/* Order Screenshot - Full width on mobile, better size */}
               {enrollment.ocrData?.screenshotUrl && (
-                <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
                   <OrderScreenshotInline screenshotUrl={enrollment.ocrData.screenshotUrl} />
                 </div>
               )}
@@ -1874,7 +1874,7 @@ export function EnrollmentShow() {
           {/* Activity - Mobile */}
           {enrollment.history && enrollment.history.length > 0 && (
             <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 lg:hidden dark:bg-zinc-900 dark:ring-zinc-800">
-              <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+              <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <ClockIcon className="size-4 text-violet-500" />
                 <span className="text-sm font-medium text-zinc-900 dark:text-white">Activity</span>
               </div>
@@ -1912,7 +1912,7 @@ export function EnrollmentShow() {
           {/* Activity */}
           {enrollment.history && enrollment.history.length > 0 && (
             <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-              <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+              <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <ClockIcon className="size-4 text-violet-500" />
                 <span className="text-sm font-medium text-zinc-900 dark:text-white">Activity</span>
               </div>

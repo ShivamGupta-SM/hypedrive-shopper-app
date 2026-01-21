@@ -90,37 +90,42 @@ export function WithdrawalShow() {
     );
   }
 
-  // Status configuration with coin styles
-  const statusConfig: Record<string, { icon: typeof ClockIcon; label: string; text: string; coinColors: string }> = {
+  // Status configuration with coin-style (gradient bg + white engraved icon)
+  const statusConfig: Record<string, { icon: typeof ClockIcon; label: string; text: string; bgColor: string; iconColor: string }> = {
     pending: {
       icon: ClockIcon,
       label: "Pending",
       text: "text-amber-600 dark:text-amber-400",
-      coinColors: "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-amber-500 dark:via-amber-600 dark:to-amber-700",
+      bgColor: "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-amber-500 dark:via-amber-600 dark:to-amber-700",
+      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
     },
     processing: {
       icon: ArrowPathIcon,
       label: "Processing",
       text: "text-sky-600 dark:text-sky-400",
-      coinColors: "bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700",
+      bgColor: "bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700",
+      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
     },
     completed: {
       icon: CheckCircleIcon,
       label: "Completed",
       text: "text-emerald-600 dark:text-emerald-400",
-      coinColors: "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700",
+      bgColor: "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700",
+      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
     },
     failed: {
       icon: XCircleIcon,
       label: "Failed",
       text: "text-red-600 dark:text-red-400",
-      coinColors: "bg-gradient-to-b from-red-400 via-red-500 to-red-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-red-500 dark:via-red-600 dark:to-red-700",
+      bgColor: "bg-gradient-to-b from-red-400 via-red-500 to-red-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-red-500 dark:via-red-600 dark:to-red-700",
+      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
     },
     cancelled: {
       icon: XCircleIcon,
       label: "Cancelled",
       text: "text-zinc-500 dark:text-zinc-400",
-      coinColors: "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700",
+      bgColor: "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700",
+      iconColor: "text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]",
     },
   };
 
@@ -142,9 +147,9 @@ export function WithdrawalShow() {
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
         <div className="p-4 lg:p-5">
           <div className="flex items-center gap-3 lg:gap-4">
-            {/* Coin-style icon with engraved effect */}
-            <div className={`flex size-11 shrink-0 items-center justify-center rounded-full lg:size-12 ${status.coinColors}`}>
-              <ArrowUpIcon className="size-5 text-white [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.35))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
+            {/* Duotone icon */}
+            <div className={`flex size-11 shrink-0 items-center justify-center rounded-full lg:size-12 ${status.bgColor}`}>
+              <ArrowUpIcon className={`size-5 ${status.iconColor}`} />
             </div>
 
             {/* Amount & Description */}
@@ -249,7 +254,7 @@ export function WithdrawalShow() {
 
       {/* DETAILS CARD */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
           {/* Date */}
           <div className="flex items-center justify-between px-4 py-3 lg:px-5">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">Requested</span>

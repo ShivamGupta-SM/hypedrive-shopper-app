@@ -113,18 +113,18 @@ export function TransactionShow() {
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
         <div className="p-4 lg:p-5">
           <div className="flex items-center gap-3 lg:gap-4">
-            {/* Coin-style icon with engraved effect */}
+            {/* Coin icon - gradient bg + white engraved icon */}
             <div
               className={`flex size-11 shrink-0 items-center justify-center rounded-full lg:size-12 ${
                 isCredit
-                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.1)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700"
-                  : "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[0_3px_6px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.1)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700"
+                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-emerald-500 dark:via-emerald-600 dark:to-emerald-700"
+                  : "bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700"
               }`}
             >
               {isCredit ? (
-                <ArrowDownIcon className="size-5 text-white [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.35))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
+                <ArrowDownIcon className="size-5 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]" />
               ) : (
-                <ArrowUpIcon className="size-5 text-white [filter:drop-shadow(0_-1px_0_rgba(0,0,0,0.35))_drop-shadow(0_1px_0_rgba(255,255,255,0.2))]" />
+                <ArrowUpIcon className="size-5 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.3))]" />
               )}
             </div>
 
@@ -157,7 +157,7 @@ export function TransactionShow() {
 
       {/* DETAILS CARD */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
           {/* Date */}
           <div className="flex items-center justify-between px-4 py-3 lg:px-5">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">Date</span>

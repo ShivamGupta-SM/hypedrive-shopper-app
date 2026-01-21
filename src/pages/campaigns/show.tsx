@@ -614,7 +614,7 @@ function CampaignTimeline({ className }: { className?: string }) {
 
   return (
     <div className={`flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 ${className || ""}`}>
-      <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <SparklesIcon className="size-4 text-violet-500 dark:text-violet-400" />
         <Subheading className="text-sm">How It Works</Subheading>
       </div>
@@ -675,7 +675,7 @@ function ImportantInfo({
 
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <InformationCircleIcon className="size-4 text-sky-500 dark:text-sky-400" />
         <Subheading className="text-sm">Important</Subheading>
       </div>
@@ -699,7 +699,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800">
+    <div className="border-b border-zinc-200 last:border-b-0 dark:border-zinc-700">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -741,7 +741,7 @@ function FAQsAccordion() {
 
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-      <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <ChatBubbleLeftRightIcon className="size-4 text-amber-500 dark:text-amber-400" />
         <Subheading className="text-sm">FAQs</Subheading>
       </div>
@@ -1112,7 +1112,7 @@ function EnrollmentDialog({
   return (
     <Dialog open={open} onClose={handleClose} size="xl">
       {processingState !== "success" && (
-        <div className="-mx-4 -mt-4 border-b border-zinc-100 bg-zinc-50 sm:-mx-6 sm:-mt-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <div className="-mx-4 -mt-4 border-b border-zinc-200 bg-zinc-50 sm:-mx-6 sm:-mt-6 dark:border-zinc-700 dark:bg-zinc-900/50">
           <StepIndicator currentStep={step} hasError={processingState === "error"} />
         </div>
       )}
@@ -1188,7 +1188,7 @@ function EnrollmentDialog({
             )}
 
             {/* Confirmation Checkbox */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
               <p className="text-sm font-medium text-zinc-900 dark:text-white">After purchasing:</p>
               <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
                 <input
@@ -1312,7 +1312,7 @@ function EnrollmentDialog({
           <div className="space-y-5">
             {/* Extracted Details - Only show if we have some valid data and not in error state */}
             {scanResult?.extractedData && processingState !== "error" && (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-zinc-900 dark:text-white">Order Details</p>
                   {scanResult.confidence !== undefined && (
@@ -1747,7 +1747,7 @@ export function CampaignShow() {
 
         {/* Right: Tasks */}
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+          <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <div className="flex items-center gap-2">
               <ClipboardDocumentListIcon className="size-4 text-rose-500 dark:text-rose-400" />
               <Subheading className="text-sm">Tasks to Complete</Subheading>

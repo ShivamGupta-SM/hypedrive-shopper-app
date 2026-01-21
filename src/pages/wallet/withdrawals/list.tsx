@@ -14,7 +14,7 @@ import { WithdrawalsListSkeleton } from "@/lib/skeleton";
 import { showError, showSuccess } from "@/lib/toast";
 import {
   ArrowPathIcon,
-  ArrowUpTrayIcon,
+  ArrowUpIcon,
   CheckCircleIcon,
   ChevronRightIcon,
   ClockIcon,
@@ -37,8 +37,8 @@ function formatDateTime(dateString?: string) {
 function EmptyWithdrawals() {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <ArrowUpTrayIcon className="size-7 text-zinc-400" />
+      <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-zinc-400 via-zinc-500 to-zinc-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-zinc-500 dark:via-zinc-600 dark:to-zinc-700">
+        <ArrowUpIcon className="size-7 text-white/95" />
       </div>
       <p className="mt-4 text-base font-semibold text-zinc-900 dark:text-white">
         No withdrawals yet
@@ -72,8 +72,8 @@ function WithdrawalRow({ withdrawal, onCancel }: { withdrawal: wallets.Withdrawa
         href={`/wallet/withdrawals/${withdrawal.id}`}
         className="flex items-center gap-3 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/50">
-          <ArrowUpTrayIcon className="size-5 text-sky-600 dark:text-sky-400" />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sky-400 via-sky-500 to-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.2)] dark:from-sky-500 dark:via-sky-600 dark:to-sky-700">
+          <ArrowUpIcon className="size-5 text-white/95" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

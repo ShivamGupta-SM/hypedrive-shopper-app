@@ -700,7 +700,7 @@ export function EnrollmentsList() {
 
       {/* Results count - only show when there are filtered results */}
       {!loading && filteredEnrollments.length > 0 && (
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 sm:pb-3 dark:border-zinc-800">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5 sm:pb-3 dark:border-zinc-700">
           <p className="text-[13px] text-zinc-500 sm:text-sm">
             {`${filteredEnrollments.length} enrollment${filteredEnrollments.length !== 1 ? "s" : ""}`}
           </p>

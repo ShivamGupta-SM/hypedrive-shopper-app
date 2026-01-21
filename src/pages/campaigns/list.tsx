@@ -578,7 +578,7 @@ export function CampaignsList() {
       )}
 
       {/* Results count */}
-      <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-700">
         <p className="text-sm text-zinc-500">
           {loading ? "Loading..." : `${campaignCount} campaign${campaignCount !== 1 ? "s" : ""}`}
         </p>

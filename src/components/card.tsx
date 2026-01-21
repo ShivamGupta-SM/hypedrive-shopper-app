@@ -71,7 +71,7 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 ${className || ""}`}
+      className={`flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 ${className || ""}`}
     >
       <div className="flex items-center gap-2">
         {Icon && <Icon className="size-4 text-zinc-400" />}
