@@ -36,7 +36,7 @@ function IconButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-white/10 dark:active:bg-zinc-700 [&>svg]:size-4.5"
+      className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:active:bg-zinc-700 [&>svg]:size-4.5"
     >
       {children}
     </button>
@@ -54,11 +54,11 @@ function MobileSidebar({ open, close, children }: React.PropsWithChildren<{ open
         transition
         className="fixed inset-y-0 w-full max-w-80 p-2 pl-safe transition duration-300 ease-in-out data-closed:-translate-x-full"
       >
-        <div className="flex h-full flex-col rounded-lg bg-white shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div className="flex h-full flex-col rounded-lg bg-white shadow-xs ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
           <div className="px-4 pt-4">
             <Headless.CloseButton
               as="button"
-              className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-950/5 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-white/10 dark:active:bg-zinc-700 [&>svg]:size-4.5"
+              className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200 active:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:active:bg-zinc-700 [&>svg]:size-4.5"
               aria-label="Close navigation"
             >
               <CloseMenuIcon />
@@ -126,7 +126,7 @@ export function SidebarLayout({
 
       {/* Content - pb for TabBar height + safe area + gap */}
       <main className="flex min-h-0 flex-1 flex-col p-2 pb-[calc(52px+env(safe-area-inset-bottom)+8px)] lg:min-w-0 lg:p-2 lg:pb-2 lg:pl-64">
-        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
           <div className="mx-auto max-w-7xl">{children}</div>
         </div>
       </main>

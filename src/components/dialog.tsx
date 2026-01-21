@@ -44,7 +44,7 @@ export function Dialog({
             className={clsx(
               className,
               sizes[size],
-              'relative row-start-2 w-full min-w-0 rounded-t-2xl bg-white p-5 shadow-xl ring-1 ring-zinc-950/5 xs:rounded-t-3xl xs:p-6 sm:mb-auto sm:rounded-2xl sm:p-6 dark:bg-zinc-900 dark:ring-white/10 forced-colors:outline',
+              'relative row-start-2 w-full min-w-0 rounded-t-2xl bg-white p-5 shadow-xl ring-1 ring-zinc-200 xs:rounded-t-3xl xs:p-6 sm:mb-auto sm:rounded-2xl sm:p-6 dark:bg-zinc-900 dark:ring-zinc-800 forced-colors:outline',
               'max-h-[calc(100vh-1rem)] overflow-y-auto xs:max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)]',
               'transition duration-150 will-change-transform data-closed:translate-y-12 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in sm:data-closed:translate-y-0 sm:data-closed:data-enter:scale-95'
             )}

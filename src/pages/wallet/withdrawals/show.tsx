@@ -144,7 +144,7 @@ export function WithdrawalShow() {
   return (
     <div className="space-y-3 lg:space-y-4">
       {/* HEADER CARD */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className="p-4 lg:p-5">
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Duotone icon */}
@@ -231,7 +231,7 @@ export function WithdrawalShow() {
 
       {/* BANK ACCOUNT CARD */}
       {method && (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
           <div className="flex items-center gap-3 p-4 lg:p-5">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
               <BuildingLibraryIcon className="size-5 text-zinc-500 dark:text-zinc-400" />
@@ -253,7 +253,7 @@ export function WithdrawalShow() {
       )}
 
       {/* DETAILS CARD */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
           {/* Date */}
           <div className="flex items-center justify-between px-4 py-3 lg:px-5">

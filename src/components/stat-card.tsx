@@ -70,7 +70,7 @@ export function StatCard({
   if (Icon) {
     return (
       <div
-        className={`flex flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 ${className || ""}`}
+        className={`flex flex-col rounded-xl bg-white p-3 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 ${className || ""}`}
       >
         <div
           className={`flex size-8 items-center justify-center rounded-lg ${styles.bg}`}

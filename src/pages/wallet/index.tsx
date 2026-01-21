@@ -17,6 +17,7 @@ import {
   ArrowDownIcon,
   ArrowTrendingUpIcon,
   ArrowUpIcon,
+  ArrowUpTrayIcon,
   BanknotesIcon,
   BuildingLibraryIcon,
   ChevronRightIcon,

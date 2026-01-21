@@ -110,7 +110,7 @@ export function TransactionShow() {
   return (
     <div className="space-y-3 lg:space-y-4">
       {/* HEADER CARD */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className="p-4 lg:p-5">
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Coin icon - gradient bg + white engraved icon */}
@@ -156,7 +156,7 @@ export function TransactionShow() {
       </div>
 
       {/* DETAILS CARD */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
         <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
           {/* Date */}
           <div className="flex items-center justify-between px-4 py-3 lg:px-5">
