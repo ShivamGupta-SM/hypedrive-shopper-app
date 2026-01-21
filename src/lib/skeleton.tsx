@@ -308,83 +308,30 @@ export function EnrollmentCardSkeleton() {
 
 // =============================================================================
 // ENROLLMENTS LIST PAGE SKELETON
-// Matches: src/pages/enrollments/list.tsx
+// Matches: src/pages/enrollments/list.tsx - Results section only
 // =============================================================================
 
 export function EnrollmentsListSkeleton() {
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Header */}
-      <div>
-        <Shimmer className="h-7 w-28" />
-        <Shimmer className="mt-0.5 h-4 w-64" />
-      </div>
-
-      {/* Search Bar */}
-      <Shimmer className="h-10 w-full rounded-lg" />
-
-      {/* Tabs */}
-      <div className="-mx-1 flex items-center gap-1.5 px-1 py-0.5">
-        <Shimmer className="h-8 w-14 rounded-full" />
-        <Shimmer className="h-8 w-[70px] rounded-full" />
-        <Shimmer className="h-8 w-24 rounded-full" />
-        <Shimmer className="h-8 w-[90px] rounded-full" />
-        <Shimmer className="h-8 w-[85px] rounded-full" />
-        <Shimmer className="h-8 w-16 rounded-full" />
-      </div>
-
-      {/* Results count */}
-      <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5 sm:pb-3 dark:border-zinc-700">
-        <Shimmer className="h-3.5 w-24" />
-      </div>
-
-      {/* Enrollment Grid */}
-      <div className="grid grid-cols-1 gap-2.5 sm:gap-3 md:grid-cols-2 lg:gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <EnrollmentCardSkeleton key={i} />
-        ))}
-      </div>
+    <div className="grid grid-cols-1 gap-2.5 sm:gap-3 md:grid-cols-2 lg:gap-4">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <EnrollmentCardSkeleton key={i} />
+      ))}
     </div>
   );
 }
 
 // =============================================================================
 // CAMPAIGNS LIST PAGE SKELETON
-// Matches: src/pages/campaigns/list.tsx
+// Matches: src/pages/campaigns/list.tsx - Results grid only
 // =============================================================================
 
 export function CampaignsListSkeleton() {
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <Shimmer className="h-7 w-24" />
-        <Shimmer className="mt-1 h-4 w-72" />
-      </div>
-
-      {/* Search + Filter Row */}
-      <div className="flex items-center gap-2">
-        <Shimmer className="h-10 flex-1 rounded-lg" />
-        <Shimmer className="h-10 w-10 rounded-lg lg:hidden" />
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1.5">
-        <Shimmer className="h-8 w-16 rounded-full" />
-        <Shimmer className="h-8 w-20 rounded-full" />
-      </div>
-
-      {/* Results count */}
-      <div className="border-b border-zinc-200 pb-3 dark:border-zinc-700">
-        <Shimmer className="h-4 w-24" />
-      </div>
-
-      {/* Campaign Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <CampaignCardSkeleton key={i} />
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <CampaignCardSkeleton key={i} />
+      ))}
     </div>
   );
 }
