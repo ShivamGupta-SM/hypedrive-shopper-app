@@ -14,7 +14,6 @@ import {
   useWallet,
   useWithdrawalMethods,
 } from "@/hooks/use-api";
-import { DashboardSkeleton } from "@/lib/skeleton";
 import {
   ArrowPathIcon,
   ArrowRightIcon,
@@ -42,13 +41,6 @@ function _isValidImageUrl(url?: string): boolean {
 }
 void _isValidImageUrl; // suppress unused warning
 
-// =============================================================================
-// LOADING STATE
-// =============================================================================
-
-function LoadingSkeleton() {
-  return <DashboardSkeleton />;
-}
 
 // =============================================================================
 // ERROR STATE
@@ -332,7 +324,7 @@ export function Dashboard() {
 
   // Loading state
   if (profileLoading || statsLoading || walletLoading || enrollmentsLoading || campaignsLoading) {
-    return <LoadingSkeleton />;
+    return null;
   }
 
   // Error state

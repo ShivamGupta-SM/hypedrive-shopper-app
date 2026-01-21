@@ -23,7 +23,6 @@ import type { shared } from "@/hooks/use-api";
 import { useInfiniteEnrollments } from "@/hooks/use-api";
 import { HighlightText } from "@/lib/highlight-text";
 import { formatCurrency } from "@/lib/money-utils";
-import { EnrollmentCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
 
 type EnrollmentStatus = shared.EnrollmentStatus;
 
@@ -91,17 +90,6 @@ function getStatusConfig(status: EnrollmentStatus): {
   };
 }
 
-function LoadingSkeleton() {
-  return (
-    <SkeletonWrapper>
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
-        {[1, 2, 3, 4].map((n) => (
-          <EnrollmentCardSkeleton key={`skeleton-${n}`} />
-        ))}
-      </div>
-    </SkeletonWrapper>
-  );
-}
 
 // Semicircle gauge for deadline visualization - clean and simple
 function DeadlineGauge({
@@ -692,9 +680,7 @@ export function EnrollmentsList() {
       )}
 
       {/* Results */}
-      {loading ? (
-        <LoadingSkeleton />
-      ) : error ? (
+      {loading ? null : error ? (
         <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-12 sm:py-16 dark:bg-zinc-900/50">
           <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
             <XMarkIcon className="size-6 text-red-500" />

@@ -57,7 +57,6 @@ import {
 } from "@/hooks/use-api";
 import { formatDate, formatRelativeTime } from "@/lib/date";
 import { formatCurrency } from "@/lib/money-utils";
-import { SkeletonWrapper, BoxSkeleton } from "@/lib/skeleton";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -91,29 +90,6 @@ import { showError, showSuccess } from "@/lib/toast";
 
 type EnrollmentStatusType = shared.EnrollmentStatus;
 
-// ============================================================================
-// LOADING SKELETON
-// ============================================================================
-
-function EnrollmentShowSkeleton() {
-  return (
-    <SkeletonWrapper>
-      <div className="space-y-4 lg:space-y-6">
-        <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-          <div className="space-y-4 lg:col-span-2 lg:space-y-6">
-            <BoxSkeleton height={160} borderRadius={12} />
-            <BoxSkeleton height={100} borderRadius={12} />
-            <BoxSkeleton height={250} borderRadius={12} />
-          </div>
-          <div className="mt-4 space-y-4 lg:mt-0">
-            <BoxSkeleton height={180} borderRadius={12} />
-            <BoxSkeleton height={200} borderRadius={12} />
-          </div>
-        </div>
-      </div>
-    </SkeletonWrapper>
-  );
-}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -1537,7 +1513,7 @@ export function EnrollmentShow() {
     refetch();
   }, [refetch]);
 
-  if (loading) return <EnrollmentShowSkeleton />;
+  if (loading) return null;
 
   if (error || !enrollment) {
     return (

@@ -25,7 +25,6 @@ import {
   useUploadProfilePicture,
   type AuthUser,
 } from "@/hooks/use-api";
-import { SettingsSkeleton } from "@/lib/skeleton";
 import type { wallets } from "@/hooks/use-api";
 import {
   ArrowPathIcon,
@@ -67,13 +66,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { showError, showSuccess } from "@/lib/toast";
 
-// =============================================================================
-// LOADING & UTILITY COMPONENTS
-// =============================================================================
-
-function LoadingState() {
-  return <SettingsSkeleton />;
-}
 
 // =============================================================================
 // EDIT PROFILE VIEW - Full page editor for all profile fields
@@ -1638,7 +1630,7 @@ export function Settings() {
   }, [notificationPrefs]);
 
   if (profileLoading || statsLoading || kycLoading) {
-    return <LoadingState />;
+    return null;
   }
 
   // Error state

@@ -22,7 +22,6 @@ import { Text } from "@/components/text";
 import { useCampaigns, useInfiniteCampaigns, usePlatforms, useProductCategories, getAssetUrl } from "@/hooks/use-api";
 import { getCampaignTypeConfig, getDaysLeft, getDisplayCashback } from "@/lib/campaign-utils";
 import { HighlightText } from "@/lib/highlight-text";
-import { CampaignCardSkeleton, SkeletonWrapper } from "@/lib/skeleton";
 
 function FilterChip({
   label,
@@ -49,17 +48,6 @@ function FilterChip({
 }
 
 
-function LoadingSkeleton() {
-  return (
-    <SkeletonWrapper>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-          <CampaignCardSkeleton key={`skeleton-${n}`} />
-        ))}
-      </div>
-    </SkeletonWrapper>
-  );
-}
 
 interface FilterState {
   platform: string;
@@ -588,9 +576,7 @@ export function CampaignsList() {
       </div>
 
       {/* Results Grid */}
-      {loading ? (
-        <LoadingSkeleton />
-      ) : error ? (
+      {loading ? null : error ? (
         <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-16 dark:bg-zinc-900/50">
           <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/50">
             <XMarkIcon className="size-6 text-red-500" />
