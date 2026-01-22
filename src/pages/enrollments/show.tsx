@@ -89,6 +89,15 @@ import { useParams, useNavigate } from "react-router";
 import { showError, showSuccess } from "@/lib/toast";
 import { EnrollmentShowSkeleton } from "@/lib/skeleton";
 
+// Page title hook
+function useDocumentTitle(title: string) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+    return () => { document.title = prevTitle; };
+  }, [title]);
+}
+
 type EnrollmentStatusType = shared.EnrollmentStatus;
 
 
@@ -1466,6 +1475,12 @@ export function EnrollmentShow() {
 
   const { data: enrollment, loading, error, refetch } = useEnrollmentDetail(id || "");
   const { data: pricing } = useEnrollmentPricing(id || "");
+
+  // Set page title
+  const pageTitle = enrollment?.campaign?.title
+    ? `${enrollment.campaign.title} - Enrollment | HypeDrive`
+    : "Enrollment | HypeDrive";
+  useDocumentTitle(pageTitle);
 
   const { withdrawEnrollment, isPending: withdrawing } = useWithdrawEnrollment();
   const { resubmitEnrollment, isPending: resubmitting } = useResubmitEnrollment();

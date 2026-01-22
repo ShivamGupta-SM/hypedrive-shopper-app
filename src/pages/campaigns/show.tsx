@@ -89,6 +89,15 @@ import {
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 
+// Page title hook
+function useDocumentTitle(title: string) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+    return () => { document.title = prevTitle; };
+  }, [title]);
+}
+
 // ============================================================================
 // UTILITY COMPONENTS
 // ============================================================================
@@ -1552,6 +1561,12 @@ export function CampaignShow() {
 
   const product = campaign?.product;
   const platform = campaign?.platform;
+
+  // Set page title
+  const pageTitle = campaign?.title
+    ? `${campaign.title} | HypeDrive`
+    : "Campaign | HypeDrive";
+  useDocumentTitle(pageTitle);
 
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
 
