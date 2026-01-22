@@ -27,6 +27,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { useState } from "react";
 import { DashboardSkeleton } from "@/lib/skeleton";
+import { useDocumentTitle } from "@/hooks";
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -311,6 +312,8 @@ function EnrollmentsSection({
 // =============================================================================
 
 export function Dashboard() {
+  useDocumentTitle("Dashboard | HypeDrive");
+
   const { data: profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useShopperProfile();
   const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useShopperStats();
   const { data: wallet, loading: walletLoading, error: walletError, refetch: refetchWallet } = useWallet();

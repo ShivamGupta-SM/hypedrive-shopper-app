@@ -12,6 +12,7 @@ import {
 	ClockIcon,
 } from "@heroicons/react/16/solid";
 import { useNavigate } from "react-router";
+import { useDocumentTitle } from "@/hooks";
 
 // Section card component for visual grouping
 function Section({
@@ -78,6 +79,7 @@ function DataItem({ label, description }: { label: string; description: string }
 }
 
 export function PrivacyPolicy() {
+	useDocumentTitle("Privacy Policy | HypeDrive");
 	const navigate = useNavigate();
 
 	return (

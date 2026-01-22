@@ -10,6 +10,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/16/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDocumentTitle } from "@/hooks";
 
 import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
@@ -500,6 +501,8 @@ const tabLabels: Record<TabType, string> = {
 };
 
 export function EnrollmentsList() {
+  useDocumentTitle("My Enrollments | HypeDrive");
+
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialData, setHasInitialData] = useState(false);

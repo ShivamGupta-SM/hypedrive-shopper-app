@@ -27,6 +27,7 @@ import {
   ShieldCheckIcon,
 } from "@heroicons/react/16/solid";
 import { useState } from "react";
+import { useDocumentTitle } from "@/hooks";
 
 function formatDateTime(dateString?: string) {
   if (!dateString) return "—";
@@ -220,6 +221,8 @@ function KYCAlert({ kycStatus, balance }: { kycStatus?: string; balance: number 
 
 
 export function Wallet() {
+  useDocumentTitle("Wallet | HypeDrive");
+
   const { data: profile, loading: profileLoading } = useShopperProfile();
   const { data: stats, loading: statsLoading } = useShopperStats();
   const { data: wallet, loading: walletLoading } = useWallet();

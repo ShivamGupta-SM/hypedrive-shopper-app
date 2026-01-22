@@ -11,6 +11,7 @@ import {
 	XCircleIcon,
 } from "@heroicons/react/16/solid";
 import { useNavigate } from "react-router";
+import { useDocumentTitle } from "@/hooks";
 
 // Section card component for visual grouping
 function Section({
@@ -88,6 +89,7 @@ function TimelineItem({ scenario, time }: { scenario: string; time: string }) {
 }
 
 export function RefundPolicy() {
+	useDocumentTitle("Refund Policy | HypeDrive");
 	const navigate = useNavigate();
 
 	return (

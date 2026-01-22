@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useDocumentTitle } from "@/hooks";
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -52,6 +53,8 @@ function getForgotPasswordErrorMessage(error: unknown): string {
 }
 
 export function ForgotPassword() {
+  useDocumentTitle("Reset Password | HypeDrive");
+
   const { mutate: forgotPassword, isPending } = useForgotPassword();
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");

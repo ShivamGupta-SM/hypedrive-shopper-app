@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useDocumentTitle } from "@/hooks";
 
 const registerSchema = z.object({
   email: z
@@ -50,6 +51,8 @@ const benefits = [
 ];
 
 export function Register() {
+  useDocumentTitle("Create Account | HypeDrive");
+
   const { mutate: registerUser, isPending } = useRegister();
   const { mutate: socialLogin, isPending: socialPending } = useSocialLogin();
   const navigate = useNavigate();

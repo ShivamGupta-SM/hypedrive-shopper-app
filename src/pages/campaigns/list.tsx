@@ -1,5 +1,6 @@
 import * as Headless from "@headlessui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDocumentTitle } from "@/hooks";
 
 import {
   ArchiveBoxIcon,
@@ -357,6 +358,8 @@ function FilterIconButton({
 }
 
 export function CampaignsList() {
+  useDocumentTitle("Campaigns | HypeDrive");
+
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"active" | "ended">("active");
   const [platformFilter, setPlatformFilter] = useState("");

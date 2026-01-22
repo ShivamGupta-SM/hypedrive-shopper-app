@@ -11,6 +11,7 @@ import {
 	EnvelopeIcon,
 } from "@heroicons/react/16/solid";
 import { useNavigate } from "react-router";
+import { useDocumentTitle } from "@/hooks";
 
 // Section card component for visual grouping
 function Section({
@@ -81,6 +82,7 @@ function CheckList({ items }: { items: string[] }) {
 }
 
 export function TermsOfService() {
+	useDocumentTitle("Terms of Service | HypeDrive");
 	const navigate = useNavigate();
 
 	return (

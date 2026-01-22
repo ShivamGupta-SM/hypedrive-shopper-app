@@ -19,6 +19,7 @@ import {
   UserCircleIcon,
 } from "@heroicons/react/16/solid";
 import { useState, useCallback } from "react";
+import { useDocumentTitle } from "@/hooks";
 
 // =============================================================================
 // FAQ DATA
@@ -346,6 +347,7 @@ function LegalSection() {
 // =============================================================================
 
 export function Support() {
+  useDocumentTitle("Help & Support | HypeDrive");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Scroll to section and select category

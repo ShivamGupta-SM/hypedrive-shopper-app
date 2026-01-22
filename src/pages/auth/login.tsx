@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useDocumentTitle } from "@/hooks";
 
 const loginSchema = z.object({
   email: z
@@ -28,6 +29,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function Login() {
+  useDocumentTitle("Sign In | HypeDrive");
+
   const { mutate: login, isPending } = useLogin();
   const { mutate: socialLogin, isPending: socialPending } = useSocialLogin();
   const navigate = useNavigate();

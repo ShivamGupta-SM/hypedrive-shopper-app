@@ -66,6 +66,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { showError, showSuccess } from "@/lib/toast";
 import { SettingsSkeleton } from "@/lib/skeleton";
+import { useDocumentTitle } from "@/hooks";
 
 
 // =============================================================================
@@ -1585,6 +1586,8 @@ function NotificationToggle({
 // =============================================================================
 
 export function Settings() {
+  useDocumentTitle("Settings | HypeDrive");
+
   const navigate = useNavigate();
   const { data: profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useShopperProfile();
   const { data: identity } = useGetIdentity<AuthUser>();
