@@ -200,6 +200,7 @@ function EnrollmentCard({
       instructions?: string;
       proofLink?: string;
       proofScreenshot?: string;
+      platformName?: string;
     }>;
   };
   searchQuery?: string;
@@ -357,8 +358,8 @@ function EnrollmentCard({
               <div className="flex gap-1.5 pb-1" style={{ minWidth: 'max-content' }}>
                 {tasks.map((task) => {
                   const isComplete = task.proofLink || task.proofScreenshot;
-                  // Detect platform from task name
-                  const platform = detectPlatformFromTaskName(task.name);
+                  // Use platformName from API, fallback to detection from task name
+                  const platform = task.platformName || detectPlatformFromTaskName(task.name);
                   const TaskPlatformIcon = platform ? getPlatformIcon(platform) : null;
                   const platformColor = platform ? getPlatformColor(platform) : "";
 

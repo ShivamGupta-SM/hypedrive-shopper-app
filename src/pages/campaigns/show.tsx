@@ -46,6 +46,7 @@ import {
   JioMartIcon,
 } from "@/components/icons/platform-icons";
 import { Input, InputGroup } from "@/components/input";
+import { CampaignShowSkeleton } from "@/lib/skeleton";
 import {
   useCampaign,
   useCampaignPricing,
@@ -91,15 +92,6 @@ import { useParams, useNavigate } from "react-router";
 // ============================================================================
 // UTILITY COMPONENTS
 // ============================================================================
-
-function LoadingSpinner() {
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center">
-      <div className="size-12 animate-spin rounded-full border-[3px] border-zinc-200 border-t-zinc-800 dark:border-zinc-700 dark:border-t-zinc-200" />
-      <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">Loading campaign...</p>
-    </div>
-  );
-}
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { color: "emerald" | "amber" | "red" | "zinc" | "sky"; label: string; icon: typeof CheckCircleIcon }> = {
@@ -1575,7 +1567,7 @@ export function CampaignShow() {
   const spotsLeft = campaign ? campaign.maxEnrollments - campaign.currentEnrollments : 0;
   const spotsPercentage = campaign ? Math.round((campaign.currentEnrollments / campaign.maxEnrollments) * 100) : 0;
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <CampaignShowSkeleton />;
 
   if (error || !campaign) {
     return (

@@ -1,10 +1,45 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuthStore } from "@/store/auth-store";
 import { useShopperProfile } from "@/hooks/use-api";
+import { WifiIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
   redirectTo?: string;
+}
+
+// Sleek connection error component - matches app's design language
+function ConnectionError() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* Icon with subtle animation */}
+        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+          <WifiIcon className="size-8 text-zinc-400" strokeWidth={1.5} />
+        </div>
+
+        {/* Text */}
+        <div className="mt-5 text-center">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-white">
+            Connection Lost
+          </h2>
+          <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+            Unable to reach our servers. Check your internet and try again.
+          </p>
+        </div>
+
+        {/* Retry button */}
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white active:scale-[0.98] dark:bg-white dark:text-zinc-900"
+        >
+          <ArrowPathIcon className="size-4" />
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -21,7 +56,7 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ children, redirectTo = "/login" }: ProtectedRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { data: shopperData, loading: shopperLoading } = useShopperProfile();
+  const { data: shopperData, loading: shopperLoading, error: shopperError } = useShopperProfile();
   const shopper = shopperData?.shopper;
   const location = useLocation();
 
@@ -32,6 +67,12 @@ export function ProtectedRoute({ children, redirectTo = "/login" }: ProtectedRou
   // Wait for shopper data to load before making routing decisions
   if (shopperLoading) {
     return null; // Brief loading state - AppInitializer handles initial load spinner
+  }
+
+  // If there's an error fetching shopper (network error, server down, etc.)
+  // DON'T redirect to onboarding - show error state instead
+  if (shopperError) {
+    return <ConnectionError />;
   }
 
   if (!shopper && location.pathname !== "/onboarding") {
@@ -52,7 +93,7 @@ export function ProtectedRoute({ children, redirectTo = "/login" }: ProtectedRou
  */
 export function OnboardingRoute({ children }: { children?: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { data: shopperData, loading: shopperLoading } = useShopperProfile();
+  const { data: shopperData, loading: shopperLoading, error: shopperError } = useShopperProfile();
   const shopper = shopperData?.shopper;
 
   if (!isAuthenticated) {
@@ -62,6 +103,11 @@ export function OnboardingRoute({ children }: { children?: React.ReactNode }) {
   // Wait for shopper data to load before making routing decisions
   if (shopperLoading) {
     return null;
+  }
+
+  // If there's an error fetching shopper, show error instead of assuming no profile
+  if (shopperError) {
+    return <ConnectionError />;
   }
 
   if (shopper) {
@@ -81,13 +127,18 @@ export function OnboardingRoute({ children }: { children?: React.ReactNode }) {
  */
 export function PublicRoute({ children, redirectTo = "/" }: ProtectedRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { data: shopperData, loading: shopperLoading } = useShopperProfile();
+  const { data: shopperData, loading: shopperLoading, error: shopperError } = useShopperProfile();
   const shopper = shopperData?.shopper;
 
   if (isAuthenticated) {
     // Wait for shopper check before redirecting
     if (shopperLoading) {
       return null;
+    }
+    // If error fetching shopper, don't redirect - let them stay on public page
+    // They can try logging in again or the issue might resolve
+    if (shopperError) {
+      return children ? <>{children}</> : <Outlet />;
     }
     const destination = shopper ? redirectTo : "/onboarding";
     return <Navigate to={destination} replace />;
